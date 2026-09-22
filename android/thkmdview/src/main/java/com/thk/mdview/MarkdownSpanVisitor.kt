@@ -1,5 +1,6 @@
 package com.thk.mdview
 
+import android.graphics.Paint
 import android.graphics.Typeface
 import android.text.Spannable
 import android.text.SpannableStringBuilder
@@ -49,6 +50,17 @@ internal class MarkdownSpanVisitor(
     private val segments = mutableListOf<RenderedSegment>()
     private var builder = SpannableStringBuilder()
     private val listStack = ArrayDeque<ListContext>()
+
+    // Used only to *measure* list-marker text ("☑ ", "12. ") at the theme's real body
+    // size, so OrderedListItemSpan/TaskListItemSpan reserve exactly enough leading margin
+    // for what they draw - a fixed guessed width previously overlapped the item text on
+    // higher-density screens or larger theme font sizes.
+    private val markerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        textSize = theme.bodyFontSizeSp * densityPx
+    }
+
+    private fun measuredMarkerWidthPx(markerText: String): Int =
+        Math.ceil(markerPaint.measureText(markerText).toDouble()).toInt()
 
     fun render(document: Document): List<RenderedSegment> {
         document.accept(this)
@@ -103,12 +115,13 @@ internal class MarkdownSpanVisitor(
         val end = builder.length
         if (end == start) return
         val cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx
-        val paddingPx = (12 * densityPx).toInt()
+        val horizontalPaddingPx = (12 * densityPx).toInt()
+        val verticalPaddingPx = (8 * densityPx).toInt()
         builder.setSpan(
-            CodeBlockBackgroundSpan(theme.codeBackgroundColor, cornerRadiusPx, start, end),
+            CodeBlockBackgroundSpan(theme.codeBackgroundColor, cornerRadiusPx, verticalPaddingPx, start, end),
             start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
-        builder.setSpan(CodeBlockPaddingSpan(paddingPx), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        builder.setSpan(CodeBlockPaddingSpan(horizontalPaddingPx), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         builder.setSpan(ForegroundColorSpan(theme.codeTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         builder.setSpan(TypefaceSpan("monospace"), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         builder.setSpan(
@@ -172,11 +185,16 @@ internal class MarkdownSpanVisitor(
         val start = builder.length
 
         val taskMarker = listItem.firstChild as? TaskListItemMarker
-        val marginSpans = mutableListOf<Any>(LeadingMarginSpan.Standard(ctx.level * INDENT_PX))
+        val indentPx = (ctx.level * INDENT_DP * densityPx).toInt()
+        val gapPx = (BULLET_GAP_DP * densityPx).toInt()
+        val marginSpans = mutableListOf<Any>(LeadingMarginSpan.Standard(indentPx))
         marginSpans += when {
-            taskMarker != null -> TaskListItemSpan(taskMarker.isChecked, BULLET_GAP_PX)
-            ctx.ordered -> OrderedListItemSpan(ctx.index, BULLET_GAP_PX)
-            else -> BulletSpan(BULLET_GAP_PX)
+            taskMarker != null -> {
+                val glyph = if (taskMarker.isChecked) "☑" else "☐"
+                TaskListItemSpan(taskMarker.isChecked, measuredMarkerWidthPx(glyph), gapPx)
+            }
+            ctx.ordered -> OrderedListItemSpan(ctx.index, measuredMarkerWidthPx("${ctx.index}."), gapPx)
+            else -> BulletSpan(gapPx)
         }
 
         var child: Node? = if (taskMarker != null) listItem.firstChild.next else listItem.firstChild
@@ -257,8 +275,8 @@ internal class MarkdownSpanVisitor(
     }
 
     companion object {
-        private const val INDENT_PX = 36
-        private const val BULLET_GAP_PX = 24
+        private const val INDENT_DP = 22f
+        private const val BULLET_GAP_DP = 8f
         private const val THEMATIC_BREAK_LINE = "────────────────────"
     }
 }

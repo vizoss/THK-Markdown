@@ -31,7 +31,7 @@ data class THKMDTheme(
             linkColor = 0xFF0A84FF.toInt(),
             codeTextColor = 0xFF3A3A3C.toInt(),
             codeBackgroundColor = 0xFFEEEEEE.toInt(),
-            codeBlockCornerRadiusDp = 6f,
+            codeBlockCornerRadiusDp = 8f,
             blockQuoteBarColor = 0xFFC7C7CC.toInt(),
             blockQuoteTextColor = 0xFF3A3A3C.toInt(),
             tableBorderColor = 0xFFD1D1D6.toInt(),

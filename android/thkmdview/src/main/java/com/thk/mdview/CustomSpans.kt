@@ -7,6 +7,7 @@ import android.text.Layout
 import android.text.style.ClickableSpan
 import android.text.style.LeadingMarginSpan
 import android.text.style.LineBackgroundSpan
+import android.text.style.LineHeightSpan
 import android.view.View
 
 internal class LinkClickableSpan(
@@ -22,12 +23,34 @@ internal class LinkClickableSpan(
 // line only gets the flat middle-fill, except the block's first line (rounded top
 // corners) and last line (rounded bottom corners) - drawn as a full round-rect then
 // squared off on the far side, which is cheaper than tracking per-glyph paths.
+//
+// Also implements LineHeightSpan to grow the first line's ascent and the last line's
+// descent by `verticalPaddingPx`: Android's Spannable/Layout has no notion of "block
+// padding" the way CSS does, so without this the code text touches the background's top
+// and bottom edges directly. Growing the line metrics reserves real layout space (Layout
+// passes the already-grown top/bottom into drawBackground above), rather than just
+// drawing a taller rect that would bleed into the surrounding paragraph's own lines.
 internal class CodeBlockBackgroundSpan(
     private val backgroundColor: Int,
     private val cornerRadiusPx: Float,
+    private val verticalPaddingPx: Int,
     private val spanStart: Int,
     private val spanEnd: Int
-) : LineBackgroundSpan {
+) : LineBackgroundSpan, LineHeightSpan {
+
+    override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
+        val isFirstLine = start <= spanStart
+        val isLastLine = end >= spanEnd
+        if (isFirstLine) {
+            fm.ascent -= verticalPaddingPx
+            fm.top -= verticalPaddingPx
+        }
+        if (isLastLine) {
+            fm.descent += verticalPaddingPx
+            fm.bottom += verticalPaddingPx
+        }
+    }
+
     override fun drawBackground(
         canvas: Canvas,
         paint: Paint,
@@ -112,12 +135,17 @@ internal class ThemedQuoteSpan(
     }
 }
 
+// markerWidthPx must be measured (Paint.measureText) against the marker text this span
+// actually draws, at the theme's real body text size - a fixed guess here previously
+// caused the marker glyph to overlap the item text on higher-density screens, since the
+// glyph was drawn at an offset near the *end* of a too-small, unscaled pixel margin.
 internal class OrderedListItemSpan(
     private val number: Int,
+    private val markerWidthPx: Int,
     private val gapWidth: Int
 ) : LeadingMarginSpan {
 
-    override fun getLeadingMargin(first: Boolean): Int = gapWidth + MARKER_WIDTH
+    override fun getLeadingMargin(first: Boolean): Int = markerWidthPx + gapWidth
 
     override fun drawLeadingMargin(
         canvas: Canvas,
@@ -134,20 +162,17 @@ internal class OrderedListItemSpan(
         layout: Layout?
     ) {
         if (!first) return
-        canvas.drawText("$number.", (x + dir * MARKER_WIDTH).toFloat(), baseline.toFloat(), paint)
-    }
-
-    private companion object {
-        const val MARKER_WIDTH = 40
+        canvas.drawText("$number.", x.toFloat(), baseline.toFloat(), paint)
     }
 }
 
 internal class TaskListItemSpan(
     private val checked: Boolean,
+    private val markerWidthPx: Int,
     private val gapWidth: Int
 ) : LeadingMarginSpan {
 
-    override fun getLeadingMargin(first: Boolean): Int = gapWidth + MARKER_WIDTH
+    override fun getLeadingMargin(first: Boolean): Int = markerWidthPx + gapWidth
 
     override fun drawLeadingMargin(
         canvas: Canvas,
@@ -165,10 +190,6 @@ internal class TaskListItemSpan(
     ) {
         if (!first) return
         val glyph = if (checked) "☑" else "☐"
-        canvas.drawText(glyph, (x + dir * MARKER_WIDTH).toFloat(), baseline.toFloat(), paint)
-    }
-
-    private companion object {
-        const val MARKER_WIDTH = 40
+        canvas.drawText(glyph, x.toFloat(), baseline.toFloat(), paint)
     }
 }

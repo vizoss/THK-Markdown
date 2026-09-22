@@ -20,7 +20,6 @@ data class ChatMessage(val id: Long, val role: Role, val content: String)
 
 private const val VIEW_TYPE_USER = 0
 private const val VIEW_TYPE_ASSISTANT = 1
-private const val BUBBLE_MAX_WIDTH_DP = 280f
 
 class ChatAdapter(
     private val messages: MutableList<ChatMessage> = mutableListOf(),
@@ -66,8 +65,6 @@ class ChatAdapter(
         } else {
             val itemView = inflater.inflate(R.layout.item_message_assistant, parent, false)
             val holder = AssistantViewHolder(itemView, itemView.findViewById(R.id.markdownView))
-            val density = parent.resources.displayMetrics.density
-            holder.markdownView.maxContentWidthPx = (BUBBLE_MAX_WIDTH_DP * density).toInt()
             holder
         }
     }
