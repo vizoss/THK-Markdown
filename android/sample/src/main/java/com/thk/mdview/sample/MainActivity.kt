@@ -1,9 +1,13 @@
 package com.thk.mdview.sample
 
+import android.content.Context
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
+import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
@@ -53,6 +57,30 @@ class MainActivity : AppCompatActivity() {
                 false
             }
         }
+    }
+
+    // Tapping anywhere that isn't the currently-focused EditText (including taps that
+    // land on THKMDView but aren't a link/image, which don't consume the touch) dismisses
+    // the keyboard - a side effect only, never consumes the event, so scrolling/links/
+    // buttons underneath still work exactly as before.
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            val focused = currentFocus
+            if (focused is EditText && !isTouchInsideView(focused, ev)) {
+                focused.clearFocus()
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(focused.windowToken, 0)
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
+    private fun isTouchInsideView(view: View, event: MotionEvent): Boolean {
+        val location = IntArray(2)
+        view.getLocationOnScreen(location)
+        val x = event.rawX.toInt()
+        val y = event.rawY.toInt()
+        return x in location[0]..(location[0] + view.width) && y in location[1]..(location[1] + view.height)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

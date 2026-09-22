@@ -117,7 +117,7 @@ internal class MarkdownSpanVisitor(
         if (end == start) return
         val cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx
         val horizontalPaddingPx = (12 * densityPx).toInt()
-        val verticalPaddingPx = (8 * densityPx).toInt()
+        val verticalPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
         builder.setSpan(
             CodeBlockBackgroundSpan(theme.codeBackgroundColor, cornerRadiusPx, verticalPaddingPx, start, end),
             start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -144,28 +144,44 @@ internal class MarkdownSpanVisitor(
         blockQuoteDepth--
         val end = builder.length
         if (end > start) {
-            val verticalPaddingPx = (6 * densityPx).toInt()
+            // Same vertical padding constant as code blocks (BLOCK_VERTICAL_PADDING_DP) so
+            // the two block types read as one consistent "padded block" family; bar width
+            // and bar-to-text gap are also shared constants - both were previously raw,
+            // unscaled pixel values here, which is why the gap looked wrong/inconsistent
+            // across densities and didn't match iOS's (differently fixed) bar width.
             builder.setSpan(
                 ThemedQuoteSpan(
                     barColor = theme.blockQuoteBarColor,
                     backgroundColor = if (isOutermost) theme.blockQuoteBackgroundColor else null,
                     cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx,
-                    verticalPaddingPx = verticalPaddingPx,
+                    verticalPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
                     spanStart = start,
-                    spanEnd = end
+                    spanEnd = end,
+                    stripeWidthPx = (QUOTE_BAR_WIDTH_DP * densityPx).toInt(),
+                    gapWidthPx = (QUOTE_BAR_GAP_DP * densityPx).toInt()
                 ),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            // A little extra leading between wrapped/multi-paragraph lines *inside* the
+            // quote (distinct from ThemedQuoteSpan's own first/last-line padding above),
+            // so multi-line quotes don't read as cramped.
+            builder.setSpan(
+                QuoteInteriorLineSpacingSpan((QUOTE_INTERIOR_LINE_SPACING_DP * densityPx).toInt(), start, end),
+                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
         }
     }
 
     override fun visit(thematicBreak: ThematicBreak) {
         separate()
         val start = builder.length
-        builder.append(THEMATIC_BREAK_LINE)
+        builder.append(' ')
         val end = builder.length
-        builder.setSpan(ForegroundColorSpan(theme.tableBorderColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        builder.setSpan(
+            ThematicBreakSpan(theme.tableBorderColor, THEMATIC_BREAK_THICKNESS_DP * densityPx),
+            start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
     }
 
     override fun visit(htmlBlock: HtmlBlock) {
@@ -293,6 +309,13 @@ internal class MarkdownSpanVisitor(
     companion object {
         private const val INDENT_DP = 22f
         private const val BULLET_GAP_DP = 8f
-        private const val THEMATIC_BREAK_LINE = "────────────────────"
+        // Shared with code blocks so both "padded block" types feel consistent, and kept
+        // numerically identical to iOS's equivalent constants (see THKMDTheme.swift /
+        // MarkdownRenderer.swift comments there) for cross-platform visual parity.
+        private const val BLOCK_VERTICAL_PADDING_DP = 8f
+        private const val QUOTE_BAR_WIDTH_DP = 4f
+        private const val QUOTE_BAR_GAP_DP = 12f
+        private const val QUOTE_INTERIOR_LINE_SPACING_DP = 2f
+        private const val THEMATIC_BREAK_THICKNESS_DP = 1.5f
     }
 }

@@ -253,3 +253,47 @@ internal class TaskListItemSpan(
         canvas.drawText(glyph, x.toFloat(), baseline.toFloat(), paint)
     }
 }
+
+// Adds a little extra leading between the lines *inside* a multi-line block quote (on
+// top of, not instead of, ThemedQuoteSpan's own first/last-line block padding) so a
+// wrapped or multi-paragraph quote doesn't read as visually cramped.
+internal class QuoteInteriorLineSpacingSpan(
+    private val extraSpacingPx: Int,
+    private val spanStart: Int,
+    private val spanEnd: Int
+) : LineHeightSpan {
+    override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
+        if (start < spanStart || end > spanEnd) return
+        fm.descent += extraSpacingPx
+        fm.bottom += extraSpacingPx
+    }
+}
+
+// Draws a real solid divider line (rather than relying on a run of Unicode box-drawing
+// characters, whose glyph tiling/side-bearing varies by font and previously rendered
+// visibly dashed on iOS while looking solid on Android with a different font) - this way
+// both platforms render an identical, font-independent line regardless of typeface.
+internal class ThematicBreakSpan(
+    private val color: Int,
+    private val thicknessPx: Float
+) : LineBackgroundSpan {
+    override fun drawBackground(
+        canvas: Canvas,
+        paint: Paint,
+        left: Int,
+        right: Int,
+        top: Int,
+        baseline: Int,
+        bottom: Int,
+        text: CharSequence,
+        start: Int,
+        end: Int,
+        lineNumber: Int
+    ) {
+        val centerY = (top + bottom) / 2f
+        val originalColor = paint.color
+        paint.color = color
+        canvas.drawRect(left.toFloat(), centerY - thicknessPx / 2f, right.toFloat(), centerY + thicknessPx / 2f, paint)
+        paint.color = originalColor
+    }
+}

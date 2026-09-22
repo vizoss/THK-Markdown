@@ -44,6 +44,10 @@ final class MessageListViewController: UIViewController {
     )
 
     private var currentTheme: THKMDTheme = .default
+    // Cell reuse means a fully-streamed message's cell gets rebound every time it scrolls
+    // back into view; without this, it would replay its typewriter animation from scratch on
+    // every rebind instead of just showing its (already known) final content.
+    private var fullyStreamedMessageIDs: Set<UUID> = []
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputBar = MessageInputBar()
     private var inputBarBottomConstraint: NSLayoutConstraint!
@@ -237,7 +241,14 @@ extension MessageListViewController: UITableViewDataSource {
                 return UITableViewCell()
             }
             cell.markdownView.theme = currentTheme
-            cell.startStreaming(message.content)
+            if fullyStreamedMessageIDs.contains(message.id) {
+                cell.showFullyRendered(message.content)
+            } else {
+                let messageID = message.id
+                cell.startStreaming(message.content) { [weak self] in
+                    self?.fullyStreamedMessageIDs.insert(messageID)
+                }
+            }
             return cell
         }
     }
