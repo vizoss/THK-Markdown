@@ -1,5 +1,6 @@
 import UIKit
 import THKMDView
+import MarkdownFixtures
 
 // Shared with AssistantMessageCell/UserMessageCell. Matches android/sample's colors.xml
 // (bubble_assistant_background / bubble_assistant_text / bubble_user_background / bubble_user_text).
@@ -46,25 +47,19 @@ final class MessageListViewController: UIViewController {
     private var currentTheme: THKMDTheme = .default
     // Keep SSE progress independent of cell visibility and reuse.
     private var streamedContent: [UUID: String] = [:]
-    private var streamTasks: [UUID: Task<Void, Never>] = [:]
+    private var playback: Task<Void, Never>?
+    private var fixtures: [MarkdownFixture] = []
+    private var selectedFixture = 0
+    private var playbackMessageID: UUID?
+    private var chunkIndex = 0
+    private let fixtureControls = FixtureControls()
     private var followsLatestMessage = true
     private var finalHeightRefreshes = 0
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputBar = MessageInputBar()
     private var inputBarBottomConstraint: NSLayoutConstraint!
 
-    private var messages: [Message] = [
-        Message(
-            id: UUID(),
-            role: .assistant,
-            content: """
-            # THKMDView chat demo
-
-            Type a message below and send it — I'll (mock) reply and stream the answer back \
-            in, chunk by chunk, exactly like a real LLM response over SSE.
-            """
-        )
-    ]
+    private var messages: [Message] = []
 
     private var heightRefreshTimer: Timer?
 
@@ -78,11 +73,15 @@ final class MessageListViewController: UIViewController {
         )
 
         setUpTableView()
+        setUpFixtureControls()
         setUpInputBar()
         setUpKeyboardObservers()
         setUpDismissKeyboardOnTap()
-        for message in messages where message.role == .assistant {
-            startStreaming(message)
+        do {
+            fixtures = try MarkdownFixture.load()
+            showFixture(full: true)
+        } catch {
+            fixtureControls.update(title: "用例加载失败", state: error.localizedDescription)
         }
     }
 
@@ -141,7 +140,7 @@ final class MessageListViewController: UIViewController {
     deinit {
         NotificationCenter.default.removeObserver(self)
         heightRefreshTimer?.invalidate()
-        streamTasks.values.forEach { $0.cancel() }
+        playback?.cancel()
     }
 
     private func setUpTableView() {
@@ -167,7 +166,7 @@ final class MessageListViewController: UIViewController {
         inputBarBottomConstraint = inputBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.topAnchor.constraint(equalTo: fixtureControls.bottomAnchor, constant: 4),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: inputBar.topAnchor),
@@ -241,7 +240,7 @@ final class MessageListViewController: UIViewController {
                     self.tableView.setContentOffset(oldOffset, animated: false)
                 }
             }
-            if self.streamTasks.isEmpty {
+            if self.playback == nil {
                 self.finalHeightRefreshes -= 1
                 if self.finalHeightRefreshes <= 0 {
                     timer.invalidate()
@@ -253,22 +252,113 @@ final class MessageListViewController: UIViewController {
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    private func startStreaming(_ message: Message) {
-        streamedContent[message.id] = ""
-        streamTasks[message.id] = Task { @MainActor [weak self] in
-            var remaining = Substring(message.content)
-            while !remaining.isEmpty {
-                guard !Task.isCancelled else { return }
-                let end = remaining.index(remaining.startIndex, offsetBy: Int.random(in: 2...6), limitedBy: remaining.endIndex) ?? remaining.endIndex
-                let chunk = String(remaining[..<end])
-                remaining = remaining[end...]
-                self?.receiveChunk(chunk, for: message.id)
-                try? await Task.sleep(nanoseconds: 30_000_000)
-            }
-            self?.streamTasks.removeValue(forKey: message.id)
-            // Allow the final debounced render and layout to complete.
-            self?.finalHeightRefreshes = 2
+    private func setUpFixtureControls() {
+        fixtureControls.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(fixtureControls)
+        NSLayoutConstraint.activate([
+            fixtureControls.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            fixtureControls.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            fixtureControls.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12)
+        ])
+        fixtureControls.onSelect = { [weak self] in self?.selectFixture() }
+        fixtureControls.onFull = { [weak self] in self?.showFixture(full: true) }
+        fixtureControls.onPlay = { [weak self] in self?.playFixture() }
+        fixtureControls.onPause = { [weak self] in
+            self?.playback?.cancel(); self?.playback = nil
+            self?.updateFixtureStatus("已暂停")
         }
+        fixtureControls.onStep = { [weak self] in
+            guard let self, !self.fixtures.isEmpty else { return }
+            self.playback?.cancel(); self.playback = nil
+            if self.chunkIndex >= self.fixtures[self.selectedFixture].chunks.count { self.showFixture(full: false) }
+            self.advanceFixture()
+        }
+        fixtureControls.onDetails = { [weak self] in
+            guard let self, !self.fixtures.isEmpty else { return }
+            let fixture = self.fixtures[self.selectedFixture]
+            let alert = UIAlertController(title: fixture.id, message: fixture.summary + "\n\nMarkdown 原文：\n" + fixture.markdown, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "关闭", style: .cancel))
+            self.present(alert, animated: true)
+        }
+    }
+
+    private func selectFixture() {
+        let sheet = UIAlertController(title: "P0 用例", message: nil, preferredStyle: .actionSheet)
+        for (index, fixture) in fixtures.enumerated() {
+            sheet.addAction(UIAlertAction(title: fixture.id + " · " + fixture.title, style: .default) { [weak self] _ in
+                self?.selectedFixture = index
+                self?.showFixture(full: true)
+            })
+        }
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        sheet.popoverPresentationController?.sourceView = fixtureControls
+        sheet.popoverPresentationController?.sourceRect = fixtureControls.bounds
+        present(sheet, animated: true)
+    }
+
+    private func showFixture(full: Bool, clearHistory: Bool = true) {
+        guard !fixtures.isEmpty else { return }
+        playback?.cancel(); playback = nil
+        heightRefreshTimer?.invalidate(); heightRefreshTimer = nil
+        let fixture = fixtures[selectedFixture]
+        if clearHistory {
+            messages = fixture.history.map { Message(id: UUID(), role: .assistant, content: $0) }
+            streamedContent.removeAll()
+        }
+        let message = Message(id: UUID(), role: .assistant, content: fixture.markdown)
+        playbackMessageID = message.id
+        chunkIndex = full ? fixture.chunks.count : 0
+        streamedContent[message.id] = full ? fixture.markdown : ""
+        messages.append(message)
+        followsLatestMessage = true
+        tableView.reloadData()
+        tableView.layoutIfNeeded()
+        scrollToLatestMessage()
+        updateFixtureStatus(full ? "全文" : "待播放")
+        requestHeightRefresh()
+    }
+
+    private func playFixture() {
+        guard !fixtures.isEmpty else { return }
+        playback?.cancel()
+        if chunkIndex >= fixtures[selectedFixture].chunks.count { showFixture(full: false) }
+        playback = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                guard self?.hasRemainingChunks == true else { break }
+                self?.advanceFixture()
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+            guard !Task.isCancelled else { return }
+            self?.playback = nil
+            self?.updateFixtureStatus("已完成")
+            self?.requestHeightRefresh()
+        }
+        requestHeightRefresh()
+    }
+
+    private func advanceFixture() {
+        guard let id = playbackMessageID, !fixtures.isEmpty else { return }
+        let chunks = fixtures[selectedFixture].chunks
+        guard chunkIndex < chunks.count else { return }
+        receiveChunk(chunks[chunkIndex], for: id)
+        chunkIndex += 1
+        updateFixtureStatus(chunkIndex == chunks.count ? "已完成" : "逐步渲染")
+        requestHeightRefresh()
+    }
+
+    private var hasRemainingChunks: Bool {
+        !fixtures.isEmpty && chunkIndex < fixtures[selectedFixture].chunks.count
+    }
+
+    private func updateFixtureStatus(_ state: String) {
+        guard !fixtures.isEmpty else { return }
+        let fixture = fixtures[selectedFixture]
+        fixtureControls.update(title: fixture.id + " · " + fixture.title,
+                               state: "\(state) · \(chunkIndex)/\(fixture.chunks.count) 分片")
+    }
+
+    private func requestHeightRefresh() {
+        finalHeightRefreshes = 2
         startHeightRefreshTimer()
     }
 
@@ -294,17 +384,12 @@ final class MessageListViewController: UIViewController {
         followsLatestMessage = true
         appendMessage(Message(id: UUID(), role: .user, content: text))
 
-        let delayNanoseconds = UInt64.random(in: 400_000_000...900_000_000)
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: delayNanoseconds)
-            let reply = buildMockAssistantReply(for: text)
-            self.appendMessage(Message(id: UUID(), role: .assistant, content: reply))
-        }
+        showFixture(full: false, clearHistory: false)
+        playFixture()
     }
 
     private func appendMessage(_ message: Message) {
         messages.append(message)
-        if message.role == .assistant { startStreaming(message) }
         let indexPath = IndexPath(row: messages.count - 1, section: 0)
         tableView.insertRows(at: [indexPath], with: .none)
         if followsLatestMessage && !tableView.isTracking && !tableView.isDecelerating {
@@ -333,7 +418,11 @@ extension MessageListViewController: UITableViewDataSource {
                 return UITableViewCell()
             }
             cell.markdownView.theme = currentTheme
-            cell.showContent(streamedContent[message.id] ?? "")
+            cell.markdownView.imageLoader = FixtureImageLoader()
+            cell.markdownView.onContentSizeChange = { [weak self] in self?.requestHeightRefresh() }
+            cell.markdownView.onLinkTap = { [weak self] url in self?.updateFixtureStatus("链接：" + url.absoluteString); return true }
+            cell.markdownView.onImageTap = { [weak self] url in self?.updateFixtureStatus("图片：" + url.absoluteString); return true }
+            cell.showContent(streamedContent[message.id] ?? message.content)
             return cell
         }
     }

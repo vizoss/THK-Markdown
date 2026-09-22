@@ -1,0 +1,677 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "P0-01",
+      "title": "单层引用与复制",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 第一行引用，这段文字用于窄屏换行。\n> 第二行引用。",
+      "chunks": [
+        "> 第一行引用，",
+        "这段文字用于窄屏换行。\n",
+        "> 第二行引用。"
+      ],
+      "expected": {
+        "textContains": [
+          "第一行引用",
+          "第二行引用"
+        ],
+        "copyTexts": [
+          "第一行引用，这段文字用于窄屏换行。 第二行引用。"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "竖条宽 4，左右间距均为 8dp/pt；复制按钮在右侧，不占独立行。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-02",
+      "title": "二级引用间距",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 外层引用。\n> > 内层第一段。\n> >\n> > 内层第二段。\n>\n> 外层结尾。",
+      "chunks": [
+        "> 外层引用。\n",
+        "> > 内层第一段。\n",
+        "> >\n",
+        "> > 内层第二段。\n",
+        ">\n> 外层结尾。"
+      ],
+      "expected": {
+        "textContains": [
+          "外层引用",
+          "内层第一段",
+          "内层第二段",
+          "外层结尾"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "二级引用上方留 10dp/pt；外层竖条连续；内层竖条贴合文字高度。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-03",
+      "title": "只有嵌套引用",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> > 只有第二级内容，没有前导外层段落。\n> > > 第三级内容。",
+      "chunks": [
+        "> > 只有第二级内容，",
+        "没有前导外层段落。\n",
+        "> > > 第三级内容。"
+      ],
+      "expected": {
+        "textContains": [
+          "只有第二级内容",
+          "第三级内容"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "第二级顶部间距不能被外层 padding 覆盖；三级竖条不能重合。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-04",
+      "title": "独立代码与空行复制",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "前文。\n\n```kotlin\nval first = 1\n\nval second = 2\n```\n\n后文。",
+      "chunks": [
+        "前文。\n\n```kotlin\n",
+        "val first = 1\n\n",
+        "val second = 2\n",
+        "```\n\n后文。"
+      ],
+      "expected": {
+        "textContains": [
+          "前文",
+          "val first = 1",
+          "val second = 2",
+          "后文"
+        ],
+        "copyTexts": [
+          "val first = 1\n\nval second = 2"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "复制保留内部空行；按钮 32，图标 16，右侧留位，代码顶部不多占一行。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-05",
+      "title": "引用中的代码",
+      "category": "nesting",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 引用说明。\n>\n> ```swift\n> let value = 42\n> ```\n> 引用结束。",
+      "chunks": [
+        "> 引用说明。\n",
+        ">\n",
+        "> ```swift\n",
+        "> let value = 42\n",
+        "> ```\n",
+        "> 引用结束。"
+      ],
+      "expected": {
+        "textContains": [
+          "引用说明",
+          "let value = 42",
+          "引用结束"
+        ],
+        "copyTexts": [
+          "let value = 42"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "引用与代码的复制入口都可点；没有按钮重叠或文字遮挡。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-06",
+      "title": "列表中的代码",
+      "category": "nesting",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 步骤一\n\n  ```kotlin\n  val answer = 42\n  ```\n\n- 步骤二",
+      "chunks": [
+        "- 步骤一\n\n",
+        "  ```kotlin\n",
+        "  val answer = 42\n",
+        "  ```\n\n",
+        "- 步骤二"
+      ],
+      "expected": {
+        "textContains": [
+          "步骤一",
+          "val answer = 42",
+          "步骤二"
+        ],
+        "copyTexts": [
+          "val answer = 42"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "代码右侧按钮正常；后续列表项不进入代码背景。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-07",
+      "title": "三级列表缩进",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 一级\n  - 二级\n    - 三级内容，需要保持自己的缩进。\n- 返回一级",
+      "chunks": [
+        "- 一级\n",
+        "  - 二级\n",
+        "    - 三级内容，需要保持自己的缩进。\n",
+        "- 返回一级"
+      ],
+      "expected": {
+        "textContains": [
+          "一级",
+          "二级",
+          "三级内容",
+          "返回一级"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "二级、三级缩进依次增加；返回一级恢复原缩进。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-08",
+      "title": "有序与任务列表混合",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "1. 开始\n   - [x] 已完成\n   - [ ] 待完成\n2. 结束",
+      "chunks": [
+        "1. 开始\n",
+        "   - [x] 已完成\n",
+        "   - [ ] 待完成\n",
+        "2. 结束"
+      ],
+      "expected": {
+        "textContains": [
+          "开始",
+          "已完成",
+          "待完成",
+          "结束"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "任务列表不覆盖外层编号；长行续行与正文对齐。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-09",
+      "title": "列表中的引用",
+      "category": "nesting",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 外层列表\n\n  > 引用第一段。\n  > > 内层引用。\n\n- 列表结尾",
+      "chunks": [
+        "- 外层列表\n\n",
+        "  > 引用第一段。\n",
+        "  > > 内层引用。\n\n",
+        "- 列表结尾"
+      ],
+      "expected": {
+        "textContains": [
+          "外层列表",
+          "引用第一段",
+          "内层引用",
+          "列表结尾"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "保留列表缩进、引用间距、右侧复制区域；列表结尾无竖条。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-10",
+      "title": "表格内格式与链接",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 内容 | 操作 |\n| :--- | ---: |\n| **加粗**与`代码` | [打开链接](https://example.com/p0) |\n",
+      "chunks": [
+        "| 内容 | 操作 |\n",
+        "| :--- | ---: |\n",
+        "| **加粗**与`代码` | [打开链接](https://example.com/p0) |\n"
+      ],
+      "expected": {
+        "textContains": [
+          "加粗",
+          "代码",
+          "打开链接"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "点击表格链接触发与普通正文一致的回调；不影响横向滚动。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-11",
+      "title": "表格内图片加载与复用",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 图片 | 说明 |\n| --- | --- |\n| ![成功图片](https://fixtures.thk.invalid/ok.png) | 本地模拟成功 |\n| ![失败图片](https://fixtures.thk.invalid/fail.png) | 本地模拟失败 |\n",
+      "chunks": [
+        "| 图片 | 说明 |\n",
+        "| --- | --- |\n",
+        "| ![成功图片](https://fixtures.thk.invalid/ok.png) | 本地模拟成功 |\n",
+        "| ![失败图片](https://fixtures.thk.invalid/fail.png) | 本地模拟失败 |\n"
+      ],
+      "expected": {
+        "textContains": [
+          "本地模拟成功",
+          "本地模拟失败"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "演示使用本地图片加载器，不发网络请求；成功显示蓝色卡片，失败保留占位；切换用例不串图。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-12",
+      "title": "引用内表格降级",
+      "category": "fallback",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 表格之前。\n>\n> | 名称 | 值 |\n> | --- | --- |\n> | alpha | 1 |\n>\n> 表格之后。",
+      "chunks": [
+        "> 表格之前。\n",
+        ">\n",
+        "> | 名称 | 值 |\n",
+        "> | --- | --- |\n",
+        "> | alpha | 1 |\n",
+        ">\n",
+        "> 表格之后。"
+      ],
+      "expected": {
+        "textContains": [
+          "表格之前",
+          "名称 | 值",
+          "alpha | 1",
+          "表格之后"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "P0 将嵌套表格降级成逐行文本，保留全部单元格及父级引用；不创建顶层表格。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-13",
+      "title": "列表内表格降级",
+      "category": "fallback",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 表格之前\n\n  | 名称 | 值 |\n  | --- | --- |\n  | beta | 2 |\n\n- 表格之后",
+      "chunks": [
+        "- 表格之前\n\n",
+        "  | 名称 | 值 |\n",
+        "  | --- | --- |\n",
+        "  | beta | 2 |\n\n",
+        "- 表格之后"
+      ],
+      "expected": {
+        "textContains": [
+          "表格之前",
+          "名称 | 值",
+          "beta | 2",
+          "表格之后"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "嵌套表格保留为文本，不清空父级列表缓冲区，不丢前后内容。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-14",
+      "title": "Mermaid 流式与完成态",
+      "category": "diagram",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "```mermaid\nflowchart LR\n  A[开始] --> B[完成]\n```",
+      "chunks": [
+        "```mermaid\n",
+        "flowchart LR\n",
+        "  A[开始]",
+        " --> B[完成]\n",
+        "```"
+      ],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 1,
+        "notes": [
+          "未完整的图可能显示错误降级；完成后为一张流程图，前缀阶段不得崩溃。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-15",
+      "title": "引用内 Mermaid 降级",
+      "category": "fallback",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 图示说明。\n>\n> ```mermaid\n> flowchart LR\n>   A --> B\n> ```\n> 图示结束。",
+      "chunks": [
+        "> 图示说明。\n",
+        ">\n",
+        "> ```mermaid\n",
+        "> flowchart LR\n",
+        ">   A --> B\n",
+        "> ```\n",
+        "> 图示结束。"
+      ],
+      "expected": {
+        "textContains": [
+          "图示说明",
+          "flowchart LR",
+          "A --> B",
+          "图示结束"
+        ],
+        "copyTexts": [
+          "flowchart LR\n  A --> B"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "P0 将嵌套 Mermaid 作为可复制代码显示；父级引用不被切断。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-16",
+      "title": "行内标记逐步闭合",
+      "category": "stream",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "中文 **加粗** 和 [链接](https://example.com/p0)，以及 `代码`。",
+      "chunks": [
+        "中文 **",
+        "加粗",
+        "** 和 [",
+        "链接",
+        "](",
+        "https://example.com/p0",
+        ")，以及 `",
+        "代码",
+        "`。"
+      ],
+      "expected": {
+        "textContains": [
+          "中文",
+          "加粗",
+          "链接",
+          "代码"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "暂停在未闭合标记；单步闭合后正确变成格式和链接；不丢字。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P0-17",
+      "title": "文本逐步变为表格",
+      "category": "stream",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 项目 | 值 |\n| --- | --- |\n| alpha | 1 |\n\n表格后文。",
+      "chunks": [
+        "| 项目 | 值 |\n",
+        "| ---",
+        " | --- |\n",
+        "| alpha",
+        " | 1 |\n",
+        "\n表格后文。"
+      ],
+      "expected": {
+        "textContains": [
+          "项目",
+          "alpha",
+          "表格后文"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "第二行分隔符完成时转换为表格；后文另起文本段；不串复制按钮。"
+        ]
+      },
+      "history": [],
+      "checkpoints": [
+        {
+          "afterChunk": 1,
+          "tableCount": 0,
+          "diagramCount": 0,
+          "textContains": [
+            "项目"
+          ]
+        },
+        {
+          "afterChunk": 2,
+          "tableCount": 0,
+          "diagramCount": 0,
+          "textContains": [
+            "项目"
+          ]
+        },
+        {
+          "afterChunk": 3,
+          "tableCount": 1,
+          "diagramCount": 0,
+          "textContains": [
+            "项目"
+          ]
+        },
+        {
+          "afterChunk": 6,
+          "tableCount": 1,
+          "diagramCount": 0,
+          "textContains": [
+            "表格后文"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "P0-18",
+      "title": "流式滚动与重新绑定",
+      "category": "stream",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "# 滚动与复用\n\n第 1 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 2 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 3 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 4 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 5 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 6 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 7 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 8 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 9 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 10 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 11 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 12 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 13 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 14 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 15 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 16 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 17 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 18 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 19 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 20 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 21 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 22 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 23 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 24 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n结束。",
+      "chunks": [
+        "# 滚动与复用\n\n",
+        "第 1 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 2 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 3 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 4 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 5 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 6 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 7 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 8 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 9 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 10 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 11 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 12 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 13 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 14 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 15 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 16 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 17 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 18 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 19 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 20 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 21 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 22 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 23 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "第 24 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n",
+        "结束。"
+      ],
+      "expected": {
+        "textContains": [
+          "滚动与复用",
+          "第 24 段",
+          "结束"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "播放期间上滑、离屏再返回：不重播、不丢字；回到底部恢复跟随；切换用例取消旧播放。"
+        ]
+      },
+      "history": [
+        "历史消息 1：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 2：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 3：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 4：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 5：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 6：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 7：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 8：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 9：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 10：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 11：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。",
+        "历史消息 12：这条内容用于验证列表复用。滚动到顶部后，新分片仍应保留在对应的消息中。"
+      ],
+      "checkpoints": []
+    }
+  ]
+}

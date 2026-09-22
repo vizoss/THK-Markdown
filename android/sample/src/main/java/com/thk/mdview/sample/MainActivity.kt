@@ -10,6 +10,8 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
@@ -17,8 +19,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.Job
 
 /**
  * A minimal LLM chat UI: type a message, get a (mocked) assistant reply that
@@ -30,6 +31,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: ChatAdapter
     private lateinit var recyclerView: RecyclerView
     private var followsLatestMessage = true
+    private lateinit var fixtures: List<MarkdownFixture>
+    private var selectedFixture = 0
+    private var playback: Job? = null
+    private var playbackMessageId: Long? = null
+    private var chunkIndex = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(findViewById<Toolbar>(R.id.toolbar))
 
         recyclerView = findViewById(R.id.messageList)
-        adapter = ChatAdapter(streamScope = lifecycleScope, onAssistantContentUpdated = ::scrollToBottom)
+        adapter = ChatAdapter(onAssistantContentUpdated = ::scrollToBottom)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.setHasFixedSize(false)
         recyclerView.adapter = adapter
@@ -52,7 +58,12 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        adapter.addMessage(ChatMessage(nextMessageId++, Role.ASSISTANT, GREETING_MARKDOWN))
+        fixtures = try { MarkdownFixture.load(this) } catch (error: Exception) {
+            AlertDialog.Builder(this).setTitle("P0 用例加载失败").setMessage(error.toString()).setPositiveButton("关闭", null).show()
+            return
+        }
+        installFixtureControls()
+        showFixture(full = true)
         installKeyboardDismissOnTap()
 
         val messageInput = findViewById<EditText>(R.id.messageInput)
@@ -132,11 +143,76 @@ class MainActivity : AppCompatActivity() {
         adapter.addMessage(ChatMessage(nextMessageId++, Role.USER, text))
         scrollToBottom()
 
-        lifecycleScope.launch {
-            delay(Random.nextLong(400L, 900L).milliseconds) // simulated "assistant is thinking" latency
-            adapter.addMessage(ChatMessage(nextMessageId++, Role.ASSISTANT, buildMockAssistantReply(text)))
-            scrollToBottom()
+        // User input remains a separate bubble; it never changes the fixture Markdown.
+        showFixture(full = false, clearHistory = false)
+        playFixture()
+    }
+
+    private fun installFixtureControls() {
+        findViewById<Button>(R.id.selectFixture).setOnClickListener {
+            AlertDialog.Builder(this).setTitle("P0 用例")
+                .setSingleChoiceItems(fixtures.map { "${it.id} · ${it.title}" }.toTypedArray(), selectedFixture) { dialog, index ->
+                    selectedFixture = index
+                    showFixture(full = true)
+                    dialog.dismiss()
+                }.show()
         }
+        findViewById<Button>(R.id.fixtureFull).setOnClickListener { showFixture(full = true) }
+        findViewById<Button>(R.id.fixturePlay).setOnClickListener { playFixture() }
+        findViewById<Button>(R.id.fixturePause).setOnClickListener {
+            playback?.cancel(); playback = null; updateFixtureStatus("已暂停")
+        }
+        findViewById<Button>(R.id.fixtureStep).setOnClickListener {
+            playback?.cancel(); playback = null
+            if (chunkIndex >= fixtures[selectedFixture].chunks.size) showFixture(full = false)
+            advanceFixture()
+        }
+        findViewById<TextView>(R.id.fixtureStatus).setOnClickListener {
+            val fixture = fixtures[selectedFixture]
+            AlertDialog.Builder(this).setTitle(fixture.id)
+                .setMessage(fixture.summary + "\n\nMarkdown 原文：\n" + fixture.markdown)
+                .setPositiveButton("关闭", null).show()
+        }
+    }
+
+    private fun showFixture(full: Boolean, clearHistory: Boolean = true) {
+        playback?.cancel(); playback = null
+        val fixture = fixtures[selectedFixture]
+        if (clearHistory) {
+            adapter.clearMessages()
+            fixture.history.forEach { adapter.addMessage(ChatMessage(nextMessageId++, Role.ASSISTANT, it)) }
+        }
+        val id = nextMessageId++
+        playbackMessageId = id
+        chunkIndex = if (full) fixture.chunks.size else 0
+        adapter.addMessage(ChatMessage(id, Role.ASSISTANT, if (full) fixture.markdown else ""))
+        followsLatestMessage = true
+        findViewById<Button>(R.id.selectFixture).text = "${fixture.id} · ${fixture.title} ▾"
+        updateFixtureStatus(if (full) "全文" else "待播放")
+        scrollToBottom()
+    }
+
+    private fun playFixture() {
+        playback?.cancel()
+        if (chunkIndex >= fixtures[selectedFixture].chunks.size) showFixture(full = false)
+        playback = lifecycleScope.launch {
+            while (chunkIndex < fixtures[selectedFixture].chunks.size) {
+                advanceFixture()
+                delay(500L)
+            }
+            updateFixtureStatus("已完成")
+        }
+    }
+
+    private fun advanceFixture() {
+        val fixture = fixtures[selectedFixture]
+        val id = playbackMessageId ?: return
+        if (chunkIndex < fixture.chunks.size) adapter.appendChunk(id, fixture.chunks[chunkIndex++])
+        updateFixtureStatus(if (chunkIndex == fixture.chunks.size) "已完成" else "逐步渲染")
+    }
+
+    private fun updateFixtureStatus(state: String) {
+        findViewById<TextView>(R.id.fixtureStatus).text = "$state · $chunkIndex/${fixtures[selectedFixture].chunks.size} 分片 · 点击查看原文与验收要求"
     }
 
     private fun scrollToBottom() {

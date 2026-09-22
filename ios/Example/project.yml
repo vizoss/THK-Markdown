@@ -28,6 +28,8 @@ targets:
     dependencies:
       - package: THKMDView
         product: THKMDView
+      - package: THKMDView
+        product: MarkdownFixtures
 packages:
   THKMDView:
     path: ../

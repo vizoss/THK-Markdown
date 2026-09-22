@@ -133,7 +133,8 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
 
         let leftInset = THKBlockQuoteMetrics.barLeftInset
         let verticalInset: CGFloat = depth == 1 ? 11 : 3
-        rect.origin.x += leftInset + CGFloat(depth - 1) * THKBlockQuoteMetrics.indentPerLevel
+        let containerIndent = textStorage?.attribute(thkQuoteContainerIndentKey, at: charRange.location, effectiveRange: nil) as? CGFloat ?? 0
+        rect.origin.x += containerIndent + leftInset + CGFloat(depth - 1) * THKBlockQuoteMetrics.indentPerLevel
         rect.size.width = THKBlockQuoteMetrics.barWidth
         rect.origin.y += verticalInset
         rect.size.height -= verticalInset * 2

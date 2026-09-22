@@ -106,7 +106,8 @@ internal class MarkdownSpanVisitor(
         // A ```mermaid fence gets its own dedicated diagram segment (rendered by a real
         // WebView, see THKMermaidView) instead of the normal monospaced code-block path -
         // same flush-and-add-segment pattern already used for tables below.
-        if (fencedCodeBlock.info?.trim()?.equals("mermaid", ignoreCase = true) == true) {
+        if (blockQuoteDepth == 0 && listStack.isEmpty() &&
+            fencedCodeBlock.info?.trim()?.equals("mermaid", ignoreCase = true) == true) {
             flushTextSegment()
             segments.add(RenderedSegment.DiagramSegment(fencedCodeBlock.literal.trimEnd('\n')))
             return
@@ -130,12 +131,12 @@ internal class MarkdownSpanVisitor(
         copyableBlocks.add(CopyableBlock(start until end, content))
         val cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx
         val horizontalPaddingPx = (12 * densityPx).toInt()
-        val topPaddingPx = if (standalone) 0 else (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt()
+        val topPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
         val bottomPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
         builder.setSpan(
             CodeBlockBackgroundSpan(
                 theme.codeBackgroundColor, cornerRadiusPx, topPaddingPx, bottomPaddingPx, start, end,
-                copyButtonGutterPx = if (standalone) (40 * densityPx).toInt() else 0
+                copyButtonGutterPx = (40 * densityPx).toInt(), containerBackground = standalone
             ),
             start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
@@ -173,7 +174,7 @@ internal class MarkdownSpanVisitor(
                     barColor = theme.blockQuoteBarColor,
                     backgroundColor = if (isOutermost) theme.blockQuoteBackgroundColor else null,
                     cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx,
-                    topPaddingPx = if (standalone) 0 else (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt(),
+                    topPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
                     bottomPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
                     spanStart = start,
                     spanEnd = end,
@@ -181,7 +182,8 @@ internal class MarkdownSpanVisitor(
                     gapWidthPx = (QUOTE_BAR_GAP_DP * densityPx).toInt(),
                     leftInsetPx = (QUOTE_BAR_LEFT_INSET_DP * densityPx).toInt(),
                     barVerticalInsetPx = (QUOTE_BAR_VERTICAL_INSET_DP * densityPx).toInt(),
-                    copyButtonGutterPx = if (standalone) (40 * densityPx).toInt() else 0,
+                    copyButtonGutterPx = if (isOutermost) (40 * densityPx).toInt() else 0,
+                    containerBackground = standalone,
                     nestedTopPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0
                 ),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or
@@ -276,6 +278,18 @@ internal class MarkdownSpanVisitor(
 
     override fun visit(customBlock: CustomBlock) {
         if (customBlock is TableBlock) {
+            if (blockQuoteDepth > 0 || listStack.isNotEmpty()) {
+                separate()
+                val table = buildTableData(customBlock)
+                (listOf(table.headerRow) + table.bodyRows).forEachIndexed { row, cells ->
+                    if (row > 0) builder.append('\n')
+                    cells.forEachIndexed { column, cell ->
+                        if (column > 0) builder.append(" | ")
+                        builder.append(cell)
+                    }
+                }
+                return
+            }
             flushTextSegment()
             segments.add(RenderedSegment.TableSegment(buildTableData(customBlock)))
         } else {

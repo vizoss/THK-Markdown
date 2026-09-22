@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "android/**"
+      - "ios/Fixtures/**"
       - ".github/workflows/android-publish.yml"
   workflow_dispatch: {}
 

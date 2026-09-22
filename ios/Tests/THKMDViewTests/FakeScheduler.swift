@@ -26,6 +26,7 @@ final class FakeScheduler: DebounceScheduling {
     /// cancelled item never fires).
     func fireAll() {
         for token in tokens where !token.isCancelled {
+            token.cancel() // A fired timer is one-shot, even if fireAll is called again.
             token.work()
         }
     }

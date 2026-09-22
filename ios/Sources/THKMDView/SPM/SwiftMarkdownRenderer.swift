@@ -261,7 +261,7 @@ struct AttributedStringVisitor: MarkupVisitor {
             // "If missing" only: a nested BlockQuote already stamped its own (deeper) indent
             // and bar depth on its own sub-range while `result` was being built; this must
             // not clobber that with the shallower outer depth.
-            addAttributeIfMissing(.paragraphStyle, value: paragraphStyle, to: result)
+            thkApplyQuoteLayout(to: result, style: paragraphStyle)
             addAttributeIfMissing(.thkBlockQuoteBar, value: depth, to: result)
             addForegroundColorIfMissing(theme.blockQuoteTextColor, to: result)
             if depth == 2 { thkAddSecondLevelQuoteSpacing(to: result) }
@@ -273,6 +273,7 @@ struct AttributedStringVisitor: MarkupVisitor {
             if isOutermost {
                 addAttributeIfMissing(.thkBlockQuoteBackground, value: true, to: result)
                 applyBlockQuoteVerticalPadding(to: result)
+                thkReserveQuoteCopyGutter(in: result)
                 result.addAttribute(.thkCopyableBlockQuote, value: true, range: NSRange(location: 0, length: result.length))
             }
         }
@@ -367,11 +368,7 @@ struct AttributedStringVisitor: MarkupVisitor {
                 result.append(NSAttributedString(string: "\n\n"))
             }
             if let table = child as? Table {
-                // A Table that ends up here (nested inside a block quote/list item, where it
-                // cannot become its own segment) falls back to being rendered inline as its
-                // header/first-row plain text isn't meaningful in that position, so render
-                // nothing rather than guessing — top-level tables are the supported case.
-                _ = table
+                result.append(thkNestedTableText(buildTableModel(table)))
                 continue
             }
             result.append(visit(child))
@@ -391,7 +388,7 @@ struct AttributedStringVisitor: MarkupVisitor {
                 result.append(NSAttributedString(string: "\n"))
             }
             if let table = child as? Table {
-                _ = table
+                result.append(thkNestedTableText(buildTableModel(table)))
                 continue
             }
             result.append(visit(child))
@@ -421,14 +418,7 @@ struct AttributedStringVisitor: MarkupVisitor {
         }
         line.append(content)
 
-        let indentUnit: CGFloat = 20
-        let indent = indentUnit * CGFloat(max(listDepth - 1, 0))
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.firstLineHeadIndent = indent
-        paragraphStyle.headIndent = indent + 16
-        if line.length > 0 {
-            line.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: line.length))
-        }
+        thkApplyListLayout(to: line, prefixLength: line.length - content.length, depth: listDepth)
         return line
     }
 

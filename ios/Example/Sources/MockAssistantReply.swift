@@ -1,178 +1,63 @@
-import Foundation
+import UIKit
+import THKMDView
 
-// Content-for-content mirror of android/sample/src/main/java/com/thk/mdview/sample/
-// SampleMarkdown.kt's template functions, same order, so "the Nth message sent" produces
-// matching demo content on both platforms.
-private let replyTemplates: [(String) -> String] = [
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — a reply built around headings, emphasis,
-        links, and quotes.
+// Fixture content is provided by the MarkdownFixtures package product, never interpolated.
+final class FixtureControls: UIStackView {
+    var onSelect: (() -> Void)?
+    var onFull: (() -> Void)?
+    var onPlay: (() -> Void)?
+    var onPause: (() -> Void)?
+    var onStep: (() -> Void)?
+    var onDetails: (() -> Void)?
+    private let select = UIButton(type: .system)
+    private let status = UIButton(type: .system)
 
-        ## A second-level heading
-        ### And a third-level one
+    override init(frame: CGRect) { super.init(frame: frame); setUp() }
+    required init(coder: NSCoder) { super.init(coder: coder); setUp() }
 
-        This is *italic*, this is **bold**, this is ***bold italic***, and ~~this is
-        struck through~~. Escaped markup like \\*not italic\\* stays literal.
-
-        > A block quote — the kind of thing right before a hedge or a caveat.
-        >
-        > > And a nested quote inside it, for good measure.
-
-        See the [THKMDView repo](https://github.com/vizoss/THK-Markdown) for more, or an
-        autolink straight from the source: <https://github.com/vizoss/THK-Markdown>.
-
-        ---
-
-        That horizontal rule above separates this from the sign-off.
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — a reply built around code and task lists.
-
-        Call `THKMDView.appendMarkdownChunk(chunk)` for each SSE delta. Here's a fenced
-        block with a language tag:
-
-        ```kotlin
-        fun greet(name: String): String {
-            return "Hello, $name!"
+    private func setUp() {
+        axis = .vertical
+        spacing = 4
+        select.setTitle("选择 P0 用例", for: .normal)
+        select.addTarget(self, action: #selector(selectTapped), for: .touchUpInside)
+        addArrangedSubview(select)
+        let actions = UIStackView()
+        actions.distribution = .fillEqually
+        for (title, selector) in [("全文", #selector(fullTapped)), ("播放", #selector(playTapped)),
+                                  ("暂停", #selector(pauseTapped)), ("单步", #selector(stepTapped))] {
+            let button = UIButton(type: .system)
+            button.setTitle(title, for: .normal)
+            button.addTarget(self, action: selector, for: .touchUpInside)
+            button.heightAnchor.constraint(equalToConstant: 36).isActive = true
+            actions.addArrangedSubview(button)
         }
-        ```
-
-        And one with no language tag:
-
-        ```
-        plain fenced content, no syntax highlighting
-        ```
-
-        An indented code block:
-
-            indented().code().block()
-
-        Progress on this feature:
-        - [x] Stream via SSE
-        - [x] Render inline formatting
-        - [ ] Ship syntax highlighting (still deferred)
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — a reply built around lists, nested and not.
-
-        Unordered, with a nested sub-list:
-        - First point
-        - Second point with **bold** in it
-          - a nested point
-          - another nested point
-        - Third point
-
-        Ordered, starting from a non-1 number:
-        5. Parse the Markdown
-        6. Convert it to spans
-        7. Render it live as chunks arrive
-
-        A line with a hard break right here,\\
-        continuing on the next line because of the trailing backslash above.
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — a real, column-aligned GFM table plus an
-        inline image loaded (and cached) over the network.
-
-        | Feature | Left | Center | Right |
-        | :-- | :-- | :-: | --: |
-        | Streaming | done | done | done |
-        | Real table layout | done | done | done |
-        | Image loading | done | done | done |
-        | Theming | done | done | done |
-
-        ![Random sample photo](https://picsum.photos/seed/thkmdview/480/270)
-
-        Tap the image, or scroll the table sideways if it's wider than the bubble.
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — or, well, a tour of every Markdown
-        construct THKMDView renders, since this is a mock.
-
-        ## Headings, emphasis, and strikethrough
-
-        This is *italic*, this is **bold**, this is ***bold italic***, and ~~this line
-        is struck through~~.
-
-        ### Inline code and a fenced code block
-
-        Call `THKMDView.appendMarkdownChunk(chunk)` for each SSE delta. Here's a block:
-
-        ```kotlin
-        fun greet(name: String): String {
-            return "Hello, $name!"
-        }
-        ```
-
-        ## Lists
-
-        Unordered:
-        - First point
-        - Second point with **bold** in it
-        - Third point
-
-        Ordered:
-        1. Parse the Markdown
-        2. Convert it to spans
-        3. Render it live as chunks arrive
-
-        Task list:
-        - [x] Stream via SSE
-        - [x] Render inline formatting
-        - [x] Ship real table layout (v1)
-
-        ## Quotes, links, and an image
-
-        > A block quote — the kind of thing right before a hedge or a caveat.
-
-        See the [THKMDView repo](https://github.com/vizoss/THK-Markdown) for more, and
-        here's a real loaded image:
-
-        ![THKMDView sample image](https://picsum.photos/seed/thkmdview/480/270)
-
-        ## A real table, aligned and scrollable
-
-        | Feature | Android | iOS |
-        | :-- | :-: | --: |
-        | Streaming | done | done |
-        | Real table layout | done | done |
-
-        ---
-
-        That's every construct THKMDView v1 supports, streamed in one bubble.
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — a Mermaid flowchart, rendered live in an
-        embedded WKWebView instead of literal code text.
-
-        ```mermaid
-        flowchart LR
-            A[User sends message] --> B{THKMDView}
-            B --> C[Parse Markdown]
-            C --> D[Render segments]
-            D --> E[Display in chat]
-        ```
-
-        That's the same request/render pipeline this demo app is built around.
-        """
+        addArrangedSubview(actions)
+        status.titleLabel?.font = .systemFont(ofSize: 12)
+        status.titleLabel?.numberOfLines = 2
+        status.addTarget(self, action: #selector(detailsTapped), for: .touchUpInside)
+        addArrangedSubview(status)
     }
-]
+    func update(title: String, state: String) {
+        select.setTitle(title + " ▾", for: .normal)
+        status.setTitle(state + " · 点击查看原文与验收要求", for: .normal)
+    }
+    @objc private func selectTapped() { onSelect?() }
+    @objc private func fullTapped() { onFull?() }
+    @objc private func playTapped() { onPlay?() }
+    @objc private func pauseTapped() { onPause?() }
+    @objc private func stepTapped() { onStep?() }
+    @objc private func detailsTapped() { onDetails?() }
+}
 
-private var nextTemplateIndex = 0
-
-func buildMockAssistantReply(for userMessage: String) -> String {
-    let template = replyTemplates[nextTemplateIndex % replyTemplates.count]
-    nextTemplateIndex += 1
-    return template(userMessage)
+struct FixtureImageLoader: THKImageLoading {
+    func load(url: URL) async -> UIImage? {
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        guard !Task.isCancelled, url.absoluteString == "https://fixtures.thk.invalid/ok.png" else { return nil }
+        return await MainActor.run {
+            UIGraphicsImageRenderer(size: CGSize(width: 120, height: 64)).image { context in
+                UIColor(red: 10 / 255.0, green: 132 / 255.0, blue: 1, alpha: 1).setFill()
+                context.fill(CGRect(x: 0, y: 0, width: 120, height: 64))
+            }
+        }
+    }
 }

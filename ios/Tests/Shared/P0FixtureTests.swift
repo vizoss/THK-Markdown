@@ -1,0 +1,142 @@
+import XCTest
+import UIKit
+@testable import THKMDView
+#if canImport(MarkdownFixtures)
+import MarkdownFixtures
+#endif
+
+final class P0FixtureTests: XCTestCase {
+    private func fingerprint(_ segments: [THKRenderSegment]) -> [String] {
+        segments.map { segment in
+            switch segment {
+            case .text(let text, _): return "text:" + text.string
+            case .table(let table):
+                return "table:" + ([table.headerCells] + table.rows).map { $0.map(\.string).joined(separator: " | ") }.joined(separator: "\n")
+            case .diagram(let source): return "diagram:" + source
+            }
+        }
+    }
+
+    func testSharedCatalogRendersEveryPrefixAndFinalContracts() throws {
+        let fixtures = try MarkdownFixture.load()
+        XCTAssertEqual(fixtures.count, 18)
+        let renderer = DefaultMarkdownRenderer()
+        for fixture in fixtures {
+            var prefix = ""
+            var segments: [THKRenderSegment] = []
+            for (index, chunk) in fixture.chunks.enumerated() {
+                prefix += chunk
+                segments = renderer.render(prefix)
+                for checkpoint in fixture.checkpoints where checkpoint.afterChunk == index + 1 {
+                    let tables = segments.filter { if case .table = $0 { return true }; return false }.count
+                    let diagrams = segments.filter { if case .diagram = $0 { return true }; return false }.count
+                    XCTAssertEqual(tables, checkpoint.tableCount, fixture.id)
+                    XCTAssertEqual(diagrams, checkpoint.diagramCount, fixture.id)
+                    let plain = fingerprint(segments).joined(separator: "\n")
+                    for fragment in checkpoint.textContains { XCTAssertTrue(plain.contains(fragment), fixture.id) }
+                }
+                for segment in segments {
+                    guard case .text(let text, let copies) = segment else { continue }
+                    for copy in copies {
+                        XCTAssertGreaterThan(copy.range.length, 0, fixture.id)
+                        XCTAssertLessThanOrEqual(NSMaxRange(copy.range), text.length, fixture.id)
+                        if NSMaxRange(copy.range) <= text.length {
+                            XCTAssertEqual(copy.text, (text.string as NSString).substring(with: copy.range), fixture.id)
+                        }
+                    }
+                }
+            }
+            XCTAssertEqual(prefix, fixture.markdown, fixture.id)
+            XCTAssertEqual(fingerprint(segments), fingerprint(renderer.render(fixture.markdown)), fixture.id)
+            let plain = fingerprint(segments).joined(separator: "\n")
+            for fragment in fixture.expected.textContains { XCTAssertTrue(plain.contains(fragment), "\(fixture.id): \(fragment)") }
+            var tableCount = 0
+            var diagramCount = 0
+            var copies: [String] = []
+            for segment in segments {
+                switch segment {
+                case .text(_, let blocks): copies += blocks.map(\.text)
+                case .table: tableCount += 1
+                case .diagram: diagramCount += 1
+                }
+            }
+            XCTAssertEqual(tableCount, fixture.expected.tableCount, fixture.id)
+            XCTAssertEqual(diagramCount, fixture.expected.diagramCount, fixture.id)
+            for expected in fixture.expected.copyTexts { XCTAssertTrue(copies.contains(expected), "\(fixture.id): copy \(expected)") }
+        }
+    }
+
+    func testNestedListKeepsDistinctIndentsAndCodeGutter() throws {
+        let fixtures = try MarkdownFixture.load()
+        let renderer = DefaultMarkdownRenderer()
+        let fixture = try XCTUnwrap(fixtures.first { $0.id == "P0-07" })
+        let text = NSMutableAttributedString()
+        for segment in renderer.render(fixture.markdown) {
+            if case .text(let value, _) = segment { text.append(value) }
+        }
+        let indents = ["一级", "二级", "三级内容"].map { word -> CGFloat in
+            let index = (text.string as NSString).range(of: word).location
+            return (text.attribute(.paragraphStyle, at: index, effectiveRange: nil) as? NSParagraphStyle)?.headIndent ?? 0
+        }
+        XCTAssertLessThan(indents[0], indents[1])
+        XCTAssertLessThan(indents[1], indents[2])
+        let codeCase = try XCTUnwrap(fixtures.first { $0.id == "P0-06" })
+        for segment in renderer.render(codeCase.markdown) {
+            guard case .text(let text, let copies) = segment else { continue }
+            for copy in copies {
+                let style = text.attribute(.paragraphStyle, at: copy.range.location, effectiveRange: nil) as? NSParagraphStyle
+                XCTAssertLessThanOrEqual(try XCTUnwrap(style).tailIndent, -40)
+            }
+        }
+    }
+
+    func testTableLinkUsesHostCallback() throws {
+        let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-10" })
+        let table = THKTableView()
+        var tapped: URL?
+        table.onLinkTap = { tapped = $0; return true }
+        for segment in DefaultMarkdownRenderer().render(fixture.markdown) {
+            if case .table(let model) = segment { table.configure(model: model, theme: .default) }
+        }
+        let url = try XCTUnwrap(URL(string: "https://example.com/p0"))
+        XCTAssertFalse(table.textView(UITextView(), shouldInteractWith: url, in: NSRange(location: 0, length: 1), interaction: .invokeDefaultAction))
+        XCTAssertEqual(tapped, url)
+    }
+
+    func testTableImagesUseInjectedLoader() throws {
+        final class Loader: THKImageLoading {
+            let onLoad: (URL) -> Void
+            init(_ onLoad: @escaping (URL) -> Void) { self.onLoad = onLoad }
+            func load(url: URL) async -> UIImage? { onLoad(url); return nil }
+        }
+        let loaded = expectation(description: "Both table images reach the host image loader")
+        loaded.expectedFulfillmentCount = 2
+        let view = THKMDView()
+        view.imageLoader = Loader { _ in loaded.fulfill() }
+        let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-11" })
+        view.setMarkdown(fixture.markdown)
+        wait(for: [loaded], timeout: 2)
+        view.reset()
+    }
+
+    #if canImport(MarkdownFixtures)
+    func testStreamingSchedulerRendersEachSharedChunk() throws {
+        for fixture in try MarkdownFixture.load() {
+            let scheduler = FakeScheduler()
+            let buffer = StreamingMarkdownBuffer(debounceInterval: 0.032, scheduler: scheduler)
+            let renderer = DefaultMarkdownRenderer()
+            var renders = 0
+            var last: [String] = []
+            buffer.onRender = { source in renders += 1; last = self.fingerprint(renderer.render(source)) }
+            var prefix = ""
+            for chunk in fixture.chunks {
+                prefix += chunk
+                buffer.append(chunk)
+                scheduler.fireAll()
+                XCTAssertEqual(last, fingerprint(renderer.render(prefix)), fixture.id)
+            }
+            XCTAssertEqual(renders, fixture.chunks.count, fixture.id)
+        }
+    }
+    #endif
+}

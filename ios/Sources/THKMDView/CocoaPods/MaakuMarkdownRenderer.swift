@@ -126,10 +126,8 @@ struct MaakuAttributedStringVisitor {
             return renderListItem(items: listItem.items, prefix: NSAttributedString(string: "\u{2022} ", attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor]))
         case let htmlBlock as HtmlBlock:
             return NSAttributedString(string: htmlBlock.html, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
-        case is Table:
-            // A Table nested inside a block quote/list item (not top-level) can't become its
-            // own segment here, so it's skipped rather than guessing at an inline representation.
-            return NSAttributedString()
+        case let table as Table:
+            return thkNestedTableText(buildTableModel(table))
         default:
             // Unsupported block types (footnotes, plugins) are not part of the node-type
             // coverage on either distribution; render nothing rather than guessing.
@@ -203,7 +201,7 @@ struct MaakuAttributedStringVisitor {
             // "If missing" only: a nested BlockQuote already stamped its own (deeper) indent
             // and bar depth on its own sub-range while `result` was being built; this must
             // not clobber that with the shallower outer depth.
-            addAttributeIfMissing(.paragraphStyle, value: paragraphStyle, to: result)
+            thkApplyQuoteLayout(to: result, style: paragraphStyle)
             addAttributeIfMissing(.thkBlockQuoteBar, value: depth, to: result)
             addForegroundColorIfMissing(theme.blockQuoteTextColor, to: result)
             if depth == 2 { thkAddSecondLevelQuoteSpacing(to: result) }
@@ -215,6 +213,7 @@ struct MaakuAttributedStringVisitor {
             if isOutermost {
                 addAttributeIfMissing(.thkBlockQuoteBackground, value: true, to: result)
                 applyBlockQuoteVerticalPadding(to: result)
+                thkReserveQuoteCopyGutter(in: result)
                 result.addAttribute(.thkCopyableBlockQuote, value: true, range: NSRange(location: 0, length: result.length))
             }
         }
@@ -392,14 +391,7 @@ struct MaakuAttributedStringVisitor {
         let line = NSMutableAttributedString(attributedString: prefix)
         line.append(content)
 
-        let indentUnit: CGFloat = 20
-        let indent = indentUnit * CGFloat(max(listDepth - 1, 0))
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.firstLineHeadIndent = indent
-        paragraphStyle.headIndent = indent + 16
-        if line.length > 0 {
-            line.addAttribute(.paragraphStyle, value: paragraphStyle, range: NSRange(location: 0, length: line.length))
-        }
+        thkApplyListLayout(to: line, prefixLength: line.length - content.length, depth: listDepth)
         return line
     }
 

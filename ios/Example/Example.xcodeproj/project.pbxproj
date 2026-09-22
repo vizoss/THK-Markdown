@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+        A00000000000000000000001 /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000002; };
 		1F4AA81CC977D114BAF277F2 /* MessageListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */; };
 		27FFE3D6D99BC2E9866F058F /* AssistantMessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */; };
 		47E9CB519197E9F06299A86F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6804762C250FC21B501077B1 /* AppDelegate.swift */; };
@@ -37,6 +38,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				85832E9EB068A8B91FE8D8CF /* THKMDView in Frameworks */,
+                A00000000000000000000001 /* MarkdownFixtures in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -100,6 +102,7 @@
 			name = Example;
 			packageProductDependencies = (
 				347D72E8CAB8BDA81A7758DA /* THKMDView */,
+                A00000000000000000000002 /* MarkdownFixtures */,
 			);
 			productName = Example;
 			productReference = F6FE7BF0248FC2FF22A10D63 /* Example.app */;
@@ -345,6 +348,7 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+        A00000000000000000000002 /* MarkdownFixtures */ = {isa = XCSwiftPackageProductDependency; productName = MarkdownFixtures; };
 		347D72E8CAB8BDA81A7758DA /* THKMDView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = THKMDView;

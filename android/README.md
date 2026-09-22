@@ -67,6 +67,8 @@ has no real rendering engine) — see "Visual verification" below for that.
 
 ## Run the sample
 
+The sample now reads the shared `ios/Fixtures/data/p0.json` catalog (18 P0 cases) and offers case selection, full text, play, pause and single-step controls. See [P0 acceptance guide](../docs/P0.zh-CN.md) for the current workflow and explicit fallback contracts; this replaces the previous rotating mock replies described below.
+
 ```sh
 ./gradlew :sample:installDebug
 ```

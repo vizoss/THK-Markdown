@@ -39,6 +39,8 @@ Pod::Spec.new do |s|
   s.dependency 'Maaku', '~> 0.9'
 
   s.test_spec 'Tests' do |test_spec|
-    test_spec.source_files = 'ios/Tests/THKMDViewCocoaPodsTests/**/*.swift'
+    test_spec.source_files = ['ios/Tests/THKMDViewCocoaPodsTests/**/*.swift',
+                              'ios/Tests/Shared/**/*.swift', 'ios/Fixtures/MarkdownFixture.swift']
+    test_spec.resources = 'ios/Fixtures/data/p0.json'
   end
 end

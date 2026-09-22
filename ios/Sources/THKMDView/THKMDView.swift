@@ -6,6 +6,8 @@ import UIKit
 /// `THKTableView`. Pin/size it like any auto-sizing view (it grows with its content via
 /// `intrinsicContentSize`), and call `reset()` from `prepareForReuse`.
 public final class THKMDView: UIView {
+    /// Async images/diagrams can resize after the final SSE chunk has rendered.
+    public var onContentSizeChange: (() -> Void)?
     public var streamingDebounceInterval: TimeInterval {
         get { buffer.debounceInterval }
         set { buffer.debounceInterval = newValue }
@@ -171,6 +173,16 @@ public final class THKMDView: UIView {
                     tableView = THKTableView()
                     stack.insertArrangedSubview(tableView, at: index)
                 }
+                tableView.imageLoader = imageLoader
+                tableView.onLinkTap = { [weak self] url in self?.onLinkTap?(url) ?? false }
+                tableView.onImageTap = { [weak self] url in
+                    guard let self else { return false }
+                    return (self.onImageTap ?? self.onLinkTap)?(url) ?? false
+                }
+                tableView.onSizeChange = { [weak self] in
+                    self?.invalidateIntrinsicContentSize()
+                    self?.onContentSizeChange?()
+                }
                 tableView.configure(model: model, theme: theme)
                 newSegmentViews.append(.table(tableView))
 
@@ -185,6 +197,7 @@ public final class THKMDView: UIView {
                     mermaidView.onSizeChange = { [weak self, weak mermaidView] in
                         mermaidView?.invalidateIntrinsicContentSize()
                         self?.invalidateIntrinsicContentSize()
+                        self?.onContentSizeChange?()
                     }
                     stack.insertArrangedSubview(mermaidView, at: index)
                 }
@@ -210,8 +223,8 @@ public final class THKMDView: UIView {
             segment.copyButtons = []
         case .diagram(let mermaidView):
             mermaidView.stop()
-        case .table:
-            break
+        case .table(let tableView):
+            tableView.cancelImageLoads()
         }
         let view = segmentView.view
         stack.removeArrangedSubview(view)
@@ -271,6 +284,7 @@ public final class THKMDView: UIView {
         let textView = segmentView.textView
         let layoutManager = textView.layoutManager
         let storageLength = textView.textStorage.length
+        var occupied: [CGRect] = []
         for (button, block) in segmentView.copyButtons {
             guard block.range.location != NSNotFound, NSMaxRange(block.range) <= storageLength, block.range.length > 0 else {
                 button.isHidden = true
@@ -281,9 +295,13 @@ public final class THKMDView: UIView {
             let firstLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
             let size = THKCopyButtonMetrics.size
             let margin = THKCopyButtonMetrics.margin
-            let x = min(firstLineRect.maxX, textView.bounds.width) - size - margin
+            var x = min(firstLineRect.maxX, textView.bounds.width) - size - margin
             let y = firstLineRect.minY + margin
+            while x > 0 && occupied.contains(where: { $0.intersects(CGRect(x: x, y: y, width: size, height: size)) }) {
+                x = max(0, x - size - margin)
+            }
             button.frame = CGRect(x: max(0, x), y: max(0, y), width: size, height: size)
+            occupied.append(button.frame)
         }
     }
 
@@ -387,6 +405,7 @@ public final class THKMDView: UIView {
             attachment.onSizeChange = { [weak self, weak textView] in
                 textView?.invalidateIntrinsicContentSize()
                 self?.invalidateIntrinsicContentSize()
+                self?.onContentSizeChange?()
             }
             attachment.startLoading(imageLoader: imageLoader, into: textView.textStorage)
         }

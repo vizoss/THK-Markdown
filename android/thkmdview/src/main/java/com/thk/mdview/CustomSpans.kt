@@ -69,7 +69,8 @@ internal class CodeBlockBackgroundSpan(
     private val bottomPaddingPx: Int,
     private val spanStart: Int,
     private val spanEnd: Int,
-    val copyButtonGutterPx: Int = 0
+    val copyButtonGutterPx: Int = 0,
+    val containerBackground: Boolean = false
 ) : LineBackgroundSpan, LineHeightSpan {
 
     override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
@@ -98,7 +99,7 @@ internal class CodeBlockBackgroundSpan(
         end: Int,
         lineNumber: Int
     ) {
-        if (copyButtonGutterPx > 0) return // The full-width container paints this background.
+        if (containerBackground) return // The full-width container paints this background.
         drawRoundedLineBackground(
             canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
             isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
@@ -139,6 +140,7 @@ internal class ThemedQuoteSpan(
     private val leftInsetPx: Int = 0,
     private val barVerticalInsetPx: Int = 0,
     val copyButtonGutterPx: Int = 0,
+    val containerBackground: Boolean = false,
     private val nestedTopPaddingPx: Int = 0
 ) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
 
@@ -186,7 +188,7 @@ internal class ThemedQuoteSpan(
         end: Int,
         lineNumber: Int
     ) {
-        if (backgroundColor == null || copyButtonGutterPx > 0) return
+        if (backgroundColor == null || containerBackground) return
         drawRoundedLineBackground(
             canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
             isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
@@ -257,7 +259,7 @@ internal class OrderedListItemSpan(
         first: Boolean,
         layout: Layout?
     ) {
-        if (!first) return
+        if (!first || (text as? android.text.Spanned)?.getSpanStart(this) != start) return
         canvas.drawText("$number.", x.toFloat(), baseline.toFloat(), paint)
     }
 }
@@ -284,7 +286,7 @@ internal class TaskListItemSpan(
         first: Boolean,
         layout: Layout?
     ) {
-        if (!first) return
+        if (!first || (text as? android.text.Spanned)?.getSpanStart(this) != start) return
         val glyph = if (checked) "☑" else "☐"
         canvas.drawText(glyph, x.toFloat(), baseline.toFloat(), paint)
     }

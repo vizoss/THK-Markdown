@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "com.thk.mdview"
     compileSdk = 34
+    sourceSets.getByName("test").resources.srcDir("../../ios/Fixtures/data")
 
     defaultConfig {
         minSdk = 21

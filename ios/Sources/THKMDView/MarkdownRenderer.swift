@@ -1,5 +1,79 @@
 import UIKit
 
+private let thkListDepthKey = NSAttributedString.Key("THKListDepth")
+let thkQuoteContainerIndentKey = NSAttributedString.Key("THKQuoteContainerIndent")
+
+/// Keep child list styles intact; add the current list offset to other block styles.
+func thkApplyListLayout(to text: NSMutableAttributedString, prefixLength: Int, depth: Int) {
+    guard text.length > 0 else { return }
+    let indent = CGFloat(max(0, depth - 1)) * 20
+    let markerWidth = text.attributedSubstring(from: NSRange(location: 0, length: prefixLength)).size().width
+    let contentIndent = indent + markerWidth
+    let full = NSRange(location: 0, length: text.length)
+    var paragraphs: [NSRange] = []
+    (text.string as NSString).enumerateSubstrings(in: full, options: .byParagraphs) { _, _, range, _ in paragraphs.append(range) }
+    for range in paragraphs {
+        // The marker prefix has no depth attribute. Inspect the actual content.
+        let probe = range.location == 0 ? min(prefixLength, text.length - 1) : range.location
+        if let existingDepth = text.attribute(thkListDepthKey, at: probe, effectiveRange: nil) as? Int, existingDepth > depth { continue }
+        let existing = text.attribute(.paragraphStyle, at: probe, effectiveRange: nil) as? NSParagraphStyle
+        let style = existing?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        if existing != nil {
+            style.firstLineHeadIndent += contentIndent
+            style.headIndent += contentIndent
+            if text.attribute(.thkBlockQuoteBar, at: probe, effectiveRange: nil) != nil {
+                let prior = text.attribute(thkQuoteContainerIndentKey, at: probe, effectiveRange: nil) as? CGFloat ?? 0
+                text.addAttribute(thkQuoteContainerIndentKey, value: prior + contentIndent, range: range)
+            }
+        } else {
+            style.firstLineHeadIndent = range.location == 0 ? indent : contentIndent
+            style.headIndent = contentIndent
+        }
+        text.addAttributes([.paragraphStyle: style, thkListDepthKey: depth], range: range)
+    }
+}
+
+func thkApplyQuoteLayout(to text: NSMutableAttributedString, style: NSParagraphStyle) {
+    let full = NSRange(location: 0, length: text.length)
+    text.enumerateAttribute(.paragraphStyle, in: full) { value, range, _ in
+        // Descendant quotes already have an absolute depth. Other child blocks need
+        // their existing indent/padding preserved inside this quote's indentation.
+        if text.attribute(.thkBlockQuoteBar, at: range.location, effectiveRange: nil) != nil { return }
+        let combined = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        combined.headIndent += style.headIndent
+        combined.firstLineHeadIndent += style.firstLineHeadIndent
+        combined.tailIndent = min(combined.tailIndent, style.tailIndent)
+        combined.lineSpacing = max(combined.lineSpacing, style.lineSpacing)
+        text.addAttribute(.paragraphStyle, value: combined, range: range)
+    }
+}
+
+func thkNestedTableText(_ table: THKTableModel) -> NSAttributedString {
+    let result = NSMutableAttributedString()
+    for (rowIndex, row) in ([table.headerCells] + table.rows).enumerated() {
+        if rowIndex > 0 { result.append(NSAttributedString(string: "\n")) }
+        for (index, cell) in row.enumerated() {
+            if index > 0 { result.append(NSAttributedString(string: " | ")) }
+            result.append(cell)
+        }
+    }
+    return result
+}
+
+/// Nested copyable blocks share a wider gutter, including when they start on one line.
+func thkReserveQuoteCopyGutter(in text: NSMutableAttributedString) {
+    let full = NSRange(location: 0, length: text.length)
+    guard full.length > 0 else { return }
+    var hasCode = false
+    text.enumerateAttribute(.thkCopyableCodeBlock, in: full) { value, _, _ in if value != nil { hasCode = true } }
+    let gutter: CGFloat = hasCode ? 76 : 40
+    text.enumerateAttribute(.paragraphStyle, in: full) { value, range, _ in
+        let style = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        style.tailIndent = min(style.tailIndent, -gutter)
+        text.addAttribute(.paragraphStyle, value: style, range: range)
+    }
+}
+
 /// A renderer walks Markdown text into an ordered list of segments (see `THKRenderSegment`)
 /// instead of one attributed string, so a `Table` block can become its own horizontally
 /// scrollable view. `theme` is settable independently of `render(_:)` so `THKMDView` can

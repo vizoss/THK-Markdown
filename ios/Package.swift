@@ -10,12 +10,14 @@ let package = Package(
         .library(
             name: "THKMDView",
             targets: ["THKMDView"]
-        )
+        ),
+        .library(name: "MarkdownFixtures", targets: ["MarkdownFixtures"])
     ],
     dependencies: [
         .package(url: "https://github.com/swiftlang/swift-markdown.git", branch: "main")
     ],
     targets: [
+        .target(name: "MarkdownFixtures", path: "Fixtures", resources: [.copy("data")]),
         .target(
             name: "THKMDView",
             dependencies: [
@@ -37,7 +39,10 @@ let package = Package(
         ),
         .testTarget(
             name: "THKMDViewTests",
-            dependencies: ["THKMDView"]
+            dependencies: ["THKMDView", "MarkdownFixtures"],
+            path: "Tests",
+            exclude: ["THKMDViewCocoaPodsTests"],
+            sources: ["THKMDViewTests", "Shared"]
         )
     ]
 )

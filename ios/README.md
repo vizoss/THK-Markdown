@@ -10,6 +10,8 @@ Markdown parser itself — see "Two distributions, one parser swapped" below.
 
 ## Requirements
 
+The example now uses the shared 18-case P0 catalog through the `MarkdownFixtures` product, with case selection, full text, play, pause and single-step controls. See [P0 acceptance guide](../docs/P0.zh-CN.md) for the current workflow; this replaces the previous rotating mock replies.
+
 - Xcode 15+ (built and tested with Xcode 26.6 / Swift 6.3)
 - iOS 13+
 - SPM distribution: [swift-markdown](https://github.com/swiftlang/swift-markdown)

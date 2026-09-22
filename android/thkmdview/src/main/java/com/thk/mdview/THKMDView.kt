@@ -172,15 +172,22 @@ class THKMDView @JvmOverloads constructor(
             ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
         val codeGutter = spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)
             ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
-        val gutter = maxOf(quoteGutter, codeGutter)
-        frame.isQuote = quoteGutter > 0
+        val lanes = segment.copyableBlocks.maxOfOrNull { block ->
+            segment.copyableBlocks.count { block.range.first in it.range }
+        } ?: 0
+        val gutter = maxOf(quoteGutter, codeGutter, if (lanes > 0) dp(36f * lanes + 4f) else 0)
+        frame.isQuote = spanned?.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
+            ?.any { it.containerBackground } == true
+        val standaloneCode = spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)
+            ?.any { it.containerBackground } == true
+        val standalone = frame.isQuote || standaloneCode
         frame.hasCopyGutter = gutter > 0
-        val verticalPadding = if (frame.hasCopyGutter) dp(8f) else 0
+        val verticalPadding = if (standalone) dp(8f) else 0
         textView.setPadding(0, verticalPadding, gutter, verticalPadding)
         textView.includeFontPadding = !frame.hasCopyGutter
         textView.setLineSpacing(if (frame.isQuote) 2 * resources.displayMetrics.density else 0f, 1f)
         frame.minimumHeight = if (frame.hasCopyGutter) dp(40f) else 0
-        frame.background = if (frame.hasCopyGutter) GradientDrawable().apply {
+        frame.background = if (standalone) GradientDrawable().apply {
             setColor(if (frame.isQuote) theme.blockQuoteBackgroundColor else theme.codeBackgroundColor)
             cornerRadius = theme.codeBlockCornerRadiusDp * resources.displayMetrics.density
         } else null
@@ -207,6 +214,16 @@ class THKMDView @JvmOverloads constructor(
             }
         }
         tableView.setData(segment.table, theme)
+        (listOf(segment.table.headerRow) + segment.table.bodyRows).forEachIndexed { row, cells ->
+            cells.forEachIndexed cell@ { column, content ->
+                val host = tableView.cellViewAt(row, column) ?: return@cell
+                val text = content as? Spanned ?: return@cell
+                text.getSpans(0, text.length, AsyncImageSpan::class.java).forEach { span ->
+                    span.attach(imageLoader, imageLoadScope, host)
+                    activeImageSpans += span
+                }
+            }
+        }
     }
 
     private fun bindDiagramSegment(index: Int, segment: RenderedSegment.DiagramSegment) {
@@ -300,12 +317,17 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
         val density = resources.displayMetrics.density
         val sizePx = (COPY_BUTTON_SIZE_DP * density).toInt()
         val marginPx = (COPY_BUTTON_MARGIN_DP * density).toInt()
+        val positioned = mutableListOf<android.graphics.Rect>()
         copyButtons.zip(copyBlocks).forEach { (button, block) ->
             val offset = block.range.first.coerceIn(0, layout.text.length)
             val line = layout.getLineForOffset(offset)
-            val x = (textView.right - sizePx - marginPx).coerceAtLeast(0)
+            var x = (textView.right - sizePx - marginPx).coerceAtLeast(0)
             val y = textView.top + (if (hasCopyGutter && offset == 0) 0 else textView.paddingTop) +
                 layout.getLineTop(line) + marginPx
+            while (x > 0 && positioned.any { android.graphics.Rect.intersects(it, android.graphics.Rect(x, y, x + sizePx, y + sizePx)) }) {
+                x = (x - sizePx - marginPx).coerceAtLeast(0)
+            }
+            positioned += android.graphics.Rect(x, y, x + sizePx, y + sizePx)
             button.layout(x, y, x + sizePx, y + sizePx)
         }
     }
