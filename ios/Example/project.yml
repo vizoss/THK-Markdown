@@ -1,0 +1,33 @@
+name: Example
+options:
+  bundleIdPrefix: com.thk.mdview.example
+  deploymentTarget:
+    iOS: "13.0"
+  createIntermediateGroups: true
+targets:
+  Example:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    info:
+      path: Generated/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.thk.mdview.example
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+        GENERATE_INFOPLIST_FILE: NO
+    dependencies:
+      - package: THKMDView
+        product: THKMDView
+packages:
+  THKMDView:
+    path: ../

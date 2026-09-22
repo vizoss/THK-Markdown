@@ -1,0 +1,18 @@
+# --- OS / editor cruft (repo root; platform dirs carry their own more specific .gitignore) ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbsdb
+
+# Editors
+.idea/
+*.iml
+.vscode/
+*.swp
+*~
+
+# Claude Code
+.claude/worktrees/
