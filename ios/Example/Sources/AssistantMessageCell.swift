@@ -1,8 +1,8 @@
 import UIKit
 import THKMDView
 
-final class MessageCell: UITableViewCell {
-    static let reuseIdentifier = "MessageCell"
+final class AssistantMessageCell: UITableViewCell {
+    static let reuseIdentifier = "AssistantMessageCell"
 
     let markdownView = THKMDView()
     private var streamTask: Task<Void, Never>?

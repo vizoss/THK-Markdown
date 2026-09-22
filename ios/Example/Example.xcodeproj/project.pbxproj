@@ -7,18 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0125029CB123A7E204769B37 /* MessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFE03E54B401D2EBA823B68B /* MessageCell.swift */; };
 		1F4AA81CC977D114BAF277F2 /* MessageListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */; };
+		27FFE3D6D99BC2E9866F058F /* AssistantMessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */; };
 		47E9CB519197E9F06299A86F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6804762C250FC21B501077B1 /* AppDelegate.swift */; };
-		6BEAAF0724ED061B5A1CCF64 /* SampleMarkdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = F08630ACB516CF8ECDA119A3 /* SampleMarkdown.swift */; };
+		5265A2A260105BF427B734B4 /* MockAssistantReply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E958AFC4DF22DECDCF05141 /* MockAssistantReply.swift */; };
+		57474C9194B9ECB1D78896D1 /* UserMessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 241F189D9AF67907740253A6 /* UserMessageCell.swift */; };
 		85832E9EB068A8B91FE8D8CF /* THKMDView in Frameworks */ = {isa = PBXBuildFile; productRef = 347D72E8CAB8BDA81A7758DA /* THKMDView */; };
+		858D834F24660EF64C253DEB /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325777869B578BB9E0D675CF /* Message.swift */; };
+		C742EFCC8F808F794B838D5C /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98090EE07C844B24C7270C35 /* MessageInputBar.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0E958AFC4DF22DECDCF05141 /* MockAssistantReply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAssistantReply.swift; sourceTree = "<group>"; };
+		241F189D9AF67907740253A6 /* UserMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMessageCell.swift; sourceTree = "<group>"; };
 		2E3F8A25A25B8FC35209ADF6 /* ios */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ios; path = ..; sourceTree = SOURCE_ROOT; };
+		325777869B578BB9E0D675CF /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		6804762C250FC21B501077B1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		CFE03E54B401D2EBA823B68B /* MessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageCell.swift; sourceTree = "<group>"; };
-		F08630ACB516CF8ECDA119A3 /* SampleMarkdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMarkdown.swift; sourceTree = "<group>"; };
+		98090EE07C844B24C7270C35 /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
+		BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMessageCell.swift; sourceTree = "<group>"; };
 		F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewController.swift; sourceTree = "<group>"; };
 		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -64,9 +70,12 @@
 			isa = PBXGroup;
 			children = (
 				6804762C250FC21B501077B1 /* AppDelegate.swift */,
-				CFE03E54B401D2EBA823B68B /* MessageCell.swift */,
+				BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */,
+				325777869B578BB9E0D675CF /* Message.swift */,
+				98090EE07C844B24C7270C35 /* MessageInputBar.swift */,
 				F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */,
-				F08630ACB516CF8ECDA119A3 /* SampleMarkdown.swift */,
+				0E958AFC4DF22DECDCF05141 /* MockAssistantReply.swift */,
+				241F189D9AF67907740253A6 /* UserMessageCell.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -130,9 +139,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				47E9CB519197E9F06299A86F /* AppDelegate.swift in Sources */,
-				0125029CB123A7E204769B37 /* MessageCell.swift in Sources */,
+				27FFE3D6D99BC2E9866F058F /* AssistantMessageCell.swift in Sources */,
+				858D834F24660EF64C253DEB /* Message.swift in Sources */,
+				C742EFCC8F808F794B838D5C /* MessageInputBar.swift in Sources */,
 				1F4AA81CC977D114BAF277F2 /* MessageListViewController.swift in Sources */,
-				6BEAAF0724ED061B5A1CCF64 /* SampleMarkdown.swift in Sources */,
+				5265A2A260105BF427B734B4 /* MockAssistantReply.swift in Sources */,
+				57474C9194B9ECB1D78896D1 /* UserMessageCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

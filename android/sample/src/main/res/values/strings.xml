@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">THKMDView Sample</string>
+    <string name="message_input_hint">Message…</string>
+    <string name="send">Send</string>
 </resources>

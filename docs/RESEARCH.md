@@ -1,5 +1,7 @@
 # THKMDView — Implementation Research & Architecture
 
+*中文版：[`RESEARCH.zh-CN.md`](RESEARCH.zh-CN.md)*
+
 Status: v0 (scaffold). This document is the design rationale behind the Android and iOS
 scaffolds in this repo, and the list of decisions that still need a human call.
 
@@ -136,8 +138,10 @@ Chosen approach (implemented in both scaffolds):
 7. **Compose / SwiftUI wrappers.** Core is UIKit/Android View by requirement (to sit
    inside `RecyclerView`/`UITableView`). A thin `@Composable`/SwiftUI `UIViewRepresentable`
    wrapper is straightforward to add later if you also need it outside a list.
-8. **Distribution.** Not yet wired to Maven Central / CocoaPods / a private registry —
-   scaffold is source-only (Gradle module, local SPM package) for now.
+8. **Distribution.** Android now publishes to GitHub Packages (Maven) on every push to
+   `main` via `.github/workflows/android-publish.yml`; iOS ships via SPM plus a
+   CocoaPods podspec consumed by git tag (see `ios/README.md`). Neither is on Maven
+   Central or the CocoaPods trunk registry yet — that's still open if you want it.
 
 ## 8. Roadmap
 

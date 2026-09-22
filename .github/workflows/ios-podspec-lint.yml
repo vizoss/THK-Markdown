@@ -1,0 +1,26 @@
+name: iOS – lint CocoaPods podspec
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ios/**"
+      - "THKMDView.podspec"
+      - ".github/workflows/ios-podspec-lint.yml"
+  workflow_dispatch: {}
+
+jobs:
+  lint:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install CocoaPods
+        run: gem install cocoapods --no-document
+
+      # This only validates the podspec (compiles it and runs the Maaku-backed test spec
+      # against a simulator) — it does NOT publish anything. There is no registered
+      # CocoaPods trunk account for this project, so `pod trunk push` is intentionally
+      # never run here; cutting a real release tag is a manual maintainer step.
+      - name: pod lib lint
+        run: pod lib lint THKMDView.podspec --test-specs=Tests --allow-warnings

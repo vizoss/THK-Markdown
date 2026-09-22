@@ -1,18 +1,8 @@
-package com.thk.mdview.sample
+import Foundation
 
-val GREETING_MARKDOWN: String = """
-    # THKMDView chat demo
-
-    Type a message below and send it — I'll (mock) reply and stream the answer back
-    in, chunk by chunk, exactly like a real LLM response over SSE.
-""".trimIndent()
-
-/**
- * Builds a fake "LLM reply" that exercises every Markdown construct THKMDView
- * supports, so sending any message is enough to see the full renderer in action.
- */
-fun buildMockAssistantReply(userMessage: String): String = """
-    Here's my answer to **"$userMessage"** — or, well, a tour of every Markdown
+func buildMockAssistantReply(for userMessage: String) -> String {
+    """
+    Here's my answer to **"\(userMessage)"** — or, well, a tour of every Markdown
     construct THKMDView renders, since this is a mock.
 
     ## Headings, emphasis, and strikethrough
@@ -24,9 +14,9 @@ fun buildMockAssistantReply(userMessage: String): String = """
 
     Call `THKMDView.appendMarkdownChunk(chunk)` for each SSE delta. Here's a block:
 
-    ```kotlin
-    fun greet(name: String): String {
-        return "Hello, ${'$'}name!"
+    ```swift
+    func greet(name: String) -> String {
+        "Hello, \\(name)!"
     }
     ```
 
@@ -66,4 +56,5 @@ fun buildMockAssistantReply(userMessage: String): String = """
     ---
 
     That's every construct THKMDView v0 supports, streamed in one bubble.
-""".trimIndent()
+    """
+}

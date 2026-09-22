@@ -20,7 +20,13 @@ let package = Package(
             name: "THKMDView",
             dependencies: [
                 .product(name: "Markdown", package: "swift-markdown")
-            ]
+            ],
+            // The CocoaPods distribution (see ../THKMDView.podspec) uses a different
+            // Markdown parser (Maaku) that has no SPM-resolvable trunk release, so its
+            // renderer lives in a sibling file under CocoaPods/ that SPM must never
+            // compile. The podspec's own `exclude_files` mirrors this in the other
+            // direction, excluding SPM/.
+            exclude: ["CocoaPods"]
         ),
         .testTarget(
             name: "THKMDViewTests",

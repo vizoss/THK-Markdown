@@ -1,5 +1,7 @@
 # THKMDView
 
+*中文文档：[`README.zh-CN.md`](README.zh-CN.md)*
+
 `THKMDView` is a cross-platform (Android / iOS) SDK for rendering **streaming Markdown**
 inside chat-style UIs — the kind of view you drop into a `RecyclerView` item or a
 `UITableView` cell to render an LLM's reply as it arrives over SSE, with full Markdown
@@ -13,7 +15,13 @@ full design rationale):
 | Platform | Path                | Language | Distribution         |
 |----------|---------------------|----------|-----------------------|
 | Android  | [`android/`](android/README.md) | Kotlin   | Gradle module (AAR)  |
-| iOS      | [`ios/`](ios/README.md)         | Swift    | Swift Package (SPM)  |
+| iOS      | [`ios/`](ios/README.md)         | Swift    | Swift Package (SPM) or CocoaPods (see [`THKMDView.podspec`](THKMDView.podspec)) |
+
+The iOS package ships two ways from the same source tree: SPM (parsed with
+swift-markdown) and CocoaPods (parsed with Maaku, since swift-markdown has no CocoaPods
+trunk release). Both share the same public API, streaming/rendering architecture, and are
+meant to produce equivalent visual output — see [`ios/README.md`](ios/README.md#cocoapods)
+for install instructions and details.
 
 ## Core capabilities (both platforms)
 
