@@ -53,16 +53,20 @@ private fun drawRoundedLineBackground(
     paint.color = originalColor
 }
 
-// Also implements LineHeightSpan to grow the first line's ascent and the last line's
-// descent by `verticalPaddingPx`: Android's Spannable/Layout has no notion of "block
-// padding" the way CSS does, so without this the code text touches the background's top
-// and bottom edges directly. Growing the line metrics reserves real layout space (Layout
-// passes the already-grown top/bottom into drawBackground above), rather than just
+// Also implements LineHeightSpan to grow the first line's ascent by `topPaddingPx` and the
+// last line's descent by `bottomPaddingPx`: Android's Spannable/Layout has no notion of
+// "block padding" the way CSS does, so without this the code text touches the background's
+// top and bottom edges directly. Growing the line metrics reserves real layout space
+// (Layout passes the already-grown top/bottom into drawBackground above), rather than just
 // drawing a taller rect that would bleed into the surrounding paragraph's own lines.
+// `topPaddingPx` is intentionally taller than `bottomPaddingPx`: every code block gets a
+// copy-button overlay in its top-right corner (see THKMDView.TextSegmentFrame), and the
+// button needs somewhere to sit that isn't directly on top of the first line's actual text.
 internal class CodeBlockBackgroundSpan(
     private val backgroundColor: Int,
     private val cornerRadiusPx: Float,
-    private val verticalPaddingPx: Int,
+    private val topPaddingPx: Int,
+    private val bottomPaddingPx: Int,
     private val spanStart: Int,
     private val spanEnd: Int
 ) : LineBackgroundSpan, LineHeightSpan {
@@ -71,12 +75,12 @@ internal class CodeBlockBackgroundSpan(
         val isFirstLine = start <= spanStart
         val isLastLine = end >= spanEnd
         if (isFirstLine) {
-            fm.ascent -= verticalPaddingPx
-            fm.top -= verticalPaddingPx
+            fm.ascent -= topPaddingPx
+            fm.top -= topPaddingPx
         }
         if (isLastLine) {
-            fm.descent += verticalPaddingPx
-            fm.bottom += verticalPaddingPx
+            fm.descent += bottomPaddingPx
+            fm.bottom += bottomPaddingPx
         }
     }
 
@@ -124,7 +128,8 @@ internal class ThemedQuoteSpan(
     private val barColor: Int,
     private val backgroundColor: Int? = null,
     private val cornerRadiusPx: Float = 0f,
-    private val verticalPaddingPx: Int = 0,
+    private val topPaddingPx: Int = 0,
+    private val bottomPaddingPx: Int = 0,
     private val spanStart: Int = 0,
     private val spanEnd: Int = 0,
     private val stripeWidthPx: Int = 6,
@@ -133,15 +138,19 @@ internal class ThemedQuoteSpan(
     private val barVerticalInsetPx: Int = 0
 ) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
 
+    // topPaddingPx is taller than bottomPaddingPx: an outermost quote also gets a
+    // copy-button overlay in its top-right corner (only outermost quotes get one, matching
+    // backgroundColor's own outermost-only scoping), which needs somewhere to sit that
+    // isn't directly on top of the quote's first line of actual text.
     override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
         if (backgroundColor == null) return
         if (start <= spanStart) {
-            fm.ascent -= verticalPaddingPx
-            fm.top -= verticalPaddingPx
+            fm.ascent -= topPaddingPx
+            fm.top -= topPaddingPx
         }
         if (end >= spanEnd) {
-            fm.descent += verticalPaddingPx
-            fm.bottom += verticalPaddingPx
+            fm.descent += bottomPaddingPx
+            fm.bottom += bottomPaddingPx
         }
     }
 

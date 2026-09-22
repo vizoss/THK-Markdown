@@ -128,9 +128,10 @@ internal class MarkdownSpanVisitor(
         copyableBlocks.add(CopyableBlock(start until end, content))
         val cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx
         val horizontalPaddingPx = (12 * densityPx).toInt()
-        val verticalPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
+        val topPaddingPx = (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt()
+        val bottomPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
         builder.setSpan(
-            CodeBlockBackgroundSpan(theme.codeBackgroundColor, cornerRadiusPx, verticalPaddingPx, start, end),
+            CodeBlockBackgroundSpan(theme.codeBackgroundColor, cornerRadiusPx, topPaddingPx, bottomPaddingPx, start, end),
             start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         builder.setSpan(CodeBlockPaddingSpan(horizontalPaddingPx), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -155,17 +156,20 @@ internal class MarkdownSpanVisitor(
         blockQuoteDepth--
         val end = builder.length
         if (end > start) {
-            // Same vertical padding constant as code blocks (BLOCK_VERTICAL_PADDING_DP) so
-            // the two block types read as one consistent "padded block" family; bar width
+            // Bottom padding shares the same constant as code blocks (BLOCK_VERTICAL_PADDING_DP)
+            // so the two block types read as one consistent "padded block" family; bar width
             // and bar-to-text gap are also shared constants - both were previously raw,
             // unscaled pixel values here, which is why the gap looked wrong/inconsistent
-            // across densities and didn't match iOS's (differently fixed) bar width.
+            // across densities and didn't match iOS's (differently fixed) bar width. Top
+            // padding is taller (COPY_BUTTON_TOP_PADDING_DP) to leave room for the outermost
+            // quote's own copy-button overlay without it covering the first line's text.
             builder.setSpan(
                 ThemedQuoteSpan(
                     barColor = theme.blockQuoteBarColor,
                     backgroundColor = if (isOutermost) theme.blockQuoteBackgroundColor else null,
                     cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx,
-                    verticalPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
+                    topPaddingPx = (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt(),
+                    bottomPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
                     spanStart = start,
                     spanEnd = end,
                     stripeWidthPx = (QUOTE_BAR_WIDTH_DP * densityPx).toInt(),
@@ -353,6 +357,11 @@ internal class MarkdownSpanVisitor(
         // numerically identical to iOS's equivalent constants (see THKMDTheme.swift /
         // MarkdownRenderer.swift comments there) for cross-platform visual parity.
         private const val BLOCK_VERTICAL_PADDING_DP = 8f
+        // Matches THKMDView.TextSegmentFrame's COPY_BUTTON_SIZE_DP(32) + 2 *
+        // COPY_BUTTON_MARGIN_DP(4) - and iOS's equivalent THKCopyButtonMetrics.
+        // topPaddingReserve - so the button has somewhere to sit above the block's first
+        // line of real text instead of on top of it.
+        private const val COPY_BUTTON_TOP_PADDING_DP = 40f
         private const val QUOTE_BAR_WIDTH_DP = 4f
         private const val QUOTE_BAR_GAP_DP = 12f
         private const val QUOTE_BAR_LEFT_INSET_DP = 2f

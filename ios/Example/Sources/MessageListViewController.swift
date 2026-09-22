@@ -83,16 +83,25 @@ final class MessageListViewController: UIViewController {
         startHeightRefreshTimer() // the seeded greeting message streams in immediately too
     }
 
-    // Tapping anywhere outside the currently-focused input (including a tap that lands on a
-    // THKMDView bubble but isn't a link/image/copy button) dismisses the keyboard.
+    // Tapping the message list (not the whole screen - see below) dismisses the keyboard,
+    // matching Android's equivalent fix in MainActivity.kt (a GestureDetector scoped to
+    // the RecyclerView only, not the whole Activity, for the same reason).
     // `cancelsTouchesInView = false` is critical: without it this recognizer would swallow
-    // taps meant for table view cells, links, buttons, and the copy buttons on code blocks/
-    // quotes, since a gesture recognizer with that flag set consumes the touch before it can
-    // reach the view underneath. Matches Android's equivalent fix in MainActivity.kt.
+    // taps meant for table view cells, links, and the copy buttons on code blocks/quotes,
+    // since a gesture recognizer with that flag set consumes the touch before it can reach
+    // the view underneath.
+    //
+    // This must be attached to `tableView`, not `view` - attaching it to the whole screen
+    // previously meant a tap on the Send button (in the separate `inputBar`) also fired
+    // `endEditing(true)`, and the resulting keyboard-dismiss animation shifted the input
+    // bar's bottom constraint mid-touch, moving the Send button out from under the tap
+    // before UIKit could register it as a completed "touch up inside" - the keyboard closed
+    // but the message never sent. Scoping to `tableView` means a tap that starts on the
+    // input bar never reaches this recognizer at all.
     private func setUpDismissKeyboardOnTap() {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboardOnTap))
         tapGesture.cancelsTouchesInView = false
-        view.addGestureRecognizer(tapGesture)
+        tableView.addGestureRecognizer(tapGesture)
     }
 
     @objc private func dismissKeyboardOnTap() {

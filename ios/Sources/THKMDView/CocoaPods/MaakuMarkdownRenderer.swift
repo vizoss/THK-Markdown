@@ -456,8 +456,8 @@ struct MaakuAttributedStringVisitor {
             paragraphStyle.firstLineHeadIndent = THKCodeBlockMetrics.horizontalPadding
             paragraphStyle.headIndent = THKCodeBlockMetrics.horizontalPadding
             paragraphStyle.tailIndent = -THKCodeBlockMetrics.horizontalPadding
-            paragraphStyle.paragraphSpacingBefore = index == 0 ? THKCodeBlockMetrics.verticalPadding : 0
-            paragraphStyle.paragraphSpacing = index == paragraphRanges.count - 1 ? THKCodeBlockMetrics.verticalPadding : 0
+            paragraphStyle.paragraphSpacingBefore = index == 0 ? THKCodeBlockMetrics.verticalPaddingTop : 0
+            paragraphStyle.paragraphSpacing = index == paragraphRanges.count - 1 ? THKCodeBlockMetrics.verticalPaddingBottom : 0
             attrString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
         }
     }
@@ -483,10 +483,10 @@ struct MaakuAttributedStringVisitor {
         }
 
         if first == last {
-            addSpacing(to: first, before: THKBlockQuoteMetrics.verticalPadding, after: THKBlockQuoteMetrics.verticalPadding)
+            addSpacing(to: first, before: THKBlockQuoteMetrics.verticalPaddingTop, after: THKBlockQuoteMetrics.verticalPaddingBottom)
         } else {
-            addSpacing(to: first, before: THKBlockQuoteMetrics.verticalPadding, after: 0)
-            addSpacing(to: last, before: 0, after: THKBlockQuoteMetrics.verticalPadding)
+            addSpacing(to: first, before: THKBlockQuoteMetrics.verticalPaddingTop, after: 0)
+            addSpacing(to: last, before: 0, after: THKBlockQuoteMetrics.verticalPaddingBottom)
         }
     }
 

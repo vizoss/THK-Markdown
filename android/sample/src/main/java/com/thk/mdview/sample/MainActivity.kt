@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * A minimal LLM chat UI: type a message, get a (mocked) assistant reply that
@@ -121,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         scrollToBottom()
 
         lifecycleScope.launch {
-            delay(Random.nextLong(400L, 900L)) // simulated "assistant is thinking" latency
+            delay(Random.nextLong(400L, 900L).milliseconds) // simulated "assistant is thinking" latency
             adapter.addMessage(ChatMessage(nextMessageId++, Role.ASSISTANT, buildMockAssistantReply(text)))
             scrollToBottom()
         }

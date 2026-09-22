@@ -254,9 +254,6 @@ public final class THKMDView: UIView {
 
     // MARK: - Copy buttons (code blocks + outermost block quotes)
 
-    private static let copyButtonSize: CGFloat = 32
-    private static let copyButtonMargin: CGFloat = 4
-
     private func rebuildCopyButtons(for segmentView: TextSegmentView) {
         segmentView.copyButtons.forEach { $0.button.removeFromSuperview() }
         segmentView.copyButtons = segmentView.copyableBlocks.map { block in
@@ -282,8 +279,8 @@ public final class THKMDView: UIView {
             button.isHidden = false
             let glyphRange = layoutManager.glyphRange(forCharacterRange: block.range, actualCharacterRange: nil)
             let firstLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
-            let size = Self.copyButtonSize
-            let margin = Self.copyButtonMargin
+            let size = THKCopyButtonMetrics.size
+            let margin = THKCopyButtonMetrics.margin
             let x = min(firstLineRect.maxX, textView.bounds.width) - size - margin
             let y = firstLineRect.minY + margin
             button.frame = CGRect(x: max(0, x), y: max(0, y), width: size, height: size)
@@ -329,9 +326,8 @@ public final class THKMDView: UIView {
         let button = UIButton(type: .system)
         button.setImage(Self.copyIconImage, for: .normal)
         button.tintColor = .secondaryLabel
-        button.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
-        button.layer.cornerRadius = 8
-        button.frame = CGRect(x: 0, y: 0, width: Self.copyButtonSize, height: Self.copyButtonSize)
+        button.backgroundColor = .clear
+        button.frame = CGRect(x: 0, y: 0, width: THKCopyButtonMetrics.size, height: THKCopyButtonMetrics.size)
         button.addTarget(self, action: #selector(copyButtonTapped(_:)), for: .touchUpInside)
         return button
     }

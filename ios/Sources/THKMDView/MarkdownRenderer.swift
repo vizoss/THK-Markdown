@@ -99,10 +99,27 @@ enum THKBlockQuoteMetrics {
     /// Extra breathing room between wrapped/multi-paragraph lines *inside* a quote, on top of
     /// (not instead of) the block-level top/bottom padding below.
     static let interiorLineSpacing: CGFloat = 2
-    /// Top-of-first-line / bottom-of-last-line padding for the whole (outermost) quote block —
-    /// shared with `THKCodeBlockMetrics.verticalPadding` so both "padded block" types read as
-    /// one consistent family, matching Android's shared `BLOCK_VERTICAL_PADDING_DP`.
-    static let verticalPadding: CGFloat = THKCodeBlockMetrics.verticalPadding
+    /// Bottom-of-last-line padding for the whole (outermost) quote block — shared with
+    /// `THKCodeBlockMetrics.verticalPaddingBottom` so both "padded block" types read as one
+    /// consistent family, matching Android's shared `BLOCK_VERTICAL_PADDING_DP`.
+    static let verticalPaddingBottom: CGFloat = THKCodeBlockMetrics.verticalPaddingBottom
+    /// Top-of-first-line padding — taller than the bottom padding, see
+    /// `THKCopyButtonMetrics.topPaddingReserve`: every outermost quote gets a copy button
+    /// overlay in its top-right corner, and this reserves enough empty space above the
+    /// actual quoted text for that button to sit in without covering any glyphs.
+    static let verticalPaddingTop: CGFloat = THKCopyButtonMetrics.topPaddingReserve
+}
+
+/// Shared by `THKMDView`'s copy-button overlay positioning and the extra top padding
+/// reserved for it in code blocks / outermost block quotes (`THKCodeBlockMetrics.
+/// verticalPaddingTop` / `THKBlockQuoteMetrics.verticalPaddingTop`) — a single source of
+/// truth so the reserved band stays exactly tall enough to keep the button from covering
+/// the block's first line of real text (previously it did, since both blocks' top padding
+/// was only ~8pt while the button itself is 32pt tall).
+enum THKCopyButtonMetrics {
+    static let size: CGFloat = 32
+    static let margin: CGFloat = 4
+    static let topPaddingReserve: CGFloat = margin + size + margin
 }
 
 /// A task-list checkbox prefix as an `NSTextAttachment`-wrapped SF Symbol image, instead of a
@@ -144,12 +161,15 @@ func thkIsMermaidLanguageTag(_ tag: String?) -> Bool {
 /// its background rect stays full-width (indentation alone produces the padded look).
 enum THKCodeBlockMetrics {
     static let horizontalPadding: CGFloat = 8
-    /// Reserved above the block's first line and below its last line (matches Android's
-    /// `CodeBlockBackgroundSpan` ~8dp `verticalPaddingPx`). Applied per-paragraph, not
-    /// uniformly across the whole block range — see `codeBlockParagraphStyle` in each
-    /// renderer, which sets this only on the first/last line so interior lines don't also
-    /// pick it up.
-    static let verticalPadding: CGFloat = 8
+    /// Reserved below the block's last line (matches Android's `CodeBlockBackgroundSpan`
+    /// ~8dp `verticalPaddingPx`). Applied per-paragraph, not uniformly across the whole
+    /// block range — see `applyCodeBlockParagraphStyles` in each renderer, which sets this
+    /// only on the first/last line so interior lines don't also pick it up.
+    static let verticalPaddingBottom: CGFloat = 8
+    /// Reserved above the block's first line — taller than the bottom padding to leave room
+    /// for the copy-button overlay (see `THKCopyButtonMetrics`) without it covering the
+    /// first line's actual text.
+    static let verticalPaddingTop: CGFloat = THKCopyButtonMetrics.topPaddingReserve
 }
 
 // `DefaultMarkdownRenderer` is intentionally NOT defined here: the SPM distribution's
