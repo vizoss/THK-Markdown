@@ -38,6 +38,13 @@ public final class THKMDView: UIView {
         let textView: UITextView
         let layoutManager: THKBackgroundLayoutManager
         var attachments: [THKAsyncImageTextAttachment] = []
+        /// Current copy-button-eligible ranges for this segment's `attributedText`, and the
+        /// overlay button placed for each — rebuilt whenever the segment's content is rebuilt
+        /// (see `rebuildCopyButtons`), repositioned on every `layoutSubviews` (see
+        /// `positionCopyButtons`) since the text view's real width/line layout isn't settled
+        /// until Auto Layout has run.
+        var copyableBlocks: [THKCopyableBlock] = []
+        var copyButtons: [(button: UIButton, block: THKCopyableBlock)] = []
 
         init(textView: UITextView, layoutManager: THKBackgroundLayoutManager) {
             self.textView = textView
@@ -48,11 +55,13 @@ public final class THKMDView: UIView {
     private enum SegmentView {
         case text(TextSegmentView)
         case table(THKTableView)
+        case diagram(THKMermaidView)
 
         var view: UIView {
             switch self {
             case .text(let segment): return segment.textView
             case .table(let tableView): return tableView
+            case .diagram(let mermaidView): return mermaidView
             }
         }
     }
@@ -134,7 +143,7 @@ public final class THKMDView: UIView {
             let existing = index < segmentViews.count ? segmentViews[index] : nil
 
             switch segment {
-            case .text(let attributed):
+            case .text(let attributed, let copyableBlocks):
                 let segmentView: TextSegmentView
                 if case .text(let reused)? = existing {
                     segmentView = reused
@@ -147,6 +156,8 @@ public final class THKMDView: UIView {
                 segmentView.attachments.forEach { $0.cancelLoading() }
                 segmentView.textView.attributedText = attributed
                 segmentView.attachments = startImageLoads(in: attributed, into: segmentView.textView)
+                segmentView.copyableBlocks = copyableBlocks
+                rebuildCopyButtons(for: segmentView)
                 newSegmentViews.append(.text(segmentView))
 
             case .table(let model):
@@ -160,6 +171,23 @@ public final class THKMDView: UIView {
                 }
                 tableView.configure(model: model, theme: theme)
                 newSegmentViews.append(.table(tableView))
+
+            case .diagram(let mermaidSource):
+                let mermaidView: THKMermaidView
+                if case .diagram(let reused)? = existing {
+                    mermaidView = reused
+                } else {
+                    if let existing { removeFromStack(existing) }
+                    mermaidView = THKMermaidView()
+                    mermaidView.translatesAutoresizingMaskIntoConstraints = false
+                    mermaidView.onSizeChange = { [weak self, weak mermaidView] in
+                        mermaidView?.invalidateIntrinsicContentSize()
+                        self?.invalidateIntrinsicContentSize()
+                    }
+                    stack.insertArrangedSubview(mermaidView, at: index)
+                }
+                mermaidView.configure(source: mermaidSource, theme: theme)
+                newSegmentViews.append(.diagram(mermaidView))
             }
         }
 
@@ -173,8 +201,15 @@ public final class THKMDView: UIView {
     }
 
     private func removeFromStack(_ segmentView: SegmentView) {
-        if case .text(let segment) = segmentView {
+        switch segmentView {
+        case .text(let segment):
             segment.attachments.forEach { $0.cancelLoading() }
+            segment.copyButtons.forEach { $0.button.removeFromSuperview() }
+            segment.copyButtons = []
+        case .diagram(let mermaidView):
+            mermaidView.stop()
+        case .table:
+            break
         }
         let view = segmentView.view
         stack.removeArrangedSubview(view)
@@ -212,6 +247,93 @@ public final class THKMDView: UIView {
         layoutManager.blockQuoteBarColor = theme.blockQuoteBarColor
         layoutManager.blockQuoteBackgroundColor = theme.blockQuoteBackgroundColor
         layoutManager.codeBlockCornerRadius = theme.codeBlockCornerRadius
+        layoutManager.thematicBreakColor = theme.tableBorderColor
+    }
+
+    // MARK: - Copy buttons (code blocks + outermost block quotes)
+
+    private static let copyButtonSize: CGFloat = 32
+    private static let copyButtonMargin: CGFloat = 4
+
+    private func rebuildCopyButtons(for segmentView: TextSegmentView) {
+        segmentView.copyButtons.forEach { $0.button.removeFromSuperview() }
+        segmentView.copyButtons = segmentView.copyableBlocks.map { block in
+            let button = makeCopyButton()
+            segmentView.textView.addSubview(button)
+            return (button, block)
+        }
+        positionCopyButtons(for: segmentView)
+    }
+
+    // Re-run on every `layoutSubviews` (not only when a segment's content is rebuilt): the
+    // text view's real width/line layout isn't settled at `rebuild(with:)` time when this is a
+    // freshly bound cell, so the first positioning pass can be based on a stale/zero width.
+    private func positionCopyButtons(for segmentView: TextSegmentView) {
+        let textView = segmentView.textView
+        let layoutManager = textView.layoutManager
+        let storageLength = textView.textStorage.length
+        for (button, block) in segmentView.copyButtons {
+            guard block.range.location != NSNotFound, NSMaxRange(block.range) <= storageLength, block.range.length > 0 else {
+                button.isHidden = true
+                continue
+            }
+            button.isHidden = false
+            let glyphRange = layoutManager.glyphRange(forCharacterRange: block.range, actualCharacterRange: nil)
+            let firstLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
+            let size = Self.copyButtonSize
+            let margin = Self.copyButtonMargin
+            let x = min(firstLineRect.maxX, textView.bounds.width) - size - margin
+            let y = firstLineRect.minY + margin
+            button.frame = CGRect(x: max(0, x), y: max(0, y), width: size, height: size)
+        }
+    }
+
+    private func makeCopyButton() -> UIButton {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "doc.on.doc"), for: .normal)
+        button.tintColor = .secondaryLabel
+        button.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
+        button.layer.cornerRadius = 8
+        button.frame = CGRect(x: 0, y: 0, width: Self.copyButtonSize, height: Self.copyButtonSize)
+        button.addTarget(self, action: #selector(copyButtonTapped(_:)), for: .touchUpInside)
+        return button
+    }
+
+    @objc private func copyButtonTapped(_ sender: UIButton) {
+        for segmentView in segmentViews {
+            guard case .text(let segment) = segmentView else { continue }
+            guard let match = segment.copyButtons.first(where: { $0.button === sender }) else { continue }
+            UIPasteboard.general.string = match.block.text
+            showCopyFeedback(near: sender, in: segment.textView)
+            return
+        }
+    }
+
+    // A brief, self-dismissing "Copied" label rather than a full toast framework — this
+    // codebase has no existing toast mechanism, and this is a one-off, low-stakes affordance.
+    private func showCopyFeedback(near button: UIButton, in textView: UITextView) {
+        let label = UILabel()
+        label.text = "Copied"
+        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.textColor = .white
+        label.backgroundColor = UIColor.black.withAlphaComponent(0.75)
+        label.textAlignment = .center
+        label.layer.cornerRadius = 6
+        label.clipsToBounds = true
+        label.alpha = 0
+        let width: CGFloat = 64
+        let height: CGFloat = 22
+        label.frame = CGRect(x: button.frame.maxX - width, y: button.frame.maxY + 4, width: width, height: height)
+        textView.addSubview(label)
+        UIView.animate(withDuration: 0.15, animations: {
+            label.alpha = 1
+        }, completion: { _ in
+            UIView.animate(withDuration: 0.2, delay: 0.6, options: [], animations: {
+                label.alpha = 0
+            }, completion: { _ in
+                label.removeFromSuperview()
+            })
+        })
     }
 
     private func startImageLoads(in attributed: NSAttributedString, into textView: UITextView) -> [THKAsyncImageTextAttachment] {
@@ -247,6 +369,11 @@ public final class THKMDView: UIView {
 
     public override func layoutSubviews() {
         super.layoutSubviews()
+        for segmentView in segmentViews {
+            if case .text(let segment) = segmentView {
+                positionCopyButtons(for: segment)
+            }
+        }
         invalidateIntrinsicContentSize()
     }
 }

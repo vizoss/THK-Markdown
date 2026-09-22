@@ -10,6 +10,7 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
     var blockQuoteBarColor: UIColor = UIColor.systemGray3
     var blockQuoteBackgroundColor: UIColor = UIColor.systemGray6
     var codeBlockCornerRadius: CGFloat = 6
+    var thematicBreakColor: UIColor = UIColor.systemGray4
 
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
@@ -41,6 +42,11 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         textStorage.enumerateAttribute(.thkBlockQuoteBar, in: charRange) { value, range, _ in
             guard value != nil else { return }
             drawBlockQuoteBar(for: range, origin: origin)
+        }
+
+        textStorage.enumerateAttribute(.thkThematicBreak, in: charRange) { value, range, _ in
+            guard value != nil else { return }
+            drawThematicBreak(for: range, origin: origin)
         }
 
         context.restoreGState()
@@ -96,8 +102,28 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             var barRect = rect
             barRect.origin.x += origin.x
             barRect.origin.y += origin.y
-            barRect.size.width = 3
+            barRect.size.width = THKBlockQuoteMetrics.barWidth
             context.fill(barRect)
+        }
+    }
+
+    // Draws a real solid divider line (rather than relying on a run of Unicode box-drawing/
+    // horizontal-bar characters, whose glyph side-bearing varies by font and could render as
+    // visibly dashed/gapped) - a thin filled rect at the line's vertical center, spanning its
+    // full width, so both this and Android's equivalent ThematicBreakSpan render an identical,
+    // font-independent line regardless of typeface. See `.thkThematicBreak` in
+    // MarkdownRenderer.swift.
+    private func drawThematicBreak(for charRange: NSRange, origin: CGPoint) {
+        guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
+        let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+        thematicBreakColor.setFill()
+        enumerateLineFragments(forGlyphRange: glyphRange) { rect, _, _, _, _ in
+            var lineRect = rect
+            lineRect.origin.x += origin.x
+            lineRect.origin.y += origin.y
+            let thickness: CGFloat = 1.5
+            let centerY = lineRect.midY
+            context.fill(CGRect(x: lineRect.minX, y: centerY - thickness / 2, width: lineRect.width, height: thickness))
         }
     }
 }

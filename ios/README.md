@@ -100,13 +100,17 @@ entries from different Xcode versions), disambiguate with `id=<UDID>` instead of
 xcodebuild test -scheme THKMDView -destination 'platform=iOS Simulator,id=<UDID>'
 ```
 
-45 tests across three files, all passing as of this writing:
+56 tests across four files, all passing as of this writing:
 
 - **`Tests/THKMDViewTests/RenderTests.swift`** — feeds Markdown fixtures through
   `DefaultMarkdownRenderer` and asserts, per segment, plain-text extraction plus the
   presence of the right attribute at the right range: bold/italic font traits (including
   combined `***bold italic***`), inline code (monospace font +
   `.thkInlineCodeBackground`), all six heading levels (bold, strictly decreasing size),
+  a code block's and an outermost block quote's `THKCopyableBlock` entry (and that a
+  nested, non-outermost quote does not produce one), and a ` ```mermaid ` fenced block
+  producing a `.diagram` segment carrying the right source string instead of a normal
+  code-block text segment,
   a link's `.link` URL (inline, autolink, and reference-style), a block quote's
   `.thkBlockQuoteBar` + indent (including nesting two levels deep), a code block's
   monospace font + `.thkCodeBlockBackground` + left/right padding (fenced with/without a
@@ -186,8 +190,9 @@ a `THKMDView`. Sending a message cycles round-robin through a pool of six reply 
 in `Example/Sources/MockAssistantReply.swift`, each exercising a different construct
 cluster: headings/emphasis/links/quotes, code blocks + task lists, nested/ordered lists,
 a real table (mixed column alignment) + a cached image
-(`https://picsum.photos/seed/thkmdview/480/270`), inert raw HTML, and an "everything"
-showcase. The nav bar's **Theme** button toggles `THKMDView.theme` between `.default` and
+(`https://picsum.photos/seed/thkmdview/480/270`), inert raw HTML, an "everything"
+showcase, and a live-rendered Mermaid flowchart. The nav bar's **Theme** button toggles
+`THKMDView.theme` between `.default` and
 a custom `THKMDTheme` on every currently visible bubble, without calling `setMarkdown`
 again, to prove theming re-renders in place.
 
@@ -274,8 +279,14 @@ public protocol MarkdownRendering: AnyObject {
 }
 
 public enum THKRenderSegment {
-    case text(NSAttributedString)
+    case text(NSAttributedString, copyableBlocks: [THKCopyableBlock])
     case table(THKTableModel)
+    case diagram(mermaidSource: String)
+}
+
+public struct THKCopyableBlock {
+    public let range: NSRange
+    public let text: String
 }
 
 public enum THKTableColumnAlignment { case leading, center, trailing }
@@ -308,10 +319,13 @@ public final class DefaultTHKImageLoader: THKImageLoading { /* URLSession + NSCa
 - `renderer` is swappable — implement `MarkdownRendering` yourself (e.g. to add syntax
   highlighting) and assign it before calling `setMarkdown`/`appendMarkdownChunk`. It now
   returns `[THKRenderSegment]` instead of a single `NSAttributedString`: as many
-  consecutive non-table blocks as possible still merge into one `.text` segment; each GFM
-  table becomes its own `.table` segment carrying a `THKTableModel` (column alignments,
-  header cells, row cells — each cell itself an `NSAttributedString` built through the
-  same inline-Markdown helper used everywhere else).
+  consecutive non-table blocks as possible still merge into one `.text` segment (now
+  carrying its `[THKCopyableBlock]` list alongside the attributed string — see "Copy
+  buttons" below); each GFM table becomes its own `.table` segment carrying a
+  `THKTableModel` (column alignments, header cells, row cells — each cell itself an
+  `NSAttributedString` built through the same inline-Markdown helper used everywhere
+  else); a fenced code block tagged ` ```mermaid ` becomes its own `.diagram` segment
+  instead (see "Mermaid diagrams" below).
 - `theme: THKMDTheme` is settable and **re-renders the current content in place** when
   changed — no need to call `setMarkdown` again. It carries body/heading/link/code
   colors, the code block background + corner radius, the block quote bar/text colors,
@@ -338,6 +352,62 @@ scrolling whenever the natural content width exceeds the view's own width. It ov
 `intrinsicContentSize` to report its actual rendered height so it sizes correctly as an
 arranged subview of `THKMDView`'s internal vertical `UIStackView`.
 
+### Copy buttons
+
+Fenced/indented code blocks and outermost block quotes (only the outermost level of a
+nested `> > quote` — the same rule the rounded background fill already uses) get a small
+tappable copy-to-clipboard button in their top-right corner, an `SF Symbol` (`doc.on.doc`)
+`UIButton` positioned by `THKMDView` as a direct subview of the internal `UITextView` that
+owns the segment. Each renderer backend tags a copyable range's full extent with a custom
+`NSAttributedString` key (`.thkCopyableCodeBlock`/`.thkCopyableBlockQuote` in
+`MarkdownRenderer.swift`) and collects them into that segment's `[THKCopyableBlock]` list;
+`THKMDView` places one button per entry using `NSLayoutManager.lineFragmentRect(forGlyphAt:
+effectiveRange:)` for the range's first line, repositioning on every layout pass (the text
+view's real width isn't settled the moment a segment is rebuilt) and rebuilding the button
+set whenever the segment's content changes. Tapping a button sets
+`UIPasteboard.general.string` to that block's plain display text and shows a brief
+self-dismissing "Copied" label. Tables never get a copy button.
+
+### Mermaid diagrams
+
+A fenced code block tagged ` ```mermaid ` renders as an actual flowchart instead of literal
+monospaced code text — a deliberate, scoped exception to this package's general "no
+WebView" stance (`docs/RESEARCH.md` §2 kept WebView as a documented escape hatch for
+exactly this kind of node type). Detection happens in both renderer backends' top-level
+block loop (`renderSegments`), the same place a `Table` block is pulled out into its own
+segment: a fenced block whose language/info tag is `mermaid` (case-insensitive) becomes a
+`.diagram(mermaidSource:)` segment instead of a normal code block; nested inside a list or
+block quote, it isn't detected (falls through to a normal code block), the same known gap
+tables already have.
+
+`THKMermaidView.swift` (shared, not parser-specific — `THKMDView.swift` binds it to
+`.diagram` segments the same way it binds `THKTableView` to `.table` ones) is a `WKWebView`
+loading a bundled `mermaid_template.html` that runs a vendored **mermaid.js v11.17.2**
+(MIT-licensed; browser-ready UMD/IIFE build, fetched from
+`https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.min.js` — see the license/
+provenance comment at the top of `Sources/THKMDView/mermaid.min.js`) against the given
+source. The template posts the rendered SVG's real bounding box back to Swift through a
+`WKScriptMessageHandler` bridge (proxied through a weak-referencing `NSObject` so
+`WKUserContentController`'s strong reference to its handler can't keep the view alive after
+`stop()`/teardown), and `THKMermaidView` resizes/invalidates its `intrinsicContentSize` to
+that real size (capped to the available width), mirroring the "real dimensions, not a fixed
+guess" pattern `THKAsyncImageTextAttachment` already uses for images. Invalid Mermaid
+syntax (or a JS error caught via the same message bridge) falls back to the raw ` ```mermaid `
+source rendered as plain monospaced text with a short "diagram failed to render" note,
+rather than a blank/broken WebView. `THKMDView.reset()`/segment teardown calls
+`THKMermaidView.stop()`, which stops any in-flight load and removes the script message
+handler — the same reuse-safety guarantee image loads and streaming text already get.
+
+Both distributions ship the same two resource files
+(`Sources/THKMDView/mermaid_template.html`, `Sources/THKMDView/mermaid.min.js`), but load
+them differently: SPM declares them as `.copy` resources in `Package.swift` and
+`THKMermaidView` reads them via `Bundle.module`; CocoaPods has no `Bundle.module`
+equivalent, so `THKMDView.podspec` declares them as an `s.resource_bundles` entry (producing
+a dedicated `THKMDView.bundle` regardless of static-library-vs-dynamic-framework
+integration) and `THKMermaidView` looks it up via `Bundle(for: THKMermaidView.self)`. A
+`pod lib lint` run exercises the CocoaPods resource path for real, since it actually
+compiles the pod and runs its test spec against Maaku.
+
 ### Known gaps
 
 - No syntax highlighting in code blocks (monospace + themed background/padding only).
@@ -345,7 +415,8 @@ arranged subview of `THKMDView`'s internal vertical `UIStackView`.
   buffer, which is fine at typical chat-message lengths.
 - A `Table` nested inside a block quote or list item (rather than top-level) is not
   rendered — only top-level tables become table segments; this is a rare construct in
-  LLM output.
+  LLM output. A ` ```mermaid ` fence nested the same way has the identical gap — it renders
+  as a normal (non-diagram) code block instead.
 - **Maaku (CocoaPods) does not preserve a GFM ordered list's non-1 start index** — its
   `OrderedList` type (upstream, `Sources/Maaku/Core/OrderedList.swift`) receives the
   starting number during parsing but never stores it, so every ordered list renders

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+  #container { display: flex; justify-content: flex-start; }
+  #container svg { max-width: 100%; height: auto; display: block; }
+</style>
+<!-- mermaid.min.js: vendored mermaid v11.17.2 (MIT license), see mermaid.min.js.NOTICE -->
+<script src="mermaid.min.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script>
+  function report() {
+    try {
+      var svg = document.querySelector('#container svg');
+      if (!svg) { throw new Error('no svg produced'); }
+      var rect = svg.getBoundingClientRect();
+      if (window.AndroidBridge) {
+        window.AndroidBridge.onDiagramRendered(rect.width, rect.height);
+      }
+    } catch (e) {
+      fail(e && e.message ? e.message : String(e));
+    }
+  }
+
+  function fail(message) {
+    if (window.AndroidBridge) {
+      window.AndroidBridge.onDiagramError(String(message));
+    }
+  }
+
+  window.onerror = function (message) { fail(message); return true; };
+
+  // Called from Android via evaluateJavascript once this page has finished loading,
+  // with `source` already JSON-string-escaped on the Kotlin side (org.json.JSONObject.quote)
+  // so arbitrary Mermaid source text (backticks, quotes, newlines) can never break out of
+  // the JS string literal or otherwise inject script.
+  function renderDiagram(source) {
+    try {
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+      mermaid.render('thk-diagram', source).then(function (result) {
+        document.getElementById('container').innerHTML = result.svg;
+        // Two rAFs: one for layout to settle after the innerHTML swap, one more so the
+        // getBoundingClientRect() below reflects the post-CSS (max-width: 100%) size.
+        requestAnimationFrame(function () {
+          requestAnimationFrame(report);
+        });
+      }).catch(function (err) {
+        fail(err && err.message ? err.message : String(err));
+      });
+    } catch (e) {
+      fail(e && e.message ? e.message : String(e));
+    }
+  }
+</script>
+</body>
+</html>

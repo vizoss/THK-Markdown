@@ -172,12 +172,36 @@ private fun kitchenSinkReply(userMessage: String): String = """
     That's every construct THKMDView v1 supports, streamed in one bubble.
 """.trimIndent()
 
+private fun mermaidDiagramReply(userMessage: String): String = """
+    Here's my answer to **"$userMessage"** — a real rendered Mermaid flowchart, via the
+    embedded-`WebView` escape hatch (see RESEARCH.md §2), not literal monospaced text.
+
+    ```mermaid
+    flowchart LR
+        A[User sends message] --> B{THKMDView}
+        B --> C[Parse Markdown]
+        C --> D[Render segments]
+        D --> E[Display in chat]
+    ```
+
+    And a quote you can copy via the corner button, right next to a code block you can
+    copy the same way:
+
+    > Every `mermaid` fence gets its own diagram segment instead of a code block.
+
+    ```kotlin
+    // Also copyable via the button in its top-right corner
+    fun renderDiagram(source: String) = THKMermaidView(context).render(source, theme)
+    ```
+""".trimIndent()
+
 private val REPLY_TEMPLATES: List<(String) -> String> = listOf(
     ::headingsAndQuotesReply,
     ::codeAndTasksReply,
     ::listsReply,
     ::tableAndImageReply,
-    ::kitchenSinkReply
+    ::kitchenSinkReply,
+    ::mermaidDiagramReply
 )
 
 private var nextReplyIndex = 0

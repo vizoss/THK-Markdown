@@ -17,7 +17,7 @@ final class RenderTests: XCTestCase {
     /// assumption doesn't hold, instead of silently comparing against the wrong segment.
     private func singleText(_ markdown: String, file: StaticString = #filePath, line: UInt = #line) -> NSAttributedString {
         let segments = renderer.render(markdown)
-        guard segments.count == 1, case .text(let attributed) = segments[0] else {
+        guard segments.count == 1, case .text(let attributed, _) = segments[0] else {
             XCTFail("expected exactly one text segment for \(markdown.debugDescription), got \(segments.count) segment(s)", file: file, line: line)
             return NSAttributedString()
         }
@@ -75,7 +75,7 @@ final class RenderTests: XCTestCase {
         let bodyFont = UIFont.preferredFont(forTextStyle: .body)
         let renderer = DefaultMarkdownRenderer(baseFont: bodyFont)
         let segments = renderer.render("# Big Heading")
-        guard case .text(let attributed) = segments[0] else { return XCTFail("expected a text segment") }
+        guard case .text(let attributed, _) = segments[0] else { return XCTFail("expected a text segment") }
         XCTAssertEqual(attributed.string, "Big Heading")
         let font = fontAttribute(in: attributed, at: 0)
         XCTAssertNotNil(font)
@@ -236,9 +236,16 @@ final class RenderTests: XCTestCase {
         XCTAssertFalse(font!.fontDescriptor.symbolicTraits.contains(.traitItalic))
     }
 
+    // A thematic break is drawn as a real filled rect by THKBackgroundLayoutManager (see
+    // .thkThematicBreak), not a run of glyph characters — this asserts the placeholder
+    // character carries that custom attribute rather than checking for any particular glyph.
     func testThematicBreakRenders() {
         let attributed = singleText("above\n\n---\n\nbelow")
-        XCTAssertTrue(attributed.string.contains("\u{2015}"))
+        var found = false
+        attributed.enumerateAttribute(.thkThematicBreak, in: NSRange(location: 0, length: attributed.length)) { value, _, _ in
+            if value != nil { found = true }
+        }
+        XCTAssertTrue(found)
     }
 
     func testRawHTMLBlockRendersAsInertLiteralText() {
@@ -255,7 +262,7 @@ final class RenderTests: XCTestCase {
 
     func testImageBecomesAsyncAttachmentWithAltTextAccessibilityLabel() {
         let segments = renderer.render("![a THKMDView logo](https://example.com/logo.png)")
-        guard case .text(let attributed) = segments[0] else { return XCTFail("expected a text segment") }
+        guard case .text(let attributed, _) = segments[0] else { return XCTFail("expected a text segment") }
         var foundAttachment: THKAsyncImageTextAttachment?
         attributed.enumerateAttribute(.attachment, in: NSRange(location: 0, length: attributed.length)) { value, _, _ in
             foundAttachment = value as? THKAsyncImageTextAttachment
@@ -305,7 +312,7 @@ final class RenderTests: XCTestCase {
         """
         let segments = renderer.render(markdown)
         XCTAssertEqual(segments.count, 3)
-        guard case .text(let intro) = segments[0], case .table = segments[1], case .text(let outro) = segments[2] else {
+        guard case .text(let intro, _) = segments[0], case .table = segments[1], case .text(let outro, _) = segments[2] else {
             return XCTFail("expected text/table/text segments, got \(segments.count)")
         }
         XCTAssertEqual(intro.string, "Intro paragraph.")
@@ -340,16 +347,96 @@ final class RenderTests: XCTestCase {
         )
         let renderer = DefaultMarkdownRenderer(theme: theme)
 
-        guard case .text(let body) = renderer.render("plain text")[0] else { return XCTFail() }
+        guard case .text(let body, _) = renderer.render("plain text")[0] else { return XCTFail() }
         XCTAssertEqual(body.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor, .systemRed)
         XCTAssertEqual(fontAttribute(in: body, at: 0)?.pointSize, 20)
 
-        guard case .text(let heading) = renderer.render("# Heading")[0] else { return XCTFail() }
+        guard case .text(let heading, _) = renderer.render("# Heading")[0] else { return XCTFail() }
         XCTAssertEqual(heading.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor, .systemBlue)
 
-        guard case .text(let code) = renderer.render("`x`")[0] else { return XCTFail() }
+        guard case .text(let code, _) = renderer.render("`x`")[0] else { return XCTFail() }
         let range = (code.string as NSString).range(of: "x")
         XCTAssertEqual(code.attribute(.foregroundColor, at: range.location, effectiveRange: nil) as? UIColor, .systemPurple)
         XCTAssertEqual(fontAttribute(in: code, at: range.location)?.pointSize, 18)
+    }
+
+    func testCodeBlockProducesACopyableBlockWithItsCode() {
+        let segments = renderer.render("```\nlet x = 1\n```")
+        guard case .text(let attributed, let copyableBlocks) = segments[0] else { return XCTFail("expected a text segment") }
+        XCTAssertEqual(copyableBlocks.count, 1)
+        XCTAssertEqual(copyableBlocks[0].text, "let x = 1")
+        XCTAssertEqual((attributed.string as NSString).substring(with: copyableBlocks[0].range), "let x = 1")
+    }
+
+    func testOutermostBlockQuoteProducesACopyableBlockWithItsText() {
+        let segments = renderer.render("> A wise quote.")
+        guard case .text(_, let copyableBlocks) = segments[0] else { return XCTFail("expected a text segment") }
+        XCTAssertEqual(copyableBlocks.count, 1)
+        XCTAssertEqual(copyableBlocks[0].text, "A wise quote.")
+    }
+
+    // Only the outermost level of a nested `> > quote` gets a copy button — same rule as the
+    // rounded background fill (`testNestedBlockQuoteBackgroundIsOneContinuousOutermostRangeOnly`).
+    // A single copyable block should cover the whole outer+nested text, not two separate ones.
+    func testNestedBlockQuoteOnlyProducesOneCopyableBlockForTheOutermostLevel() {
+        let segments = renderer.render("> Outer\n> > Inner")
+        guard case .text(let attributed, let copyableBlocks) = segments[0] else { return XCTFail("expected a text segment") }
+        XCTAssertEqual(copyableBlocks.count, 1)
+        XCTAssertEqual(copyableBlocks[0].text, attributed.string)
+        XCTAssertTrue(copyableBlocks[0].text.contains("Outer"))
+        XCTAssertTrue(copyableBlocks[0].text.contains("Inner"))
+    }
+
+    func testMermaidFencedCodeBlockProducesADiagramSegmentNotACodeBlock() {
+        let markdown = """
+        Before.
+
+        ```mermaid
+        flowchart LR
+            A --> B
+        ```
+
+        After.
+        """
+        let segments = renderer.render(markdown)
+        XCTAssertEqual(segments.count, 3)
+        guard case .text(let before, _) = segments[0] else { return XCTFail("expected a text segment") }
+        guard case .diagram(let source) = segments[1] else { return XCTFail("expected a diagram segment") }
+        guard case .text(let after, _) = segments[2] else { return XCTFail("expected a text segment") }
+        XCTAssertEqual(before.string, "Before.")
+        XCTAssertEqual(after.string, "After.")
+        XCTAssertEqual(source, "flowchart LR\n    A --> B")
+    }
+
+    func testMermaidLanguageTagIsCaseInsensitive() {
+        let segments = renderer.render("```MermaiD\nflowchart LR\n  A --> B\n```")
+        XCTAssertEqual(segments.count, 1)
+        guard case .diagram = segments[0] else { return XCTFail("expected a diagram segment") }
+    }
+
+    // Guards the SPM half of the dual resource-bundling setup: THKMermaidView reads these via
+    // `Bundle.module` (declared as `.copy` resources in Package.swift). A missing/misconfigured
+    // resource otherwise compiles fine but fails silently at runtime, so this actually loads
+    // and inspects the bundled files' content rather than only checking the URLs are non-nil.
+    func testMermaidResourcesAreBundledAndLoadableAtRuntime() {
+        guard let templateURL = THKMermaidView.resourceURL(name: "mermaid_template", ext: "html") else {
+            return XCTFail("mermaid_template.html was not found in the SPM resource bundle")
+        }
+        // mermaid.min.js is never looked up via `resourceURL` from Swift (the template's own
+        // `<script src="mermaid.min.js">` resolves it relative to `templateURL`'s directory at
+        // WebView load time), so this checks it sits alongside the template on disk instead.
+        let scriptURL = templateURL.deletingLastPathComponent().appendingPathComponent("mermaid.min.js")
+        guard FileManager.default.fileExists(atPath: scriptURL.path) else {
+            return XCTFail("mermaid.min.js was not found next to mermaid_template.html in the SPM resource bundle")
+        }
+        guard let templateHTML = try? String(contentsOf: templateURL, encoding: .utf8) else {
+            return XCTFail("mermaid_template.html could not be read")
+        }
+        XCTAssertTrue(templateHTML.contains("mermaid.min.js"))
+        XCTAssertTrue(templateHTML.contains("THK_MERMAID_SOURCE_B64"))
+        guard let scriptData = try? Data(contentsOf: scriptURL) else {
+            return XCTFail("mermaid.min.js could not be read")
+        }
+        XCTAssertGreaterThan(scriptData.count, 100_000, "expected a real vendored mermaid.js, not a stub")
     }
 }

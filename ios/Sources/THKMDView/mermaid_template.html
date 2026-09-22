@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+  }
+  #thkMermaidContainer {
+    display: inline-block;
+  }
+  #thkMermaidContainer svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+  }
+</style>
+<script src="mermaid.min.js"></script>
+</head>
+<body>
+<div id="thkMermaidContainer"></div>
+<script>
+  // THKMDView bridges out via window.webkit.messageHandlers.thkMermaid (see
+  // THKMermaidView.swift's WKScriptMessageHandler proxy). The Mermaid source itself is
+  // injected as a base64-encoded JSON string literal (THK_MERMAID_SOURCE_B64) rather than
+  // interpolated as raw text, so arbitrary chat content (quotes, backslashes, `</script>`-
+  // looking substrings) can never break out of this script block.
+  function thkPostToNative(payload) {
+    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.thkMermaid) {
+      window.webkit.messageHandlers.thkMermaid.postMessage(payload);
+    }
+  }
+
+  function thkDecodeBase64Utf8(b64) {
+    var binary = window.atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+
+  try {
+    var source = JSON.parse(thkDecodeBase64Utf8('THK_MERMAID_SOURCE_B64'))[0];
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    mermaid.render('thkMermaidSvg', source).then(function (result) {
+      var container = document.getElementById('thkMermaidContainer');
+      container.innerHTML = result.svg;
+      var svg = container.querySelector('svg');
+      if (!svg) {
+        thkPostToNative({ type: 'error', message: 'no svg produced' });
+        return;
+      }
+      var rect = svg.getBoundingClientRect();
+      thkPostToNative({ type: 'size', width: rect.width, height: rect.height });
+    }).catch(function (err) {
+      thkPostToNative({ type: 'error', message: String(err && err.message ? err.message : err) });
+    });
+  } catch (err) {
+    thkPostToNative({ type: 'error', message: String(err && err.message ? err.message : err) });
+  }
+</script>
+</body>
+</html>

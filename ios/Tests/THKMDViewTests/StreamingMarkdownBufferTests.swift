@@ -48,12 +48,14 @@ final class StreamingMarkdownBufferTests: XCTestCase {
     private func plainText(_ segments: [THKRenderSegment]) -> String {
         segments.map { segment -> String in
             switch segment {
-            case .text(let attributed):
+            case .text(let attributed, _):
                 return attributed.string
             case .table(let model):
                 let header = model.headerCells.map(\.string).joined(separator: "|")
                 let rows = model.rows.map { $0.map(\.string).joined(separator: "|") }.joined(separator: "\n")
                 return "\(header)\n\(rows)"
+            case .diagram(let source):
+                return source
             }
         }.joined(separator: "\n")
     }

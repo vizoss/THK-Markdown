@@ -304,4 +304,57 @@ class DefaultMarkdownRendererTest {
         assertThat(segments).hasSize(1)
         assertThat(segments[0]).isInstanceOf(RenderedSegment.TextSegment::class.java)
     }
+
+    @Test
+    fun codeBlock_getsACopyableBlockWithTheCodeContent() {
+        val text = onlyText("```kotlin\nfun main() {}\n```")
+        val segments = renderer().render("```kotlin\nfun main() {}\n```", theme, bounds)
+        val textSegment = segments.single() as RenderedSegment.TextSegment
+        assertThat(textSegment.copyableBlocks).hasSize(1)
+        val block = textSegment.copyableBlocks.single()
+        assertThat(block.text).isEqualTo("fun main() {}")
+        assertThat(text.subSequence(block.range.first, block.range.last + 1).toString())
+            .isEqualTo("fun main() {}")
+    }
+
+    @Test
+    fun outermostBlockQuote_getsACopyableBlockWithItsPlainText() {
+        val markdown = "> quoted text"
+        val segments = renderer().render(markdown, theme, bounds)
+        val textSegment = segments.single() as RenderedSegment.TextSegment
+        assertThat(textSegment.copyableBlocks).hasSize(1)
+        assertThat(textSegment.copyableBlocks.single().text).isEqualTo("quoted text")
+    }
+
+    @Test
+    fun nestedBlockQuote_onlyTheOutermostGetsACopyableBlock() {
+        val markdown = "> outer\n> > inner"
+        val segments = renderer().render(markdown, theme, bounds)
+        val textSegment = segments.single() as RenderedSegment.TextSegment
+        // Only one CopyableBlock for the whole (outermost) quote, matching the existing
+        // "only the outermost quote gets the rounded background" rule - not one per level.
+        assertThat(textSegment.copyableBlocks).hasSize(1)
+        assertThat(textSegment.copyableBlocks.single().text).isEqualTo("outer\ninner")
+    }
+
+    @Test
+    fun mermaidFencedBlock_becomesADiagramSegmentNotACodeBlock() {
+        val markdown = "before\n\n```mermaid\nflowchart LR\n    A --> B\n```\n\nafter"
+        val segments = renderer().render(markdown, theme, bounds)
+        val diagramSegments = segments.filterIsInstance<RenderedSegment.DiagramSegment>()
+        assertThat(diagramSegments).hasSize(1)
+        assertThat(diagramSegments.single().mermaidSource).isEqualTo("flowchart LR\n    A --> B")
+
+        // Surrounding text is split into its own segments, same as around a table, and
+        // no TextSegment anywhere contains the mermaid source as a rendered code block.
+        val textSegments = segments.filterIsInstance<RenderedSegment.TextSegment>()
+        assertThat(textSegments.map { it.spanned.toString() }).containsExactly("before", "after").inOrder()
+        assertThat(textSegments.none { it.spanned.toString().contains("flowchart") }).isTrue()
+    }
+
+    @Test
+    fun mermaidLanguageTagIsCaseInsensitive() {
+        val segments = renderer().render("```Mermaid\nflowchart TD\n    A --> B\n```", theme, bounds)
+        assertThat(segments.single()).isInstanceOf(RenderedSegment.DiagramSegment::class.java)
+    }
 }

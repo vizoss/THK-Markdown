@@ -12,7 +12,7 @@ public final class DefaultMarkdownRenderer: MarkdownRendering {
 
     public func render(_ markdown: String) -> [THKRenderSegment] {
         guard let document = try? Document(text: markdown) else {
-            return [.text(NSAttributedString(string: markdown, attributes: [.font: baseFont]))]
+            return [.text(NSAttributedString(string: markdown, attributes: [.font: baseFont]), copyableBlocks: [])]
         }
         var visitor = MaakuAttributedStringVisitor(baseFont: baseFont, theme: theme)
         return visitor.renderSegments(blocks: document.items)
@@ -58,7 +58,7 @@ struct MaakuAttributedStringVisitor {
             let attributed = joinBlocks(pendingBlocks)
             if attributed.length > 0 {
                 addForegroundColorIfMissing(theme.bodyTextColor, to: attributed)
-                segments.append(.text(attributed))
+                segments.append(.text(attributed, copyableBlocks: collectCopyableBlocks(in: attributed)))
             }
             pendingBlocks = []
         }
@@ -67,12 +67,39 @@ struct MaakuAttributedStringVisitor {
             if let table = block as? Table {
                 flushPending()
                 segments.append(.table(buildTableModel(table)))
+            } else if let codeBlock = block as? CodeBlock, thkIsMermaidLanguageTag(codeBlock.info) {
+                flushPending()
+                segments.append(.diagram(mermaidSource: mermaidSource(from: codeBlock.code)))
             } else {
                 pendingBlocks.append(block)
             }
         }
         flushPending()
         return segments
+    }
+
+    private func mermaidSource(from code: String) -> String {
+        var source = code
+        if source.hasSuffix("\n") {
+            source.removeLast()
+        }
+        return source
+    }
+
+    // Mirrors the SPM renderer's identically-named helper — see its doc comment in
+    // Sources/THKMDView/SPM/SwiftMarkdownRenderer.swift.
+    private func collectCopyableBlocks(in attributed: NSAttributedString) -> [THKCopyableBlock] {
+        guard attributed.length > 0 else { return [] }
+        let fullRange = NSRange(location: 0, length: attributed.length)
+        let nsString = attributed.string as NSString
+        var found: [(NSRange, String)] = []
+        for key in [NSAttributedString.Key.thkCopyableCodeBlock, .thkCopyableBlockQuote] {
+            attributed.enumerateAttribute(key, in: fullRange) { value, range, _ in
+                guard value != nil, range.length > 0 else { return }
+                found.append((range, nsString.substring(with: range)))
+            }
+        }
+        return found.sorted { $0.0.location < $1.0.location }.map { THKCopyableBlock(range: $0.0, text: $0.1) }
     }
 
     // MARK: - Blocks
@@ -134,16 +161,17 @@ struct MaakuAttributedStringVisitor {
         let result = NSMutableAttributedString(string: code, attributes: [
             .font: codeFont,
             .foregroundColor: theme.codeTextColor,
-            .thkCodeBlockBackground: true
+            .thkCodeBlockBackground: true,
+            .thkCopyableCodeBlock: true
         ])
         applyCodeBlockParagraphStyles(to: result)
         return result
     }
 
     private func visitThematicBreak(_ thematicBreak: HorizontalRule) -> NSAttributedString {
-        NSAttributedString(string: "\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}", attributes: [
+        NSAttributedString(string: " ", attributes: [
             .font: baseFont,
-            .foregroundColor: theme.tableBorderColor
+            .thkThematicBreak: true
         ])
     }
 
@@ -156,9 +184,16 @@ struct MaakuAttributedStringVisitor {
 
         if result.length > 0 {
             let paragraphStyle = NSMutableParagraphStyle()
-            let indent: CGFloat = 16 * CGFloat(depth)
+            // Bar width + bar-to-text gap per level, not one opaque constant — see
+            // THKBlockQuoteMetrics. Numerically unchanged from the previous single `16 *
+            // depth` (4 + 12 == 16), so this is a naming/composition change, not a layout one.
+            let indent: CGFloat = THKBlockQuoteMetrics.indentPerLevel * CGFloat(depth)
             paragraphStyle.headIndent = indent
             paragraphStyle.firstLineHeadIndent = indent
+            // Applied at every nesting level (not just the outermost, unlike the block-level
+            // vertical padding below) so a wrapped/multi-paragraph line anywhere inside a
+            // quote — nested or not — gets the same interior breathing room.
+            paragraphStyle.lineSpacing = THKBlockQuoteMetrics.interiorLineSpacing
             // "If missing" only: a nested BlockQuote already stamped its own (deeper) indent
             // and bar depth on its own sub-range while `result` was being built; this must
             // not clobber that with the shallower outer depth.
@@ -172,6 +207,8 @@ struct MaakuAttributedStringVisitor {
             // instead of getting its own separately-rounded, seamed fill.
             if isOutermost {
                 addAttributeIfMissing(.thkBlockQuoteBackground, value: true, to: result)
+                applyBlockQuoteVerticalPadding(to: result)
+                result.addAttribute(.thkCopyableBlockQuote, value: true, range: NSRange(location: 0, length: result.length))
             }
         }
         return result
@@ -399,6 +436,34 @@ struct MaakuAttributedStringVisitor {
             paragraphStyle.paragraphSpacingBefore = index == 0 ? THKCodeBlockMetrics.verticalPadding : 0
             paragraphStyle.paragraphSpacing = index == paragraphRanges.count - 1 ? THKCodeBlockMetrics.verticalPadding : 0
             attrString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+        }
+    }
+
+    // Mirrors the SPM renderer's identically-named helper — see its doc comment in
+    // Sources/THKMDView/SPM/SwiftMarkdownRenderer.swift.
+    private func applyBlockQuoteVerticalPadding(to attrString: NSMutableAttributedString) {
+        let fullRange = NSRange(location: 0, length: attrString.length)
+        guard fullRange.length > 0 else { return }
+        var paragraphRanges: [NSRange] = []
+        (attrString.string as NSString).enumerateSubstrings(in: fullRange, options: .byParagraphs) { _, _, enclosingRange, _ in
+            paragraphRanges.append(enclosingRange)
+        }
+        guard let first = paragraphRanges.first, let last = paragraphRanges.last else { return }
+
+        func addSpacing(to range: NSRange, before: CGFloat, after: CGFloat) {
+            guard range.length > 0 else { return }
+            let existing = (attrString.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle) ?? NSParagraphStyle.default
+            let style = (existing.mutableCopy() as? NSMutableParagraphStyle) ?? NSMutableParagraphStyle()
+            style.paragraphSpacingBefore = before
+            style.paragraphSpacing = after
+            attrString.addAttribute(.paragraphStyle, value: style, range: range)
+        }
+
+        if first == last {
+            addSpacing(to: first, before: THKBlockQuoteMetrics.verticalPadding, after: THKBlockQuoteMetrics.verticalPadding)
+        } else {
+            addSpacing(to: first, before: THKBlockQuoteMetrics.verticalPadding, after: 0)
+            addSpacing(to: last, before: 0, after: THKBlockQuoteMetrics.verticalPadding)
         }
     }
 

@@ -79,7 +79,24 @@ final class MessageListViewController: UIViewController {
         setUpTableView()
         setUpInputBar()
         setUpKeyboardObservers()
+        setUpDismissKeyboardOnTap()
         startHeightRefreshTimer() // the seeded greeting message streams in immediately too
+    }
+
+    // Tapping anywhere outside the currently-focused input (including a tap that lands on a
+    // THKMDView bubble but isn't a link/image/copy button) dismisses the keyboard.
+    // `cancelsTouchesInView = false` is critical: without it this recognizer would swallow
+    // taps meant for table view cells, links, buttons, and the copy buttons on code blocks/
+    // quotes, since a gesture recognizer with that flag set consumes the touch before it can
+    // reach the view underneath. Matches Android's equivalent fix in MainActivity.kt.
+    private func setUpDismissKeyboardOnTap() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboardOnTap))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
+    }
+
+    @objc private func dismissKeyboardOnTap() {
+        view.endEditing(true)
     }
 
     // Proves `THKMDView.theme` re-renders in place: every currently visible assistant

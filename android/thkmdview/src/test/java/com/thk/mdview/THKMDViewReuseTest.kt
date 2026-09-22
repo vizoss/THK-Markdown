@@ -1,7 +1,6 @@
 package com.thk.mdview
 
 import android.os.Looper
-import androidx.appcompat.widget.AppCompatTextView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -24,7 +23,7 @@ class THKMDViewReuseTest {
     }
 
     private fun firstSegmentText(view: THKMDView): String =
-        (view.getChildAt(0) as? AppCompatTextView)?.text?.toString().orEmpty()
+        (view.getChildAt(0) as? TextSegmentFrame)?.textView?.text?.toString().orEmpty()
 
     @Test
     fun resetPreventsAStalePendingRenderFromLandingOnANewlyBoundMessage() {
@@ -83,6 +82,17 @@ class THKMDViewReuseTest {
     }
 
     @Test
+    fun diagramSegment_getsItsOwnTHKMermaidViewChild_andResetTearsItDown() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("```mermaid\nflowchart LR\n    A --> B\n```")
+        assertThat(view.childCount).isEqualTo(1)
+        assertThat(view.getChildAt(0)).isInstanceOf(THKMermaidView::class.java)
+
+        view.reset()
+        assertThat(view.childCount).isEqualTo(0)
+    }
+
+    @Test
     fun reset_removesTableSegmentsToo() {
         val view = THKMDView(ApplicationProvider.getApplicationContext())
         view.setMarkdown("| a |\n| --- |\n| 1 |\n")
@@ -98,7 +108,7 @@ class THKMDViewReuseTest {
         val view = THKMDView(ApplicationProvider.getApplicationContext())
         view.setMarkdown("first")
         val firstChild = view.getChildAt(0)
-        assertThat(firstChild).isInstanceOf(AppCompatTextView::class.java)
+        assertThat(firstChild).isInstanceOf(TextSegmentFrame::class.java)
 
         view.setMarkdown("second, still just text")
         assertThat(view.childCount).isEqualTo(1)
@@ -111,7 +121,7 @@ class THKMDViewReuseTest {
     fun changingSegmentTypeAtAnIndex_replacesRatherThanCrashes() {
         val view = THKMDView(ApplicationProvider.getApplicationContext())
         view.setMarkdown("just text, no table")
-        assertThat(view.getChildAt(0)).isInstanceOf(AppCompatTextView::class.java)
+        assertThat(view.getChildAt(0)).isInstanceOf(TextSegmentFrame::class.java)
 
         view.setMarkdown("| a |\n| --- |\n| 1 |\n")
         assertThat(view.childCount).isEqualTo(1)
@@ -126,7 +136,7 @@ class THKMDViewReuseTest {
         val customTheme = THKMDTheme.Default.copy(bodyTextColor = 0xFF123456.toInt())
         view.theme = customTheme
 
-        val textView = view.getChildAt(0) as AppCompatTextView
+        val textView = (view.getChildAt(0) as TextSegmentFrame).textView
         assertThat(textView.currentTextColor).isEqualTo(0xFF123456.toInt())
         assertThat(textView.text.toString()).isEqualTo("hello theme")
     }
@@ -143,7 +153,7 @@ class THKMDViewReuseTest {
         view.imageLoader = loader
         view.setMarkdown("![alt](https://example.com/pic.png)")
 
-        val recycledTextView = view.getChildAt(0) as AppCompatTextView
+        val recycledTextView = (view.getChildAt(0) as TextSegmentFrame).textView
         val span = (recycledTextView.text as android.text.Spanned)
             .getSpans(0, recycledTextView.text.length, AsyncImageSpan::class.java)
             .first()

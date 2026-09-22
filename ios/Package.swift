@@ -26,7 +26,14 @@ let package = Package(
             // renderer lives in a sibling file under CocoaPods/ that SPM must never
             // compile. The podspec's own `exclude_files` mirrors this in the other
             // direction, excluding SPM/.
-            exclude: ["CocoaPods"]
+            exclude: ["CocoaPods"],
+            // THKMermaidView.swift loads these via `Bundle.module`. The podspec declares the
+            // same two files separately (as `s.resource_bundles`) since CocoaPods has no
+            // `Bundle.module` equivalent — see THKMermaidView.swift's `resourceURL(name:ext:)`.
+            resources: [
+                .copy("mermaid_template.html"),
+                .copy("mermaid.min.js")
+            ]
         ),
         .testTarget(
             name: "THKMDViewTests",

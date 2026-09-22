@@ -17,6 +17,7 @@ private fun DefaultMarkdownRenderer.renderText(markdown: String): String =
         when (segment) {
             is RenderedSegment.TextSegment -> segment.spanned.toString()
             is RenderedSegment.TableSegment -> "[table]"
+            is RenderedSegment.DiagramSegment -> "[diagram]"
         }
     }
 

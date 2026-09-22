@@ -22,6 +22,20 @@ Pod::Spec.new do |s|
   s.source_files     = 'ios/Sources/THKMDView/**/*.swift'
   s.exclude_files    = 'ios/Sources/THKMDView/SPM/**/*.swift'
 
+  # THKMermaidView.swift needs these at runtime for its Mermaid WKWebView (mermaid.min.js
+  # v11.17.2, MIT-licensed — see ios/Sources/THKMDView/mermaid.min.js's own header comment
+  # for provenance). `s.resources` alone would copy them straight into the consuming app's
+  # main bundle, which works for a static-library integration but not a dynamic-framework
+  # one; `resource_bundles` instead produces a dedicated `THKMDView.bundle` that
+  # `THKMermaidView.resourceURL(name:ext:)` can find via `Bundle(for:)` either way. The SPM
+  # distribution ships the same two files through `Package.swift`'s `resources:` instead.
+  s.resource_bundles = {
+    'THKMDView' => [
+      'ios/Sources/THKMDView/mermaid_template.html',
+      'ios/Sources/THKMDView/mermaid.min.js'
+    ]
+  }
+
   s.dependency 'Maaku', '~> 0.9'
 
   s.test_spec 'Tests' do |test_spec|

@@ -49,6 +49,7 @@ internal class MarkdownSpanVisitor(
 
     private val segments = mutableListOf<RenderedSegment>()
     private var builder = SpannableStringBuilder()
+    private var copyableBlocks = mutableListOf<CopyableBlock>()
     private val listStack = ArrayDeque<ListContext>()
     private var blockQuoteDepth = 0
 
@@ -74,9 +75,10 @@ internal class MarkdownSpanVisitor(
             builder.delete(builder.length - 1, builder.length)
         }
         if (builder.isNotEmpty()) {
-            segments.add(RenderedSegment.TextSegment(builder))
+            segments.add(RenderedSegment.TextSegment(builder, copyableBlocks))
         }
         builder = SpannableStringBuilder()
+        copyableBlocks = mutableListOf()
     }
 
     override fun visit(document: Document) {
@@ -101,6 +103,14 @@ internal class MarkdownSpanVisitor(
     }
 
     override fun visit(fencedCodeBlock: FencedCodeBlock) {
+        // A ```mermaid fence gets its own dedicated diagram segment (rendered by a real
+        // WebView, see THKMermaidView) instead of the normal monospaced code-block path -
+        // same flush-and-add-segment pattern already used for tables below.
+        if (fencedCodeBlock.info?.trim()?.equals("mermaid", ignoreCase = true) == true) {
+            flushTextSegment()
+            segments.add(RenderedSegment.DiagramSegment(fencedCodeBlock.literal.trimEnd('\n')))
+            return
+        }
         renderCodeBlock(fencedCodeBlock.literal)
     }
 
@@ -115,6 +125,7 @@ internal class MarkdownSpanVisitor(
         builder.append(content)
         val end = builder.length
         if (end == start) return
+        copyableBlocks.add(CopyableBlock(start until end, content))
         val cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx
         val horizontalPaddingPx = (12 * densityPx).toInt()
         val verticalPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
@@ -170,6 +181,9 @@ internal class MarkdownSpanVisitor(
                 QuoteInteriorLineSpacingSpan((QUOTE_INTERIOR_LINE_SPACING_DP * densityPx).toInt(), start, end),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
+            if (isOutermost) {
+                copyableBlocks.add(CopyableBlock(start until end, builder.subSequence(start, end).toString()))
+            }
         }
     }
 

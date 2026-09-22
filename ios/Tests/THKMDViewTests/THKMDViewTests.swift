@@ -7,7 +7,7 @@ private final class SpyRenderer: MarkdownRendering {
 
     func render(_ markdown: String) -> [THKRenderSegment] {
         renderedMarkdowns.append(markdown)
-        return [.text(NSAttributedString(string: markdown))]
+        return [.text(NSAttributedString(string: markdown), copyableBlocks: [])]
     }
 }
 

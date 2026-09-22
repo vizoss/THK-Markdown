@@ -5,9 +5,22 @@ package com.thk.mdview
  * [MarkdownRenderer] contract, so a custom renderer implementation produces these too.
  */
 sealed interface RenderedSegment {
-    data class TextSegment(val spanned: CharSequence) : RenderedSegment
+    data class TextSegment(
+        val spanned: CharSequence,
+        val copyableBlocks: List<CopyableBlock> = emptyList()
+    ) : RenderedSegment
     data class TableSegment(val table: THKTableData) : RenderedSegment
+    /** A ```mermaid fenced block, rendered by [THKMermaidView] instead of as plain code text. */
+    data class DiagramSegment(val mermaidSource: String) : RenderedSegment
 }
+
+/**
+ * A code block or the outermost block quote's plain-text range within a [RenderedSegment.TextSegment]'s
+ * `spanned` content — [text] is what a corner copy button (added by THKMDView as a text-segment
+ * overlay) copies to the clipboard. A nested (non-outermost) block quote does not get one, matching
+ * the existing "only the outermost quote gets the rounded background" rule.
+ */
+data class CopyableBlock(val range: IntRange, val text: String)
 
 enum class THKTableAlignment { START, CENTER, END }
 

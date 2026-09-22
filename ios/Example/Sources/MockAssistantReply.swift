@@ -150,6 +150,22 @@ private let replyTemplates: [(String) -> String] = [
 
         That's every construct THKMDView v1 supports, streamed in one bubble.
         """
+    },
+    { userMessage in
+        """
+        Here's my answer to **"\(userMessage)"** — a Mermaid flowchart, rendered live in an
+        embedded WKWebView instead of literal code text.
+
+        ```mermaid
+        flowchart LR
+            A[User sends message] --> B{THKMDView}
+            B --> C[Parse Markdown]
+            C --> D[Render segments]
+            D --> E[Display in chat]
+        ```
+
+        That's the same request/render pipeline this demo app is built around.
+        """
     }
 ]
 

@@ -1,14 +1,24 @@
 package com.thk.mdview
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.text.Spanned
 import android.text.method.LinkMovementMethod
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
 import android.view.View.MeasureSpec
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.widget.AppCompatTextView
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.view.doOnLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -88,6 +98,9 @@ class THKMDView @JvmOverloads constructor(
     fun reset() {
         buffer.reset()
         cancelActiveImageLoads()
+        for (i in 0 until childCount) {
+            destroySegmentViewIfNeeded(getChildAt(i))
+        }
         removeAllViews()
     }
 
@@ -133,15 +146,18 @@ class THKMDView @JvmOverloads constructor(
             when (segment) {
                 is RenderedSegment.TextSegment -> bindTextSegment(index, segment)
                 is RenderedSegment.TableSegment -> bindTableSegment(index, segment)
+                is RenderedSegment.DiagramSegment -> bindDiagramSegment(index, segment)
             }
         }
         while (childCount > segments.size) {
+            destroySegmentViewIfNeeded(getChildAt(childCount - 1))
             removeViewAt(childCount - 1)
         }
     }
 
     private fun bindTextSegment(index: Int, segment: RenderedSegment.TextSegment) {
-        val textView = reuseOrCreate(index) { createTextSegmentView() }
+        val frame = reuseOrCreate(index) { createTextSegmentView() }
+        val textView = frame.textView
         textView.setTextColor(theme.bodyTextColor)
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.bodyFontSizeSp)
         textView.text = segment.spanned
@@ -156,6 +172,8 @@ class THKMDView @JvmOverloads constructor(
             span.attach(imageLoader, imageLoadScope, textView)
             activeImageSpans += span
         }
+
+        frame.updateCopyButtons(segment.copyableBlocks, theme, ::copyToClipboard)
     }
 
     private fun bindTableSegment(index: Int, segment: RenderedSegment.TableSegment) {
@@ -170,20 +188,43 @@ class THKMDView @JvmOverloads constructor(
         tableView.setData(segment.table, theme)
     }
 
+    private fun bindDiagramSegment(index: Int, segment: RenderedSegment.DiagramSegment) {
+        // Width MATCH_PARENT caps the WebView to the bubble's width, same as THKTableView
+        // above; the diagram template's own CSS (`max-width: 100%`) scales the rendered
+        // SVG down to fit that width rather than overflowing it.
+        val diagramView = reuseOrCreate(index) {
+            THKMermaidView(context).apply {
+                layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+            }
+        }
+        diagramView.render(segment.mermaidSource, theme)
+    }
+
     private inline fun <reified T : View> reuseOrCreate(index: Int, create: () -> T): T {
         val existing = getChildAt(index)
         if (existing is T) return existing
-        val view = create()
         if (index < childCount) {
+            destroySegmentViewIfNeeded(getChildAt(index))
             removeViewAt(index)
         }
+        val view = create()
         addView(view, index)
         return view
     }
 
-    private fun createTextSegmentView(): AppCompatTextView = AppCompatTextView(context).apply {
-        movementMethod = LinkMovementMethod.getInstance()
-        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+    // WebViews are relatively heavy and must never leak across RecyclerView recycling -
+    // called both when reset() tears everything down and when reuseOrCreate/applySegments
+    // replace or drop a segment view of a different or now-absent type.
+    private fun destroySegmentViewIfNeeded(view: View?) {
+        if (view is THKMermaidView) view.destroy()
+    }
+
+    private fun createTextSegmentView(): TextSegmentFrame = TextSegmentFrame(context)
+
+    private fun copyToClipboard(text: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        clipboard?.setPrimaryClip(ClipData.newPlainText("code", text))
+        Toast.makeText(context, R.string.thkmdview_copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()
@@ -196,4 +237,82 @@ class THKMDView @JvmOverloads constructor(
         private const val MAX_IMAGE_HEIGHT_DP = 320f
         private const val MIN_IMAGE_WIDTH_DP = 80f
     }
+}
+
+// Wraps the text segment's TextView in a FrameLayout so a code block/outermost block
+// quote's corner copy button can be a real, independently hit-testable child View - a
+// Span only paints into the TextView's own canvas and isn't separately tappable, the
+// same reasoning that gave tables their own THKTableView (see RESEARCH.md §8/§9).
+// Top-level + internal (rather than private-nested in THKMDView) so THKMDViewReuseTest
+// can assert against it directly, like it already does for THKTableView.
+internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
+    val textView: AppCompatTextView = AppCompatTextView(context).apply {
+        movementMethod = LinkMovementMethod.getInstance()
+        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
+    }
+    private val copyButtons = mutableListOf<ImageButton>()
+
+    init {
+        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        addView(textView)
+    }
+
+    fun updateCopyButtons(blocks: List<CopyableBlock>, theme: THKMDTheme, onCopy: (String) -> Unit) {
+        copyButtons.forEach { removeView(it) }
+        copyButtons.clear()
+        if (blocks.isEmpty()) return
+        // Positions depend on the just-assigned text's real Layout (getLineTop/line
+        // offsets), which doesn't exist yet until the TextView measures/lays out the new
+        // content - doOnLayout runs once that's happened (immediately if it's already laid
+        // out and text didn't just change, otherwise after the next layout pass).
+        textView.doOnLayout {
+            val layout = textView.layout ?: return@doOnLayout
+            val density = resources.displayMetrics.density
+            val sizePx = (COPY_BUTTON_SIZE_DP * density).toInt()
+            val marginPx = (COPY_BUTTON_MARGIN_DP * density).toInt()
+            val rightEdgePx = textView.width - textView.paddingRight
+            for (block in blocks) {
+                val startOffset = block.range.first.coerceIn(0, layout.text.length)
+                val line = layout.getLineForOffset(startOffset)
+                val topPx = textView.paddingTop + layout.getLineTop(line)
+                val button = createCopyButton(context, theme) { onCopy(block.text) }
+                val params = LayoutParams(sizePx, sizePx)
+                params.leftMargin = (rightEdgePx - sizePx - marginPx).coerceAtLeast(0)
+                params.topMargin = topPx + marginPx
+                addView(button, params)
+                copyButtons += button
+            }
+        }
+    }
+
+    private companion object {
+        const val COPY_BUTTON_SIZE_DP = 32f
+        const val COPY_BUTTON_MARGIN_DP = 4f
+    }
+}
+
+private fun createCopyButton(context: Context, theme: THKMDTheme, onClick: () -> Unit): ImageButton {
+    val density = context.resources.displayMetrics.density
+    val iconPaddingPx = (8 * density).toInt()
+    val button = ImageButton(context)
+    button.scaleType = ImageView.ScaleType.FIT_CENTER
+    button.setPadding(iconPaddingPx, iconPaddingPx, iconPaddingPx, iconPaddingPx)
+    button.background = rippleBackground(context)
+    button.contentDescription = context.getString(R.string.thkmdview_copy_content_description)
+    val icon: Drawable? = ContextCompat.getDrawable(context, R.drawable.ic_copy)?.mutate()
+    icon?.let { DrawableCompat.setTint(it, theme.codeTextColor) }
+    button.setImageDrawable(icon)
+    button.setOnClickListener { onClick() }
+    return button
+}
+
+// android.R.attr.selectableItemBackgroundBorderless: a themed circular ripple with no
+// background fill outside the touch/press state, resolved at runtime (rather than
+// hardcoded) so a copy button follows the host app's theme like everything else.
+private fun rippleBackground(context: Context): Drawable? {
+    val typedValue = TypedValue()
+    val resolved = context.theme.resolveAttribute(
+        android.R.attr.selectableItemBackgroundBorderless, typedValue, true
+    )
+    return if (resolved) ContextCompat.getDrawable(context, typedValue.resourceId) else null
 }
