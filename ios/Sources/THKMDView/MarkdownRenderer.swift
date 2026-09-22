@@ -88,14 +88,13 @@ public extension NSAttributedString.Key {
 
 /// Shared block-quote layout constants, numerically identical to Android's
 /// `MarkdownSpanVisitor.QUOTE_BAR_WIDTH_DP`/`QUOTE_BAR_GAP_DP`/`QUOTE_INTERIOR_LINE_SPACING_DP`
-/// (dp ≈ pt at baseline scale). `indentPerLevel` is what each renderer's `visitBlockQuote`
-/// multiplies by nesting depth for `headIndent`/`firstLineHeadIndent`; it happens to equal the
-/// previous single hardcoded `16`, but is now expressed as bar width + the gap specifically
-/// between the bar and the text, per level, rather than one opaque constant.
+/// (dp ≈ pt at baseline scale). Each level reserves a left inset, the bar, and a text gap.
 enum THKBlockQuoteMetrics {
     static let barWidth: CGFloat = 4
-    static let barToTextGap: CGFloat = 12
-    static let indentPerLevel: CGFloat = barWidth + barToTextGap
+    static let barLeftInset: CGFloat = 8
+    static let barToTextGap: CGFloat = 8
+    static let secondLevelTopSpacing: CGFloat = 10
+    static let indentPerLevel: CGFloat = barLeftInset + barWidth + barToTextGap
     /// Extra breathing room between wrapped/multi-paragraph lines *inside* a quote, on top of
     /// (not instead of) the block-level top/bottom padding below.
     static let interiorLineSpacing: CGFloat = 2
@@ -103,19 +102,22 @@ enum THKBlockQuoteMetrics {
     /// `THKCodeBlockMetrics.verticalPaddingBottom` so both "padded block" types read as one
     /// consistent family, matching Android's shared `BLOCK_VERTICAL_PADDING_DP`.
     static let verticalPaddingBottom: CGFloat = THKCodeBlockMetrics.verticalPaddingBottom
-    /// Top-of-first-line padding — taller than the bottom padding, see
-    /// `THKCopyButtonMetrics.topPaddingReserve`: every outermost quote gets a copy button
-    /// overlay in its top-right corner, and this reserves enough empty space above the
-    /// actual quoted text for that button to sit in without covering any glyphs.
-    static let verticalPaddingTop: CGFloat = THKCopyButtonMetrics.topPaddingReserve
+    /// Copy buttons sit beside the text in a trailing gutter.
+    static let verticalPaddingTop: CGFloat = 8
+    static let copyButtonGutter: CGFloat = 40
 }
 
-/// Shared by `THKMDView`'s copy-button overlay positioning and the extra top padding
-/// reserved for it in code blocks / outermost block quotes (`THKCodeBlockMetrics.
-/// verticalPaddingTop` / `THKBlockQuoteMetrics.verticalPaddingTop`) — a single source of
-/// truth so the reserved band stays exactly tall enough to keep the button from covering
-/// the block's first line of real text (previously it did, since both blocks' top padding
-/// was only ~8pt while the button itself is 32pt tall).
+/// Apply spacing only to the first paragraph of a second-level quote.
+func thkAddSecondLevelQuoteSpacing(to text: NSMutableAttributedString) {
+    guard text.length > 0 else { return }
+    let range = (text.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
+    let existing = text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
+    let style = existing?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+    style.paragraphSpacingBefore += THKBlockQuoteMetrics.secondLevelTopSpacing
+    text.addAttribute(.paragraphStyle, value: style, range: range)
+}
+
+/// Copy-button size and margin. Block text reserves a right-hand gutter.
 enum THKCopyButtonMetrics {
     static let size: CGFloat = 32
     static let margin: CGFloat = 4
@@ -166,10 +168,9 @@ enum THKCodeBlockMetrics {
     /// block range — see `applyCodeBlockParagraphStyles` in each renderer, which sets this
     /// only on the first/last line so interior lines don't also pick it up.
     static let verticalPaddingBottom: CGFloat = 8
-    /// Reserved above the block's first line — taller than the bottom padding to leave room
-    /// for the copy-button overlay (see `THKCopyButtonMetrics`) without it covering the
-    /// first line's actual text.
-    static let verticalPaddingTop: CGFloat = THKCopyButtonMetrics.topPaddingReserve
+    /// The button sits beside the first line, so top and bottom padding stay symmetric.
+    static let verticalPaddingTop: CGFloat = 8
+    static let copyButtonGutter: CGFloat = THKCopyButtonMetrics.margin + THKCopyButtonMetrics.size + THKCopyButtonMetrics.margin
 }
 
 // `DefaultMarkdownRenderer` is intentionally NOT defined here: the SPM distribution's

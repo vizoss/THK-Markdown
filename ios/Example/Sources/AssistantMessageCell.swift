@@ -6,7 +6,6 @@ final class AssistantMessageCell: UITableViewCell {
 
     let markdownView = THKMDView()
     private let bubbleView = UIView()
-    private var streamTask: Task<Void, Never>?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -52,54 +51,15 @@ final class AssistantMessageCell: UITableViewCell {
         ])
     }
 
-    // This is the reference implementation the README points to: cancel the in-flight
-    // stream simulation and reset the view's buffer/pending-render state before the cell
-    // gets rebound to a different row.
+    // The controller owns streaming; reuse only clears this view's pending render.
     override func prepareForReuse() {
         super.prepareForReuse()
-        streamTask?.cancel()
-        streamTask = nil
         markdownView.reset()
     }
 
-    /// `onFinished` fires once, on the main actor, only when the chunk loop runs all the way
-    /// to the end on its own — never when `prepareForReuse`/a later `startStreaming` call
-    /// cancels this task first. That's what lets the caller distinguish "genuinely finished
-    /// streaming" from "recycled mid-stream" so it knows which messages to render instantly
-    /// (no re-typing animation) the next time their cell is bound.
-    func startStreaming(_ fullMarkdown: String, onFinished: @escaping () -> Void) {
-        streamTask?.cancel()
+    /// Restore exactly the prefix received so far, including after scrolling back onscreen.
+    func showContent(_ markdown: String) {
         markdownView.reset()
-
-        let view = markdownView
-        streamTask = Task {
-            var remaining = Substring(fullMarkdown)
-            while !remaining.isEmpty {
-                if Task.isCancelled { return }
-                let chunkSize = Int.random(in: 2...6)
-                let end = remaining.index(remaining.startIndex, offsetBy: chunkSize, limitedBy: remaining.endIndex) ?? remaining.endIndex
-                let chunk = String(remaining[remaining.startIndex..<end])
-                remaining = remaining[end...]
-                await MainActor.run {
-                    view.appendMarkdownChunk(chunk)
-                }
-                try? await Task.sleep(nanoseconds: 30_000_000)
-            }
-            if Task.isCancelled { return }
-            await MainActor.run {
-                onFinished()
-            }
-        }
-    }
-
-    /// Used instead of `startStreaming` when this row's message already finished streaming
-    /// once before (tracked by `MessageListViewController`) and its cell is simply scrolling
-    /// back into view via normal `UITableView` reuse — shows the full content immediately
-    /// rather than re-running the typewriter animation from scratch.
-    func showFullyRendered(_ fullMarkdown: String) {
-        streamTask?.cancel()
-        streamTask = nil
-        markdownView.reset()
-        markdownView.setMarkdown(fullMarkdown)
+        markdownView.setMarkdown(markdown)
     }
 }

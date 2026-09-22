@@ -119,6 +119,8 @@ internal class MarkdownSpanVisitor(
     }
 
     private fun renderCodeBlock(literal: String) {
+        val standalone = blockQuoteDepth == 0 && listStack.isEmpty()
+        if (standalone) flushTextSegment()
         separate()
         val content = literal.trimEnd('\n')
         val start = builder.length
@@ -128,10 +130,13 @@ internal class MarkdownSpanVisitor(
         copyableBlocks.add(CopyableBlock(start until end, content))
         val cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx
         val horizontalPaddingPx = (12 * densityPx).toInt()
-        val topPaddingPx = (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt()
-        val bottomPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
+        val topPaddingPx = if (standalone) 0 else (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt()
+        val bottomPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt()
         builder.setSpan(
-            CodeBlockBackgroundSpan(theme.codeBackgroundColor, cornerRadiusPx, topPaddingPx, bottomPaddingPx, start, end),
+            CodeBlockBackgroundSpan(
+                theme.codeBackgroundColor, cornerRadiusPx, topPaddingPx, bottomPaddingPx, start, end,
+                copyButtonGutterPx = if (standalone) (40 * densityPx).toInt() else 0
+            ),
             start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
         builder.setSpan(CodeBlockPaddingSpan(horizontalPaddingPx), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -141,9 +146,14 @@ internal class MarkdownSpanVisitor(
             RelativeSizeSpan(theme.codeFontSizeSp / theme.bodyFontSizeSp),
             start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
+        if (standalone) flushTextSegment()
     }
 
     override fun visit(blockQuote: BlockQuote) {
+        // A standalone quote gets its own text container, leaving a real right-hand
+        // gutter for the copy button without narrowing the surrounding paragraphs.
+        val standalone = blockQuoteDepth == 0 && listStack.isEmpty()
+        if (standalone) flushTextSegment()
         separate()
         val start = builder.length
         val isOutermost = blockQuoteDepth == 0
@@ -156,34 +166,32 @@ internal class MarkdownSpanVisitor(
         blockQuoteDepth--
         val end = builder.length
         if (end > start) {
-            // Bottom padding shares the same constant as code blocks (BLOCK_VERTICAL_PADDING_DP)
-            // so the two block types read as one consistent "padded block" family; bar width
-            // and bar-to-text gap are also shared constants - both were previously raw,
-            // unscaled pixel values here, which is why the gap looked wrong/inconsistent
-            // across densities and didn't match iOS's (differently fixed) bar width. Top
-            // padding is taller (COPY_BUTTON_TOP_PADDING_DP) to leave room for the outermost
-            // quote's own copy-button overlay without it covering the first line's text.
+            // Standalone quotes use view padding rather than growing a line's font
+            // metrics: Android can carry those enlarged metrics into wrapped lines.
             builder.setSpan(
                 ThemedQuoteSpan(
                     barColor = theme.blockQuoteBarColor,
                     backgroundColor = if (isOutermost) theme.blockQuoteBackgroundColor else null,
                     cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx,
-                    topPaddingPx = (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt(),
-                    bottomPaddingPx = (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
+                    topPaddingPx = if (standalone) 0 else (COPY_BUTTON_TOP_PADDING_DP * densityPx).toInt(),
+                    bottomPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
                     spanStart = start,
                     spanEnd = end,
                     stripeWidthPx = (QUOTE_BAR_WIDTH_DP * densityPx).toInt(),
                     gapWidthPx = (QUOTE_BAR_GAP_DP * densityPx).toInt(),
                     leftInsetPx = (QUOTE_BAR_LEFT_INSET_DP * densityPx).toInt(),
-                    barVerticalInsetPx = (QUOTE_BAR_VERTICAL_INSET_DP * densityPx).toInt()
+                    barVerticalInsetPx = (QUOTE_BAR_VERTICAL_INSET_DP * densityPx).toInt(),
+                    copyButtonGutterPx = if (standalone) (40 * densityPx).toInt() else 0,
+                    nestedTopPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0
                 ),
-                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or
+                    ((255 - blockQuoteDepth).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)
             )
             builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             // A little extra leading between wrapped/multi-paragraph lines *inside* the
             // quote (distinct from ThemedQuoteSpan's own first/last-line padding above),
             // so multi-line quotes don't read as cramped.
-            builder.setSpan(
+            if (isOutermost && !standalone) builder.setSpan(
                 QuoteInteriorLineSpacingSpan((QUOTE_INTERIOR_LINE_SPACING_DP * densityPx).toInt(), start, end),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
@@ -191,6 +199,7 @@ internal class MarkdownSpanVisitor(
                 copyableBlocks.add(CopyableBlock(start until end, builder.subSequence(start, end).toString()))
             }
         }
+        if (standalone) flushTextSegment()
     }
 
     override fun visit(thematicBreak: ThematicBreak) {
@@ -363,8 +372,8 @@ internal class MarkdownSpanVisitor(
         // line of real text instead of on top of it.
         private const val COPY_BUTTON_TOP_PADDING_DP = 40f
         private const val QUOTE_BAR_WIDTH_DP = 4f
-        private const val QUOTE_BAR_GAP_DP = 12f
-        private const val QUOTE_BAR_LEFT_INSET_DP = 2f
+        private const val QUOTE_BAR_GAP_DP = 8f
+        private const val QUOTE_BAR_LEFT_INSET_DP = 8f
         private const val QUOTE_BAR_VERTICAL_INSET_DP = 3f
         private const val QUOTE_INTERIOR_LINE_SPACING_DP = 2f
         private const val THEMATIC_BREAK_THICKNESS_DP = 1.5f

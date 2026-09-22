@@ -44,10 +44,11 @@ final class MessageListViewController: UIViewController {
     )
 
     private var currentTheme: THKMDTheme = .default
-    // Cell reuse means a fully-streamed message's cell gets rebound every time it scrolls
-    // back into view; without this, it would replay its typewriter animation from scratch on
-    // every rebind instead of just showing its (already known) final content.
-    private var fullyStreamedMessageIDs: Set<UUID> = []
+    // Keep SSE progress independent of cell visibility and reuse.
+    private var streamedContent: [UUID: String] = [:]
+    private var streamTasks: [UUID: Task<Void, Never>] = [:]
+    private var followsLatestMessage = true
+    private var finalHeightRefreshes = 0
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputBar = MessageInputBar()
     private var inputBarBottomConstraint: NSLayoutConstraint!
@@ -80,7 +81,9 @@ final class MessageListViewController: UIViewController {
         setUpInputBar()
         setUpKeyboardObservers()
         setUpDismissKeyboardOnTap()
-        startHeightRefreshTimer() // the seeded greeting message streams in immediately too
+        for message in messages where message.role == .assistant {
+            startStreaming(message)
+        }
     }
 
     // Tapping the message list (not the whole screen - see below) dismisses the keyboard,
@@ -138,6 +141,7 @@ final class MessageListViewController: UIViewController {
     deinit {
         NotificationCenter.default.removeObserver(self)
         heightRefreshTimer?.invalidate()
+        streamTasks.values.forEach { $0.cancel() }
     }
 
     private func setUpTableView() {
@@ -216,35 +220,78 @@ final class MessageListViewController: UIViewController {
     // assistant reply starts streaming, since that now happens repeatedly, not just once at
     // launch.
     private func startHeightRefreshTimer() {
-        heightRefreshTimer?.invalidate()
-        // The longest mock reply template is a couple thousand characters and streams at
-        // 2-6 chars/30ms, so a slow run (small chunks) can take 20s+; a table/image reply also
-        // keeps growing briefly after the text finishes while the image loads. ~45s here stays
-        // comfortably ahead of both.
-        var ticksRemaining = 300
-        heightRefreshTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] timer in
+        guard heightRefreshTimer == nil else { return }
+        let timer = Timer(timeInterval: 0.15, repeats: true) { [weak self] timer in
             guard let self else {
                 timer.invalidate()
                 return
             }
-            ticksRemaining -= 1
+            // Don't fight a drag/deceleration with self-sizing row updates. The next
+            // idle tick catches up using the message's latest streamed content.
+            guard !self.tableView.isTracking, !self.tableView.isDragging,
+                  !self.tableView.isDecelerating else { return }
+            let oldOffset = self.tableView.contentOffset
             UIView.performWithoutAnimation {
                 self.tableView.beginUpdates()
                 self.tableView.endUpdates()
+                self.tableView.layoutIfNeeded()
+                if self.followsLatestMessage {
+                    self.scrollToLatestMessage()
+                } else {
+                    self.tableView.setContentOffset(oldOffset, animated: false)
+                }
             }
-            // Keep the growing bubble pinned to the bottom of the viewport as it streams,
-            // the same way a real chat UI tracks an in-progress reply.
-            if !self.messages.isEmpty {
-                let lastIndexPath = IndexPath(row: self.messages.count - 1, section: 0)
-                self.tableView.scrollToRow(at: lastIndexPath, at: .bottom, animated: false)
-            }
-            if ticksRemaining <= 0 {
-                timer.invalidate()
+            if self.streamTasks.isEmpty {
+                self.finalHeightRefreshes -= 1
+                if self.finalHeightRefreshes <= 0 {
+                    timer.invalidate()
+                    self.heightRefreshTimer = nil
+                }
             }
         }
+        heightRefreshTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func startStreaming(_ message: Message) {
+        streamedContent[message.id] = ""
+        streamTasks[message.id] = Task { @MainActor [weak self] in
+            var remaining = Substring(message.content)
+            while !remaining.isEmpty {
+                guard !Task.isCancelled else { return }
+                let end = remaining.index(remaining.startIndex, offsetBy: Int.random(in: 2...6), limitedBy: remaining.endIndex) ?? remaining.endIndex
+                let chunk = String(remaining[..<end])
+                remaining = remaining[end...]
+                self?.receiveChunk(chunk, for: message.id)
+                try? await Task.sleep(nanoseconds: 30_000_000)
+            }
+            self?.streamTasks.removeValue(forKey: message.id)
+            // Allow the final debounced render and layout to complete.
+            self?.finalHeightRefreshes = 2
+        }
+        startHeightRefreshTimer()
+    }
+
+    private func receiveChunk(_ chunk: String, for messageID: UUID) {
+        streamedContent[messageID, default: ""] += chunk
+        guard let row = messages.firstIndex(where: { $0.id == messageID }),
+              let cell = tableView.cellForRow(at: IndexPath(row: row, section: 0)) as? AssistantMessageCell else { return }
+        cell.markdownView.appendMarkdownChunk(chunk)
+    }
+
+    private func scrollToLatestMessage() {
+        let bottom = max(-tableView.adjustedContentInset.top,
+                         tableView.contentSize.height - tableView.bounds.height + tableView.adjustedContentInset.bottom)
+        tableView.setContentOffset(CGPoint(x: 0, y: bottom), animated: false)
+    }
+
+    private func resumeFollowingIfAtBottom() {
+        let bottom = tableView.contentSize.height - tableView.bounds.height + tableView.adjustedContentInset.bottom
+        followsLatestMessage = bottom - tableView.contentOffset.y <= 24
     }
 
     private func send(_ text: String) {
+        followsLatestMessage = true
         appendMessage(Message(id: UUID(), role: .user, content: text))
 
         let delayNanoseconds = UInt64.random(in: 400_000_000...900_000_000)
@@ -252,15 +299,18 @@ final class MessageListViewController: UIViewController {
             try? await Task.sleep(nanoseconds: delayNanoseconds)
             let reply = buildMockAssistantReply(for: text)
             self.appendMessage(Message(id: UUID(), role: .assistant, content: reply))
-            self.startHeightRefreshTimer()
         }
     }
 
     private func appendMessage(_ message: Message) {
         messages.append(message)
+        if message.role == .assistant { startStreaming(message) }
         let indexPath = IndexPath(row: messages.count - 1, section: 0)
         tableView.insertRows(at: [indexPath], with: .none)
-        tableView.scrollToRow(at: indexPath, at: .bottom, animated: true)
+        if followsLatestMessage && !tableView.isTracking && !tableView.isDecelerating {
+            tableView.layoutIfNeeded()
+            scrollToLatestMessage()
+        }
     }
 }
 
@@ -283,17 +333,27 @@ extension MessageListViewController: UITableViewDataSource {
                 return UITableViewCell()
             }
             cell.markdownView.theme = currentTheme
-            if fullyStreamedMessageIDs.contains(message.id) {
-                cell.showFullyRendered(message.content)
-            } else {
-                let messageID = message.id
-                cell.startStreaming(message.content) { [weak self] in
-                    self?.fullyStreamedMessageIDs.insert(messageID)
-                }
-            }
+            cell.showContent(streamedContent[message.id] ?? "")
             return cell
         }
     }
 }
 
-extension MessageListViewController: UITableViewDelegate {}
+extension MessageListViewController: UITableViewDelegate {
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        followsLatestMessage = false
+    }
+
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        if !decelerate { resumeFollowingIfAtBottom() }
+    }
+
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        resumeFollowingIfAtBottom()
+    }
+
+    func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
+        followsLatestMessage = false
+        return true
+    }
+}

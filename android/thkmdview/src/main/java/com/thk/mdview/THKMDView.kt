@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
 import android.text.Spanned
 import android.text.method.LinkMovementMethod
 import android.util.AttributeSet
@@ -18,7 +19,6 @@ import android.widget.Toast
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
-import androidx.core.view.doOnLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -148,6 +148,11 @@ class THKMDView @JvmOverloads constructor(
                 is RenderedSegment.TableSegment -> bindTableSegment(index, segment)
                 is RenderedSegment.DiagramSegment -> bindDiagramSegment(index, segment)
             }
+            val child = getChildAt(index)
+            val followsBlock = index > 0 && (getChildAt(index - 1) as? TextSegmentFrame)?.hasCopyGutter == true
+            (child.layoutParams as LinearLayout.LayoutParams).topMargin =
+                if (index > 0 && (followsBlock || (child as? TextSegmentFrame)?.hasCopyGutter == true))
+                    (theme.bodyFontSizeSp * resources.displayMetrics.scaledDensity).toInt() else 0
         }
         while (childCount > segments.size) {
             destroySegmentViewIfNeeded(getChildAt(childCount - 1))
@@ -163,6 +168,22 @@ class THKMDView @JvmOverloads constructor(
         textView.text = segment.spanned
 
         val spanned = segment.spanned as? Spanned
+        val quoteGutter = spanned?.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
+            ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
+        val codeGutter = spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)
+            ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
+        val gutter = maxOf(quoteGutter, codeGutter)
+        frame.isQuote = quoteGutter > 0
+        frame.hasCopyGutter = gutter > 0
+        val verticalPadding = if (frame.hasCopyGutter) dp(8f) else 0
+        textView.setPadding(0, verticalPadding, gutter, verticalPadding)
+        textView.includeFontPadding = !frame.hasCopyGutter
+        textView.setLineSpacing(if (frame.isQuote) 2 * resources.displayMetrics.density else 0f, 1f)
+        frame.minimumHeight = if (frame.hasCopyGutter) dp(40f) else 0
+        frame.background = if (frame.hasCopyGutter) GradientDrawable().apply {
+            setColor(if (frame.isQuote) theme.blockQuoteBackgroundColor else theme.codeBackgroundColor)
+            cornerRadius = theme.codeBlockCornerRadiusDp * resources.displayMetrics.density
+        } else null
         val imageSpans = spanned?.getSpans(0, spanned.length, AsyncImageSpan::class.java).orEmpty()
         // A TextView can't expose distinct accessibility nodes per inline span without a
         // custom AccessibilityDelegate; as a pragmatic v1 stand-in, alt text becomes the
@@ -246,11 +267,14 @@ class THKMDView @JvmOverloads constructor(
 // Top-level + internal (rather than private-nested in THKMDView) so THKMDViewReuseTest
 // can assert against it directly, like it already does for THKTableView.
 internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
+    var isQuote = false
+    var hasCopyGutter = false
     val textView: AppCompatTextView = AppCompatTextView(context).apply {
         movementMethod = LinkMovementMethod.getInstance()
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
     private val copyButtons = mutableListOf<ImageButton>()
+    private var copyBlocks: List<CopyableBlock> = emptyList()
 
     init {
         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -260,28 +284,29 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
     fun updateCopyButtons(blocks: List<CopyableBlock>, theme: THKMDTheme, onCopy: (String) -> Unit) {
         copyButtons.forEach { removeView(it) }
         copyButtons.clear()
-        if (blocks.isEmpty()) return
-        // Positions depend on the just-assigned text's real Layout (getLineTop/line
-        // offsets), which doesn't exist yet until the TextView measures/lays out the new
-        // content - doOnLayout runs once that's happened (immediately if it's already laid
-        // out and text didn't just change, otherwise after the next layout pass).
-        textView.doOnLayout {
-            val layout = textView.layout ?: return@doOnLayout
-            val density = resources.displayMetrics.density
-            val sizePx = (COPY_BUTTON_SIZE_DP * density).toInt()
-            val marginPx = (COPY_BUTTON_MARGIN_DP * density).toInt()
-            val rightEdgePx = textView.width - textView.paddingRight
-            for (block in blocks) {
-                val startOffset = block.range.first.coerceIn(0, layout.text.length)
-                val line = layout.getLineForOffset(startOffset)
-                val topPx = textView.paddingTop + layout.getLineTop(line)
-                val button = createCopyButton(context, theme) { onCopy(block.text) }
-                val params = LayoutParams(sizePx, sizePx)
-                params.leftMargin = (rightEdgePx - sizePx - marginPx).coerceAtLeast(0)
-                params.topMargin = topPx + marginPx
-                addView(button, params)
-                copyButtons += button
-            }
+        copyBlocks = blocks
+        val sizePx = (COPY_BUTTON_SIZE_DP * resources.displayMetrics.density).toInt()
+        for (block in blocks) {
+            val button = createCopyButton(context, theme) { onCopy(block.text) }
+            addView(button, LayoutParams(sizePx, sizePx))
+            copyButtons += button
+        }
+        requestLayout()
+    }
+
+    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
+        super.onLayout(changed, left, top, right, bottom)
+        val layout = textView.layout ?: return
+        val density = resources.displayMetrics.density
+        val sizePx = (COPY_BUTTON_SIZE_DP * density).toInt()
+        val marginPx = (COPY_BUTTON_MARGIN_DP * density).toInt()
+        copyButtons.zip(copyBlocks).forEach { (button, block) ->
+            val offset = block.range.first.coerceIn(0, layout.text.length)
+            val line = layout.getLineForOffset(offset)
+            val x = (textView.right - sizePx - marginPx).coerceAtLeast(0)
+            val y = textView.top + (if (hasCopyGutter && offset == 0) 0 else textView.paddingTop) +
+                layout.getLineTop(line) + marginPx
+            button.layout(x, y, x + sizePx, y + sizePx)
         }
     }
 

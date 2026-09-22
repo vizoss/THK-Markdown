@@ -29,6 +29,7 @@ class MainActivity : AppCompatActivity() {
     private var nextMessageId = 0L
     private lateinit var adapter: ChatAdapter
     private lateinit var recyclerView: RecyclerView
+    private var followsLatestMessage = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,10 +38,19 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(findViewById<Toolbar>(R.id.toolbar))
 
         recyclerView = findViewById(R.id.messageList)
-        adapter = ChatAdapter(onAssistantContentUpdated = ::scrollToBottom)
+        adapter = ChatAdapter(streamScope = lifecycleScope, onAssistantContentUpdated = ::scrollToBottom)
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.setHasFixedSize(false)
         recyclerView.adapter = adapter
+        recyclerView.itemAnimator = null
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) followsLatestMessage = false
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    followsLatestMessage = !rv.canScrollVertically(1)
+                }
+            }
+        })
 
         adapter.addMessage(ChatMessage(nextMessageId++, Role.ASSISTANT, GREETING_MARKDOWN))
         installKeyboardDismissOnTap()
@@ -118,6 +128,7 @@ class MainActivity : AppCompatActivity() {
         if (text.isEmpty()) return
         messageInput.text?.clear()
 
+        followsLatestMessage = true
         adapter.addMessage(ChatMessage(nextMessageId++, Role.USER, text))
         scrollToBottom()
 
@@ -129,9 +140,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun scrollToBottom() {
-        val lastPosition = adapter.itemCount - 1
-        if (lastPosition >= 0) {
-            recyclerView.scrollToPosition(lastPosition)
+        // Render is debounced; follow only after its new height has reached layout.
+        recyclerView.removeCallbacks(followLatest)
+        if (followsLatestMessage) recyclerView.postDelayed(followLatest, 40L)
+    }
+
+    private val followLatest = Runnable {
+        if (followsLatestMessage && recyclerView.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+            val manager = recyclerView.layoutManager as LinearLayoutManager
+            val last = manager.findViewByPosition(adapter.itemCount - 1)
+            if (last != null) {
+                recyclerView.scrollBy(0, maxOf(0, manager.getDecoratedBottom(last) -
+                    (recyclerView.height - recyclerView.paddingBottom)))
+            } else if (adapter.itemCount > 0) {
+                manager.scrollToPositionWithOffset(adapter.itemCount - 1, 0)
+                recyclerView.post { if (followsLatestMessage) scrollToBottom() }
+            }
         }
     }
 }

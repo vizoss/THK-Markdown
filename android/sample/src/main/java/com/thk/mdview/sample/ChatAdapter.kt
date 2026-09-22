@@ -8,8 +8,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.thk.mdview.THKMDTheme
 import com.thk.mdview.THKMDView
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -22,6 +20,7 @@ private const val VIEW_TYPE_USER = 0
 private const val VIEW_TYPE_ASSISTANT = 1
 
 class ChatAdapter(
+    private val streamScope: CoroutineScope,
     private val messages: MutableList<ChatMessage> = mutableListOf(),
     private val onAssistantContentUpdated: () -> Unit = {},
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -29,10 +28,8 @@ class ChatAdapter(
     class UserViewHolder(itemView: View, val textView: TextView) : RecyclerView.ViewHolder(itemView)
 
     class AssistantViewHolder(itemView: View, val markdownView: THKMDView) : RecyclerView.ViewHolder(itemView) {
-        // One coroutine scope per view holder, reused across rebinds; only the
-        // in-flight streaming Job is cancelled on recycle, not the scope itself.
-        val scope = CoroutineScope(Dispatchers.Main.immediate + Job())
-        var streamingJob: Job? = null
+        // Streaming belongs to the message, so recycling only unbinds this view.
+        var messageId: Long? = null
     }
 
     // Bound assistant holders are tracked so setTheme() can update THKMDView.theme on
@@ -52,6 +49,7 @@ class ChatAdapter(
     // frame - would restart the whole streaming coroutine from scratch, competing with
     // the scroll gesture for main-thread time and re-typing text the user already read.
     private val fullyStreamedMessageIds = mutableSetOf<Long>()
+    private val streamedContent = mutableMapOf<Long, String>()
 
     fun setTheme(theme: THKMDTheme) {
         currentTheme = theme
@@ -63,6 +61,24 @@ class ChatAdapter(
         messages.add(message)
         val position = messages.size - 1
         notifyItemInserted(position)
+        if (message.role == Role.ASSISTANT) {
+            streamedContent[message.id] = ""
+            streamScope.launch {
+                var index = 0
+                while (index < message.content.length) {
+                    val end = minOf(index + Random.nextInt(3, 10), message.content.length)
+                    val chunk = message.content.substring(index, end)
+                    streamedContent[message.id] = message.content.substring(0, end)
+                    boundAssistantHolders.filter { it.messageId == message.id }.forEach {
+                        it.markdownView.appendMarkdownChunk(chunk)
+                    }
+                    index = end
+                    onAssistantContentUpdated()
+                    delay(Random.nextLong(30L, 80L))
+                }
+                fullyStreamedMessageIds += message.id
+            }
+        }
         return position
     }
 
@@ -90,7 +106,7 @@ class ChatAdapter(
     }
 
     private fun bindAssistant(holder: AssistantViewHolder, message: ChatMessage) {
-        holder.streamingJob?.cancel()
+        holder.messageId = message.id
         holder.markdownView.reset()
         holder.markdownView.theme = currentTheme
         boundAssistantHolders += holder
@@ -100,26 +116,12 @@ class ChatAdapter(
             return
         }
 
-        holder.streamingJob = holder.scope.launch {
-            val chunkSizes = 3..9
-            var index = 0
-            val text = message.content
-            while (index < text.length) {
-                val size = Random.nextInt(chunkSizes.first, chunkSizes.last + 1)
-                val end = minOf(index + size, text.length)
-                holder.markdownView.appendMarkdownChunk(text.substring(index, end))
-                index = end
-                onAssistantContentUpdated()
-                delay(Random.nextLong(30L, 80L))
-            }
-            fullyStreamedMessageIds += message.id
-        }
+        holder.markdownView.setMarkdown(streamedContent[message.id].orEmpty())
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
         if (holder is AssistantViewHolder) {
-            holder.streamingJob?.cancel()
-            holder.streamingJob = null
+            holder.messageId = null
             holder.markdownView.reset()
             boundAssistantHolders -= holder
         }

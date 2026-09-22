@@ -39,10 +39,28 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             drawFullWidthBackground(for: range, color: blockQuoteBackgroundColor, origin: origin, cornerRadius: codeBlockCornerRadius)
         }
 
-        textStorage.enumerateAttribute(.thkBlockQuoteBar, in: charRange) { value, range, _ in
-            guard value != nil else { return }
-            let depth = value as? Int ?? 1
-            drawBlockQuoteBar(for: range, origin: origin, depth: depth)
+        // A depth attribute describes the deepest quote at each character. Collect
+        // continuous ranges at every level so the outer bar also spans nested quotes.
+        textStorage.enumerateAttribute(.thkCopyableBlockQuote, in: NSRange(location: 0, length: textStorage.length)) { value, quoteRange, _ in
+            guard value != nil, NSIntersectionRange(quoteRange, charRange).length > 0 else { return }
+            var rangesByDepth: [Int: [NSRange]] = [:]
+            textStorage.enumerateAttribute(.thkBlockQuoteBar, in: quoteRange) { value, range, _ in
+                guard let depth = value as? Int, depth > 0 else { return }
+                for level in 1...depth {
+                    var ranges = rangesByDepth[level, default: []]
+                    if let last = ranges.last, NSMaxRange(last) == range.location {
+                        ranges[ranges.count - 1] = NSUnionRange(last, range)
+                    } else {
+                        ranges.append(range)
+                    }
+                    rangesByDepth[level] = ranges
+                }
+            }
+            for depth in rangesByDepth.keys.sorted() {
+                for range in rangesByDepth[depth, default: []] {
+                    drawBlockQuoteBar(for: range, origin: origin, depth: depth)
+                }
+            }
         }
 
         textStorage.enumerateAttribute(.thkThematicBreak, in: charRange) { value, range, _ in
@@ -113,12 +131,34 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
         guard var rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
 
-        let leftInset: CGFloat = 2
-        let verticalInset: CGFloat = 3
+        let leftInset = THKBlockQuoteMetrics.barLeftInset
+        let verticalInset: CGFloat = depth == 1 ? 11 : 3
         rect.origin.x += leftInset + CGFloat(depth - 1) * THKBlockQuoteMetrics.indentPerLevel
         rect.size.width = THKBlockQuoteMetrics.barWidth
         rect.origin.y += verticalInset
         rect.size.height -= verticalInset * 2
+        if depth > 1, let storage = textStorage {
+            // Line fragments include paragraph padding and the extra line spacing.
+            // Align nested bars to the text baselines instead, excluding both the
+            // outer quote's bottom padding and the second-level quote's top gap.
+            var textTop = CGFloat.greatestFiniteMagnitude
+            var textBottom = -CGFloat.greatestFiniteMagnitude
+            storage.enumerateAttribute(.font, in: charRange) { value, range, _ in
+                guard let font = value as? UIFont else { return }
+                let run = self.glyphRange(forCharacterRange: range, actualCharacterRange: nil)
+                guard run.length > 0 else { return }
+                let first = run.location
+                let last = NSMaxRange(run) - 1
+                let firstBaseline = self.lineFragmentRect(forGlyphAt: first, effectiveRange: nil).minY + self.location(forGlyphAt: first).y
+                let lastBaseline = self.lineFragmentRect(forGlyphAt: last, effectiveRange: nil).minY + self.location(forGlyphAt: last).y
+                textTop = min(textTop, firstBaseline - font.capHeight)
+                textBottom = max(textBottom, lastBaseline - font.descender)
+            }
+            if textBottom > textTop {
+                rect.origin.y = origin.y + textTop
+                rect.size.height = textBottom - textTop
+            }
+        }
         guard rect.height > 0 else { return }
 
         blockQuoteBarColor.setFill()

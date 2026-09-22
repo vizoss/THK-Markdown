@@ -249,12 +249,11 @@ struct AttributedStringVisitor: MarkupVisitor {
 
         if result.length > 0 {
             let paragraphStyle = NSMutableParagraphStyle()
-            // Bar width + bar-to-text gap per level, not one opaque constant — see
-            // THKBlockQuoteMetrics. Numerically unchanged from the previous single `16 *
-            // depth` (4 + 12 == 16), so this is a naming/composition change, not a layout one.
+            // Match Android's left inset, bar width, and text gap at each depth.
             let indent: CGFloat = THKBlockQuoteMetrics.indentPerLevel * CGFloat(depth)
             paragraphStyle.headIndent = indent
             paragraphStyle.firstLineHeadIndent = indent
+            paragraphStyle.tailIndent = -THKBlockQuoteMetrics.copyButtonGutter
             // Applied at every nesting level (not just the outermost, unlike the block-level
             // vertical padding below) so a wrapped/multi-paragraph line anywhere inside a
             // quote — nested or not — gets the same interior breathing room.
@@ -265,6 +264,7 @@ struct AttributedStringVisitor: MarkupVisitor {
             addAttributeIfMissing(.paragraphStyle, value: paragraphStyle, to: result)
             addAttributeIfMissing(.thkBlockQuoteBar, value: depth, to: result)
             addForegroundColorIfMissing(theme.blockQuoteTextColor, to: result)
+            if depth == 2 { thkAddSecondLevelQuoteSpacing(to: result) }
             // Only the outermost level gets the rounded background fill: a nested quote's own
             // recursive call already ran with isOutermost == false, so this "if missing" stamp
             // (from the outermost call, over the WHOLE joined range) is the only one that ever
@@ -484,7 +484,7 @@ struct AttributedStringVisitor: MarkupVisitor {
             let paragraphStyle = NSMutableParagraphStyle()
             paragraphStyle.firstLineHeadIndent = THKCodeBlockMetrics.horizontalPadding
             paragraphStyle.headIndent = THKCodeBlockMetrics.horizontalPadding
-            paragraphStyle.tailIndent = -THKCodeBlockMetrics.horizontalPadding
+            paragraphStyle.tailIndent = -THKCodeBlockMetrics.copyButtonGutter
             paragraphStyle.paragraphSpacingBefore = index == 0 ? THKCodeBlockMetrics.verticalPaddingTop : 0
             paragraphStyle.paragraphSpacing = index == paragraphRanges.count - 1 ? THKCodeBlockMetrics.verticalPaddingBottom : 0
             attrString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
@@ -510,8 +510,8 @@ struct AttributedStringVisitor: MarkupVisitor {
             guard range.length > 0 else { return }
             let existing = (attrString.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle) ?? NSParagraphStyle.default
             let style = (existing.mutableCopy() as? NSMutableParagraphStyle) ?? NSMutableParagraphStyle()
-            style.paragraphSpacingBefore = before
-            style.paragraphSpacing = after
+            style.paragraphSpacingBefore += before
+            style.paragraphSpacing += after
             attrString.addAttribute(.paragraphStyle, value: style, range: range)
         }
 

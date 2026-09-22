@@ -68,7 +68,8 @@ internal class CodeBlockBackgroundSpan(
     private val topPaddingPx: Int,
     private val bottomPaddingPx: Int,
     private val spanStart: Int,
-    private val spanEnd: Int
+    private val spanEnd: Int,
+    val copyButtonGutterPx: Int = 0
 ) : LineBackgroundSpan, LineHeightSpan {
 
     override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
@@ -97,6 +98,7 @@ internal class CodeBlockBackgroundSpan(
         end: Int,
         lineNumber: Int
     ) {
+        if (copyButtonGutterPx > 0) return // The full-width container paints this background.
         drawRoundedLineBackground(
             canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
             isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
@@ -135,14 +137,31 @@ internal class ThemedQuoteSpan(
     private val stripeWidthPx: Int = 6,
     private val gapWidthPx: Int = 20,
     private val leftInsetPx: Int = 0,
-    private val barVerticalInsetPx: Int = 0
+    private val barVerticalInsetPx: Int = 0,
+    val copyButtonGutterPx: Int = 0,
+    private val nestedTopPaddingPx: Int = 0
 ) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
 
-    // topPaddingPx is taller than bottomPaddingPx: an outermost quote also gets a
-    // copy-button overlay in its top-right corner (only outermost quotes get one, matching
-    // backgroundColor's own outermost-only scoping), which needs somewhere to sit that
-    // isn't directly on top of the quote's first line of actual text.
+    private var expandedAscent: Int? = null
+    private var expandedTop: Int? = null
+
+    // Standalone quotes reserve padding on their TextView; embedded quotes retain
+    // per-block padding here. Nested spans never add another layer of line padding.
     override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
+        if (nestedTopPaddingPx > 0) {
+            // StaticLayout may reuse the previous wrapped line's font metrics.
+            // Remove our previous addition before applying it to the first line only.
+            if (fm.ascent == expandedAscent) fm.ascent += nestedTopPaddingPx
+            if (fm.top == expandedTop) fm.top += nestedTopPaddingPx
+            expandedAscent = null
+            expandedTop = null
+            if (start <= spanStart) {
+                fm.ascent -= nestedTopPaddingPx
+                fm.top -= nestedTopPaddingPx
+                expandedAscent = fm.ascent
+                expandedTop = fm.top
+            }
+        }
         if (backgroundColor == null) return
         if (start <= spanStart) {
             fm.ascent -= topPaddingPx
@@ -167,7 +186,7 @@ internal class ThemedQuoteSpan(
         end: Int,
         lineNumber: Int
     ) {
-        if (backgroundColor == null) return
+        if (backgroundColor == null || copyButtonGutterPx > 0) return
         drawRoundedLineBackground(
             canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
             isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
@@ -200,7 +219,7 @@ internal class ThemedQuoteSpan(
         val isLastLine = end >= spanEnd
         var barTop = top
         var barBottom = bottom
-        if (isFirstLine) barTop += barVerticalInsetPx
+        if (isFirstLine) barTop += barVerticalInsetPx + nestedTopPaddingPx
         if (isLastLine) barBottom -= barVerticalInsetPx
         drawRoundedLineBackground(
             canvas, paint,

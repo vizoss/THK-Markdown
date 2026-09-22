@@ -294,8 +294,11 @@ public final class THKMDView: UIView {
     private static let copyIconImage: UIImage = makeCopyIconImage()
 
     private static func makeCopyIconImage() -> UIImage {
-        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 24, height: 24))
-        let image = renderer.image { _ in
+        // Android fits its 24-unit vector into a 32dp button with 8dp padding:
+        // the visible icon is 16dp square. Preserve that exact scale on iOS.
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 16, height: 16))
+        let image = renderer.image { context in
+            context.cgContext.scaleBy(x: 16.0 / 24.0, y: 16.0 / 24.0)
             let path = UIBezierPath()
             path.lineWidth = 2
             path.lineCapStyle = .round
@@ -325,7 +328,7 @@ public final class THKMDView: UIView {
     private func makeCopyButton() -> UIButton {
         let button = UIButton(type: .system)
         button.setImage(Self.copyIconImage, for: .normal)
-        button.tintColor = .secondaryLabel
+        button.tintColor = theme.codeTextColor
         button.backgroundColor = .clear
         button.frame = CGRect(x: 0, y: 0, width: THKCopyButtonMetrics.size, height: THKCopyButtonMetrics.size)
         button.addTarget(self, action: #selector(copyButtonTapped(_:)), for: .touchUpInside)
