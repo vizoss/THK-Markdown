@@ -1,10 +1,13 @@
 package com.thk.mdview.sample
 
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -28,6 +31,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        setSupportActionBar(findViewById<Toolbar>(R.id.toolbar))
+
         recyclerView = findViewById(R.id.messageList)
         adapter = ChatAdapter(onAssistantContentUpdated = ::scrollToBottom)
         recyclerView.layoutManager = LinearLayoutManager(this)
@@ -38,7 +43,6 @@ class MainActivity : AppCompatActivity() {
 
         val messageInput = findViewById<EditText>(R.id.messageInput)
         val sendButton = findViewById<Button>(R.id.sendButton)
-        val themeToggleButton = findViewById<Button>(R.id.themeToggleButton)
 
         sendButton.setOnClickListener { sendMessage(messageInput) }
         messageInput.setOnEditorActionListener { _, actionId, _ ->
@@ -49,12 +53,22 @@ class MainActivity : AppCompatActivity() {
                 false
             }
         }
-        // Proves THKMDView.theme = ... alone re-renders already-bound bubbles: no
-        // reset()/setMarkdown call happens here, only ChatAdapter.setTheme below.
-        themeToggleButton.setOnClickListener {
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    // Proves THKMDView.theme = ... alone re-renders already-bound bubbles: no
+    // reset()/setMarkdown call happens here, only ChatAdapter.setTheme below.
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_theme) {
             usingAltTheme = !usingAltTheme
             adapter.setTheme(if (usingAltTheme) ALT_THEME else THKMDTheme.Default)
+            return true
         }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun sendMessage(messageInput: EditText) {

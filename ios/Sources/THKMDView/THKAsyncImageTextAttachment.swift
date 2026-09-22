@@ -1,24 +1,40 @@
 import UIKit
 
-/// An `NSTextAttachment` that starts out as a placeholder box sized to `maxSize`, then swaps
-/// in the real image once `imageLoader` resolves it — without re-setting the containing text
-/// view's `attributedText` or relayouting the surrounding text. The standard TextKit technique
-/// for that is `NSTextStorage.edited(.editedAttributes, range:, changeInLength: 0)` on just the
-/// attachment's character range, which is what `applyLoadedImage` does.
+/// An `NSTextAttachment` that starts out as a generic-aspect-ratio placeholder box, then
+/// re-sizes itself to the image's REAL aspect ratio once `imageLoader` resolves it — bounds
+/// always exactly match the displayed size (never a wider reserved box with the image floating
+/// centered inside it), so the image sits flush at the paragraph's left edge. Swapping in the
+/// real image changes the attachment's `bounds`, which is a genuine layout change (glyph
+/// geometry, not just pixels), so beyond `NSTextStorage.edited(.editedAttributes, ...)` (for
+/// redrawing) `applyLoadedImage` also calls `invalidateLayout(forCharacterRange:...)` on every
+/// attached layout manager to force TextKit to actually re-measure the line.
 public final class THKAsyncImageTextAttachment: NSTextAttachment {
-    public static let maxSize = CGSize(width: 240, height: 180)
+    /// Width cap once the real image is known; also the placeholder's width. Matches the
+    /// existing "available max width" used elsewhere for image layout.
+    public static let maxWidth: CGFloat = 240
+    /// Absolute height safety cap (matches Android's `MAX_IMAGE_HEIGHT_DP`) so an unusually
+    /// tall/narrow image can't blow out the message bubble's height.
+    public static let maxHeight: CGFloat = 320
+    /// height/width guess for the placeholder box shown before the real image loads, when the
+    /// real aspect ratio isn't known yet.
+    private static let placeholderAspectRatio: CGFloat = 0.6
 
     public let url: URL
     private let altText: String
     private weak var textStorage: NSTextStorage?
     private var loadTask: Task<Void, Never>?
+    /// Set by `THKMDView` so a growing/shrinking image can tell the containing view's own
+    /// intrinsic content size is stale too — `invalidateLayout` alone only tells TextKit to
+    /// re-measure the text view's internal layout, not the Auto Layout constraints above it.
+    public var onSizeChange: (() -> Void)?
 
     public init(url: URL, altText: String) {
         self.url = url
         self.altText = altText
         super.init(data: nil, ofType: nil)
-        self.image = Self.placeholderImage(size: Self.maxSize)
-        self.bounds = CGRect(origin: .zero, size: Self.maxSize)
+        let placeholderSize = Self.placeholderSize()
+        self.image = Self.placeholderImage(size: placeholderSize)
+        self.bounds = CGRect(origin: .zero, size: placeholderSize)
         self.accessibilityLabel = altText
     }
 
@@ -51,7 +67,7 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
 
     @MainActor
     private func applyLoadedImage(_ loadedImage: UIImage) {
-        let fitted = Self.scaledSize(for: loadedImage.size, maxSize: Self.maxSize)
+        let fitted = Self.scaledSize(for: loadedImage.size)
         image = loadedImage
         bounds = CGRect(origin: .zero, size: fitted)
 
@@ -59,6 +75,15 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
         textStorage.beginEditing()
         textStorage.edited(.editedAttributes, range: range, changeInLength: 0)
         textStorage.endEditing()
+        // .editedAttributes alone tells TextKit this range may need redrawing, but the
+        // attachment object itself didn't change (only its `bounds` property did), so that
+        // alone isn't guaranteed to make the layout manager re-measure the line's glyph
+        // geometry — invalidateLayout explicitly forces the real re-layout the size change
+        // needs (a placeholder-sized line growing/shrinking to the real image's box).
+        for layoutManager in textStorage.layoutManagers {
+            layoutManager.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+        }
+        onSizeChange?()
     }
 
     private func attachmentRange(in textStorage: NSTextStorage) -> NSRange? {
@@ -72,10 +97,23 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
         return found
     }
 
-    private static func scaledSize(for size: CGSize, maxSize: CGSize) -> CGSize {
-        guard size.width > 0, size.height > 0 else { return maxSize }
-        let scale = min(maxSize.width / size.width, maxSize.height / size.height, 1)
-        return CGSize(width: (size.width * scale).rounded(), height: (size.height * scale).rounded())
+    // Real aspect ratio, never upscaled past the source size: width is capped at maxWidth
+    // (not stretched up to it), height follows from the real aspect ratio, and only an
+    // unusually tall/narrow image gets clamped further by maxHeight (recomputing width from
+    // that so the aspect ratio stays correct rather than squashing/stretching the image).
+    private static func scaledSize(for size: CGSize) -> CGSize {
+        guard size.width > 0, size.height > 0 else { return placeholderSize() }
+        var width = min(size.width, maxWidth)
+        var height = width * size.height / size.width
+        if height > maxHeight {
+            height = maxHeight
+            width = height * size.width / size.height
+        }
+        return CGSize(width: width.rounded(), height: height.rounded())
+    }
+
+    private static func placeholderSize() -> CGSize {
+        CGSize(width: maxWidth, height: (maxWidth * placeholderAspectRatio).rounded())
     }
 
     private static func placeholderImage(size: CGSize) -> UIImage {

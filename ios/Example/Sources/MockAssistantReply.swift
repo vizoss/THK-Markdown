@@ -1,133 +1,150 @@
 import Foundation
 
+// Content-for-content mirror of android/sample/src/main/java/com/thk/mdview/sample/
+// SampleMarkdown.kt's template functions, same order, so "the Nth message sent" produces
+// matching demo content on both platforms.
 private let replyTemplates: [(String) -> String] = [
     { userMessage in
         """
-        Here's my answer to **"\(userMessage)"** — a look at headings, emphasis, links, and quotes.
+        Here's my answer to **"\(userMessage)"** — a reply built around headings, emphasis,
+        links, and quotes.
 
-        # Top-level heading
-        ## Second level
-        ### Third level
+        ## A second-level heading
+        ### And a third-level one
 
         This is *italic*, this is **bold**, this is ***bold italic***, and ~~this is
-        struck through~~. Escaped characters render literally too: \\*not emphasis\\*.
+        struck through~~. Escaped markup like \\*not italic\\* stays literal.
 
-        Autolinks work directly: <https://swift.org>. So do regular links: see the
-        [THKMDView repo](https://github.com/vizoss/THK-Markdown) for more.
-
-        > A block quote — the kind of thing right before a caveat.
+        > A block quote — the kind of thing right before a hedge or a caveat.
         >
-        > > And a nested quote one level deeper.
+        > > And a nested quote inside it, for good measure.
+
+        See the [THKMDView repo](https://github.com/vizoss/THK-Markdown) for more, or an
+        autolink straight from the source: <https://github.com/vizoss/THK-Markdown>.
+
+        ---
+
+        That horizontal rule above separates this from the sign-off.
         """
     },
     { userMessage in
         """
-        Here's my answer to **"\(userMessage)"** — code blocks and task lists.
+        Here's my answer to **"\(userMessage)"** — a reply built around code and task lists.
+
+        Call `THKMDView.appendMarkdownChunk(chunk)` for each SSE delta. Here's a fenced
+        block with a language tag:
+
+        ```kotlin
+        fun greet(name: String): String {
+            return "Hello, $name!"
+        }
+        ```
+
+        And one with no language tag:
+
+        ```
+        plain fenced content, no syntax highlighting
+        ```
+
+        An indented code block:
+
+            indented().code().block()
+
+        Progress on this feature:
+        - [x] Stream via SSE
+        - [x] Render inline formatting
+        - [ ] Ship syntax highlighting (still deferred)
+        """
+    },
+    { userMessage in
+        """
+        Here's my answer to **"\(userMessage)"** — a reply built around lists, nested and not.
+
+        Unordered, with a nested sub-list:
+        - First point
+        - Second point with **bold** in it
+          - a nested point
+          - another nested point
+        - Third point
+
+        Ordered, starting from a non-1 number:
+        5. Parse the Markdown
+        6. Convert it to spans
+        7. Render it live as chunks arrive
+
+        A line with a hard break right here,\\
+        continuing on the next line because of the trailing backslash above.
+        """
+    },
+    { userMessage in
+        """
+        Here's my answer to **"\(userMessage)"** — a real, column-aligned GFM table plus an
+        inline image loaded (and cached) over the network.
+
+        | Feature | Left | Center | Right |
+        | :-- | :-- | :-: | --: |
+        | Streaming | done | done | done |
+        | Real table layout | done | done | done |
+        | Image loading | done | done | done |
+        | Theming | done | done | done |
+
+        ![Random sample photo](https://picsum.photos/seed/thkmdview/480/270)
+
+        Tap the image, or scroll the table sideways if it's wider than the bubble.
+        """
+    },
+    { userMessage in
+        """
+        Here's my answer to **"\(userMessage)"** — or, well, a tour of every Markdown
+        construct THKMDView renders, since this is a mock.
+
+        ## Headings, emphasis, and strikethrough
+
+        This is *italic*, this is **bold**, this is ***bold italic***, and ~~this line
+        is struck through~~.
 
         ### Inline code and a fenced code block
 
         Call `THKMDView.appendMarkdownChunk(chunk)` for each SSE delta. Here's a block:
 
-        ```swift
-        func greet(name: String) -> String {
-            "Hello, \\(name)!"
+        ```kotlin
+        fun greet(name: String): String {
+            return "Hello, $name!"
         }
         ```
 
-        An indented code block works too:
+        ## Lists
 
-            let indented = true
+        Unordered:
+        - First point
+        - Second point with **bold** in it
+        - Third point
+
+        Ordered:
+        1. Parse the Markdown
+        2. Convert it to spans
+        3. Render it live as chunks arrive
 
         Task list:
         - [x] Stream via SSE
         - [x] Render inline formatting
-        - [x] Real GFM tables
-        - [ ] Syntax highlighting (v2)
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — nested and ordered lists.
+        - [x] Ship real table layout (v1)
 
-        Unordered, nested:
-        - First point
-          - A nested point with **bold** in it
-          - Another nested point
-        - Second point
-        - Third point
+        ## Quotes, links, and an image
 
-        Ordered, starting past 1:
-        5. Fifth step
-        6. Sixth step
-        7. Seventh step
+        > A block quote — the kind of thing right before a hedge or a caveat.
 
-        Ordered, nested inside unordered:
-        - Setup
-          1. Install the package
-          2. Import THKMDView
-          3. Drop it in a cell
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — a real table and a cached image.
+        See the [THKMDView repo](https://github.com/vizoss/THK-Markdown) for more, and
+        here's a real loaded image:
 
-        | Feature | Alignment | Android | iOS |
-        | :--- | :---: | ---: | ---: |
-        | Streaming | left | done | done |
-        | Real table layout | center | done | done |
-        | Cached image loading | right | done | done |
-        | Theming | right | done | done |
+        ![THKMDView sample image](https://picsum.photos/seed/thkmdview/480/270)
 
-        And here's an image, loaded asynchronously and cached on disk:
+        ## A real table, aligned and scrollable
 
-        ![THKMDView sample photo](https://picsum.photos/seed/thkmdview/480/270)
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — raw HTML stays inert, exactly as an
-        LLM might accidentally emit it.
-
-        This paragraph contains a literal tag: <script>alert('not executed')</script> —
-        it renders as visible text, not live markup.
-
-        Inline HTML like <span class="highlight">this</span> is inert too.
-
-        ---
-
-        That thematic break above separates this from a closing thought: raw HTML from
-        a model should never be trusted to run.
-        """
-    },
-    { userMessage in
-        """
-        Here's my answer to **"\(userMessage)"** — every construct THKMDView renders, \
-        streamed in one bubble.
-
-        # Everything, all at once
-
-        *italic*, **bold**, ***bold italic***, ~~strikethrough~~, and `inline code`.
-
-        ```swift
-        struct Example { let value: Int }
-        ```
-
-        - Unordered item
-          - Nested unordered item
-        1. Ordered item
-        - [x] Done
-        - [ ] Not done
-
-        > A closing block quote.
-
-        | A | B | C |
-        | :--- | :---: | ---: |
-        | 1 | 2 | 3 |
-
-        ![Sample image](https://picsum.photos/seed/thkmdview/480/270)
-
-        See [the repo](https://github.com/vizoss/THK-Markdown) or <https://swift.org>.
+        | Feature | Android | iOS |
+        | :-- | :-: | --: |
+        | Streaming | done | done |
+        | Real table layout | done | done |
 
         ---
 

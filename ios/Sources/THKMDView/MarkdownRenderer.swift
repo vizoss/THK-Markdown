@@ -47,6 +47,11 @@ public extension NSAttributedString.Key {
     static let thkCodeBlockBackground = NSAttributedString.Key("THKCodeBlockBackground")
     /// Paints a left-edge vertical bar behind block quote ranges. Value is the nesting depth (Int).
     static let thkBlockQuoteBar = NSAttributedString.Key("THKBlockQuoteBar")
+    /// Paints a full-width rounded background behind a block quote range. Only set on the
+    /// outermost level of a nested `> > quote` (see `blockQuoteDepth` in each renderer), so a
+    /// nested quote reads as one continuous background rather than a seam where the nested
+    /// portion starts.
+    static let thkBlockQuoteBackground = NSAttributedString.Key("THKBlockQuoteBackground")
 }
 
 /// Horizontal inset reserved on each side of a code block via `NSParagraphStyle`
@@ -54,6 +59,12 @@ public extension NSAttributedString.Key {
 /// its background rect stays full-width (indentation alone produces the padded look).
 enum THKCodeBlockMetrics {
     static let horizontalPadding: CGFloat = 8
+    /// Reserved above the block's first line and below its last line (matches Android's
+    /// `CodeBlockBackgroundSpan` ~8dp `verticalPaddingPx`). Applied per-paragraph, not
+    /// uniformly across the whole block range — see `codeBlockParagraphStyle` in each
+    /// renderer, which sets this only on the first/last line so interior lines don't also
+    /// pick it up.
+    static let verticalPadding: CGFloat = 8
 }
 
 // `DefaultMarkdownRenderer` is intentionally NOT defined here: the SPM distribution's

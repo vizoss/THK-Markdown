@@ -19,11 +19,40 @@ internal class LinkClickableSpan(
     }
 }
 
-// Draws a full rounded-rect background across a (possibly multi-line) code block: each
-// line only gets the flat middle-fill, except the block's first line (rounded top
-// corners) and last line (rounded bottom corners) - drawn as a full round-rect then
+// Shared by CodeBlockBackgroundSpan and ThemedQuoteSpan: draws a full rounded-rect
+// background across a (possibly multi-line) block, only rounding the very top corners
+// (first line) and very bottom corners (last line) - drawn as a full round-rect then
 // squared off on the far side, which is cheaper than tracking per-glyph paths.
-//
+private fun drawRoundedLineBackground(
+    canvas: Canvas,
+    paint: Paint,
+    left: Int,
+    right: Int,
+    top: Int,
+    bottom: Int,
+    color: Int,
+    cornerRadiusPx: Float,
+    isFirstLine: Boolean,
+    isLastLine: Boolean
+) {
+    val rect = RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
+    val originalColor = paint.color
+    paint.color = color
+    when {
+        isFirstLine && isLastLine -> canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
+        isFirstLine -> {
+            canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
+            canvas.drawRect(rect.left, rect.top + cornerRadiusPx, rect.right, rect.bottom, paint)
+        }
+        isLastLine -> {
+            canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
+            canvas.drawRect(rect.left, rect.top, rect.right, rect.bottom - cornerRadiusPx, paint)
+        }
+        else -> canvas.drawRect(rect, paint)
+    }
+    paint.color = originalColor
+}
+
 // Also implements LineHeightSpan to grow the first line's ascent and the last line's
 // descent by `verticalPaddingPx`: Android's Spannable/Layout has no notion of "block
 // padding" the way CSS does, so without this the code text touches the background's top
@@ -64,24 +93,10 @@ internal class CodeBlockBackgroundSpan(
         end: Int,
         lineNumber: Int
     ) {
-        val isFirstLine = start <= spanStart
-        val isLastLine = end >= spanEnd
-        val rect = RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
-        val originalColor = paint.color
-        paint.color = backgroundColor
-        when {
-            isFirstLine && isLastLine -> canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
-            isFirstLine -> {
-                canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
-                canvas.drawRect(rect.left, rect.top + cornerRadiusPx, rect.right, rect.bottom, paint)
-            }
-            isLastLine -> {
-                canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
-                canvas.drawRect(rect.left, rect.top, rect.right, rect.bottom - cornerRadiusPx, paint)
-            }
-            else -> canvas.drawRect(rect, paint)
-        }
-        paint.color = originalColor
+        drawRoundedLineBackground(
+            canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
+            isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
+        )
     }
 }
 
@@ -98,11 +113,56 @@ internal class CodeBlockPaddingSpan(private val paddingPx: Int) : LeadingMarginS
 // A LeadingMarginSpan-based block-quote bar (rather than android.text.style.QuoteSpan,
 // whose colored constructor needs API 28): multiple instances stacked over the same
 // range - one per nesting level - render as multiple side-by-side bars for `> > nested`.
+//
+// Only the OUTERMOST quote in a nested `> > quote` gets the rounded background fill (a
+// non-null `backgroundColor`, set by MarkdownSpanVisitor only when blockQuoteDepth == 0
+// at the point this span's range starts): an inner span's own start/end only cover the
+// nested portion, so if it also drew a rounded background, the "first/last line" corner
+// rounding would trigger at the nested quote's boundary - a visual notch in the middle
+// of what should be one continuous rounded block. Nested levels still get their own bar.
 internal class ThemedQuoteSpan(
     private val barColor: Int,
+    private val backgroundColor: Int? = null,
+    private val cornerRadiusPx: Float = 0f,
+    private val verticalPaddingPx: Int = 0,
+    private val spanStart: Int = 0,
+    private val spanEnd: Int = 0,
     private val stripeWidthPx: Int = 6,
     private val gapWidthPx: Int = 20
-) : LeadingMarginSpan {
+) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
+
+    override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
+        if (backgroundColor == null) return
+        if (start <= spanStart) {
+            fm.ascent -= verticalPaddingPx
+            fm.top -= verticalPaddingPx
+        }
+        if (end >= spanEnd) {
+            fm.descent += verticalPaddingPx
+            fm.bottom += verticalPaddingPx
+        }
+    }
+
+    override fun drawBackground(
+        canvas: Canvas,
+        paint: Paint,
+        left: Int,
+        right: Int,
+        top: Int,
+        baseline: Int,
+        bottom: Int,
+        text: CharSequence,
+        start: Int,
+        end: Int,
+        lineNumber: Int
+    ) {
+        if (backgroundColor == null) return
+        drawRoundedLineBackground(
+            canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
+            isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
+        )
+    }
+
     override fun getLeadingMargin(first: Boolean): Int = stripeWidthPx + gapWidthPx
 
     override fun drawLeadingMargin(

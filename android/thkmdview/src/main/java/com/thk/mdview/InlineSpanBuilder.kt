@@ -125,7 +125,7 @@ internal object InlineSpanBuilder {
             url = url,
             altText = altText,
             maxWidthPx = imageContext.bounds.maxWidthPx,
-            maxHeightPx = imageContext.bounds.maxHeightPx,
+            absoluteMaxHeightPx = imageContext.bounds.maxHeightPx,
             cornerRadiusPx = imageContext.cornerRadiusPx,
             placeholderColor = imageContext.placeholderColor
         )

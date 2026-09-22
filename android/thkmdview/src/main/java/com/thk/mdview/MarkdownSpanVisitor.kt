@@ -50,6 +50,7 @@ internal class MarkdownSpanVisitor(
     private val segments = mutableListOf<RenderedSegment>()
     private var builder = SpannableStringBuilder()
     private val listStack = ArrayDeque<ListContext>()
+    private var blockQuoteDepth = 0
 
     // Used only to *measure* list-marker text ("☑ ", "12. ") at the theme's real body
     // size, so OrderedListItemSpan/TaskListItemSpan reserve exactly enough leading margin
@@ -133,13 +134,28 @@ internal class MarkdownSpanVisitor(
     override fun visit(blockQuote: BlockQuote) {
         separate()
         val start = builder.length
+        val isOutermost = blockQuoteDepth == 0
+        blockQuoteDepth++
         // Recursing through visitChildren (not InlineSpanBuilder) lets a nested
         // `> > quote` add its own ThemedQuoteSpan over the inner range, so nested
-        // quotes stack as multiple side-by-side bars rather than needing depth tracking.
+        // quotes stack as multiple side-by-side bars. Only the outermost span also gets
+        // the rounded background fill - see the comment on ThemedQuoteSpan for why.
         visitChildren(blockQuote)
+        blockQuoteDepth--
         val end = builder.length
         if (end > start) {
-            builder.setSpan(ThemedQuoteSpan(theme.blockQuoteBarColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            val verticalPaddingPx = (6 * densityPx).toInt()
+            builder.setSpan(
+                ThemedQuoteSpan(
+                    barColor = theme.blockQuoteBarColor,
+                    backgroundColor = if (isOutermost) theme.blockQuoteBackgroundColor else null,
+                    cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx,
+                    verticalPaddingPx = verticalPaddingPx,
+                    spanStart = start,
+                    spanEnd = end
+                ),
+                start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
             builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }

@@ -8,6 +8,7 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
     var codeBlockBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var inlineCodeBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var blockQuoteBarColor: UIColor = UIColor.systemGray3
+    var blockQuoteBackgroundColor: UIColor = UIColor.systemGray6
     var codeBlockCornerRadius: CGFloat = 6
 
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
@@ -29,6 +30,14 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             drawInlineBackground(for: range, color: inlineCodeBackgroundColor, origin: origin, cornerRadius: 3)
         }
 
+        // Drawn before the bar so the bar paints on top of the fill, and reuses
+        // drawFullWidthBackground/codeBlockCornerRadius — same "one continuous rounded shape"
+        // logic as a code block, just a different attribute/color.
+        textStorage.enumerateAttribute(.thkBlockQuoteBackground, in: charRange) { value, range, _ in
+            guard value != nil else { return }
+            drawFullWidthBackground(for: range, color: blockQuoteBackgroundColor, origin: origin, cornerRadius: codeBlockCornerRadius)
+        }
+
         textStorage.enumerateAttribute(.thkBlockQuoteBar, in: charRange) { value, range, _ in
             guard value != nil else { return }
             drawBlockQuoteBar(for: range, origin: origin)
@@ -37,17 +46,26 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         context.restoreGState()
     }
 
+    // Draws ONE rounded shape spanning every line of the block, rather than a separate
+    // rounded rect per line fragment (which produced a stack of independently-pill-shaped
+    // lines instead of a single continuous block). `lineFragmentRect` already includes any
+    // paragraphSpacingBefore/paragraphSpacing reserved on the first/last line (see
+    // codeBlockParagraphStyle in SwiftMarkdownRenderer.swift/MaakuMarkdownRenderer.swift),
+    // so unioning the line rects picks up that vertical padding automatically.
     private func drawFullWidthBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat) {
         guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
         let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
-        color.setFill()
+        var unionRect: CGRect?
         enumerateLineFragments(forGlyphRange: glyphRange) { rect, _, _, _, _ in
             var r = rect
             r.origin.x += origin.x
             r.origin.y += origin.y
-            let path = UIBezierPath(roundedRect: r.insetBy(dx: 0, dy: -1), cornerRadius: cornerRadius)
-            context.addPath(path.cgPath)
+            unionRect = unionRect?.union(r) ?? r
         }
+        guard let rect = unionRect else { return }
+        color.setFill()
+        let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
+        context.addPath(path.cgPath)
         context.fillPath()
     }
 

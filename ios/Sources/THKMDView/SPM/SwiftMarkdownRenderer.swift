@@ -170,12 +170,13 @@ struct AttributedStringVisitor: MarkupVisitor {
         if code.hasSuffix("\n") {
             code.removeLast()
         }
-        return NSAttributedString(string: code, attributes: [
+        let result = NSMutableAttributedString(string: code, attributes: [
             .font: codeFont,
             .foregroundColor: theme.codeTextColor,
-            .thkCodeBlockBackground: true,
-            .paragraphStyle: codeBlockParagraphStyle()
+            .thkCodeBlockBackground: true
         ])
+        applyCodeBlockParagraphStyles(to: result)
+        return result
     }
 
     mutating func visitLink(_ link: Link) -> NSAttributedString {
@@ -201,6 +202,7 @@ struct AttributedStringVisitor: MarkupVisitor {
     }
 
     mutating func visitBlockQuote(_ blockQuote: BlockQuote) -> NSAttributedString {
+        let isOutermost = blockQuoteDepth == 0
         let depth = blockQuoteDepth + 1
         blockQuoteDepth = depth
         let result = joinBlocks(Array(blockQuote.children))
@@ -217,6 +219,14 @@ struct AttributedStringVisitor: MarkupVisitor {
             addAttributeIfMissing(.paragraphStyle, value: paragraphStyle, to: result)
             addAttributeIfMissing(.thkBlockQuoteBar, value: depth, to: result)
             addForegroundColorIfMissing(theme.blockQuoteTextColor, to: result)
+            // Only the outermost level gets the rounded background fill: a nested quote's own
+            // recursive call already ran with isOutermost == false, so this "if missing" stamp
+            // (from the outermost call, over the WHOLE joined range) is the only one that ever
+            // applies it — the nested portion reads as part of one continuous background
+            // instead of getting its own separately-rounded, seamed fill.
+            if isOutermost {
+                addAttributeIfMissing(.thkBlockQuoteBackground, value: true, to: result)
+            }
         }
         return result
     }
@@ -224,7 +234,7 @@ struct AttributedStringVisitor: MarkupVisitor {
     mutating func visitThematicBreak(_ thematicBreak: ThematicBreak) -> NSAttributedString {
         NSAttributedString(string: "\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}\u{2015}", attributes: [
             .font: baseFont,
-            .foregroundColor: UIColor.separator
+            .foregroundColor: theme.tableBorderColor
         ])
     }
 
@@ -390,14 +400,29 @@ struct AttributedStringVisitor: MarkupVisitor {
         }
     }
 
-    private func codeBlockParagraphStyle() -> NSParagraphStyle {
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.paragraphSpacingBefore = 4
-        paragraphStyle.paragraphSpacing = 4
-        paragraphStyle.firstLineHeadIndent = THKCodeBlockMetrics.horizontalPadding
-        paragraphStyle.headIndent = THKCodeBlockMetrics.horizontalPadding
-        paragraphStyle.tailIndent = -THKCodeBlockMetrics.horizontalPadding
-        return paragraphStyle
+    // A single NSParagraphStyle applied uniformly across a multi-line code block would add
+    // paragraphSpacingBefore/paragraphSpacing at every internal line break too, since each
+    // `\n`-delimited line is its own "paragraph" for NSParagraphStyle purposes — that would
+    // put unwanted gaps between every source line, not just around the block's outside. So
+    // each line/paragraph range gets its own style object, with the vertical padding
+    // non-zero only on the very first (spacingBefore) and very last (spacing) line.
+    private func applyCodeBlockParagraphStyles(to attrString: NSMutableAttributedString) {
+        let fullRange = NSRange(location: 0, length: attrString.length)
+        guard fullRange.length > 0 else { return }
+        var paragraphRanges: [NSRange] = []
+        (attrString.string as NSString).enumerateSubstrings(in: fullRange, options: .byParagraphs) { _, _, enclosingRange, _ in
+            paragraphRanges.append(enclosingRange)
+        }
+        guard !paragraphRanges.isEmpty else { return }
+        for (index, range) in paragraphRanges.enumerated() {
+            let paragraphStyle = NSMutableParagraphStyle()
+            paragraphStyle.firstLineHeadIndent = THKCodeBlockMetrics.horizontalPadding
+            paragraphStyle.headIndent = THKCodeBlockMetrics.horizontalPadding
+            paragraphStyle.tailIndent = -THKCodeBlockMetrics.horizontalPadding
+            paragraphStyle.paragraphSpacingBefore = index == 0 ? THKCodeBlockMetrics.verticalPadding : 0
+            paragraphStyle.paragraphSpacing = index == paragraphRanges.count - 1 ? THKCodeBlockMetrics.verticalPadding : 0
+            attrString.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+        }
     }
 
     private mutating func plainText(of markup: Markup) -> String {
@@ -408,15 +433,22 @@ struct AttributedStringVisitor: MarkupVisitor {
         markup.children.map { plainText(of: $0) }.joined()
     }
 
+    // Relative multipliers matching Android's `sizeForLevel` in MarkdownSpanVisitor.kt, so
+    // the h1-h6 size ramp looks the same on both platforms regardless of the theme's
+    // bodyFontSize (a fixed-point-offset ramp, used previously, drifts away from Android's
+    // ratios whenever bodyFontSize differs from the value it was tuned against).
     private func headingFontSize(for level: Int) -> CGFloat {
-        let base = baseFont.pointSize
+        baseFont.pointSize * Self.headingSizeRatio(for: level)
+    }
+
+    private static func headingSizeRatio(for level: Int) -> CGFloat {
         switch level {
-        case 1: return base + 10
-        case 2: return base + 7
-        case 3: return base + 5
-        case 4: return base + 3
-        case 5: return base + 1
-        default: return base
+        case 1: return 1.6
+        case 2: return 1.4
+        case 3: return 1.25
+        case 4: return 1.15
+        case 5: return 1.05
+        default: return 1.0
         }
     }
 }

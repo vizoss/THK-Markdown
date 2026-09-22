@@ -20,13 +20,15 @@ final class UserMessageCell: UITableViewCell {
         selectionStyle = .none
         backgroundColor = .clear
 
-        bubbleView.backgroundColor = .systemBlue
-        bubbleView.layer.cornerRadius = 16
+        // Matches Android's user bubble (item_message_user.xml: cardCornerRadius 14dp,
+        // bubble_user_background, uniform 14dp padding around the text).
+        bubbleView.backgroundColor = SampleBubbleColors.userBackground
+        bubbleView.layer.cornerRadius = 14
         bubbleView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(bubbleView)
 
         label.numberOfLines = 0
-        label.textColor = .white
+        label.textColor = SampleBubbleColors.userText
         label.font = .preferredFont(forTextStyle: .body)
         label.translatesAutoresizingMaskIntoConstraints = false
         bubbleView.addSubview(label)
@@ -42,8 +44,8 @@ final class UserMessageCell: UITableViewCell {
             bubbleView.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: 16),
             maxWidthConstraint,
 
-            label.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 10),
-            label.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -10),
+            label.topAnchor.constraint(equalTo: bubbleView.topAnchor, constant: 14),
+            label.bottomAnchor.constraint(equalTo: bubbleView.bottomAnchor, constant: -14),
             label.leadingAnchor.constraint(equalTo: bubbleView.leadingAnchor, constant: 14),
             label.trailingAnchor.constraint(equalTo: bubbleView.trailingAnchor, constant: -14)
         ])

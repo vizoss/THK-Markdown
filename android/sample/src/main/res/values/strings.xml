@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">THKMDView Sample</string>
+    <!-- In-app toolbar title - kept identical to the iOS Example app's nav bar title
+         (see ios/Example/Sources/MessageListViewController.swift) for consistency. -->
+    <string name="app_title">THKMDView Demo</string>
     <string name="message_input_hint">Message…</string>
     <string name="send">Send</string>
     <string name="theme_toggle">Theme</string>

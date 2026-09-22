@@ -146,7 +146,7 @@ public final class THKMDView: UIView {
                 applyTheme(to: segmentView.layoutManager)
                 segmentView.attachments.forEach { $0.cancelLoading() }
                 segmentView.textView.attributedText = attributed
-                segmentView.attachments = startImageLoads(in: attributed, textStorage: segmentView.textView.textStorage)
+                segmentView.attachments = startImageLoads(in: attributed, into: segmentView.textView)
                 newSegmentViews.append(.text(segmentView))
 
             case .table(let model):
@@ -210,10 +210,11 @@ public final class THKMDView: UIView {
         layoutManager.codeBlockBackgroundColor = theme.codeBackgroundColor
         layoutManager.inlineCodeBackgroundColor = theme.codeBackgroundColor
         layoutManager.blockQuoteBarColor = theme.blockQuoteBarColor
+        layoutManager.blockQuoteBackgroundColor = theme.blockQuoteBackgroundColor
         layoutManager.codeBlockCornerRadius = theme.codeBlockCornerRadius
     }
 
-    private func startImageLoads(in attributed: NSAttributedString, textStorage: NSTextStorage) -> [THKAsyncImageTextAttachment] {
+    private func startImageLoads(in attributed: NSAttributedString, into textView: UITextView) -> [THKAsyncImageTextAttachment] {
         var attachments: [THKAsyncImageTextAttachment] = []
         attributed.enumerateAttribute(.attachment, in: NSRange(location: 0, length: attributed.length)) { value, _, _ in
             if let attachment = value as? THKAsyncImageTextAttachment {
@@ -221,7 +222,15 @@ public final class THKMDView: UIView {
             }
         }
         for attachment in attachments {
-            attachment.startLoading(imageLoader: imageLoader, into: textStorage)
+            // The image's real size (once loaded) can differ from the placeholder box, which
+            // changes this text view's own intrinsic content size, which in turn changes
+            // THKMDView's (its stack view wraps this text view) — both need to be told their
+            // previously-cached intrinsic size is stale, not just TextKit's internal layout.
+            attachment.onSizeChange = { [weak self, weak textView] in
+                textView?.invalidateIntrinsicContentSize()
+                self?.invalidateIntrinsicContentSize()
+            }
+            attachment.startLoading(imageLoader: imageLoader, into: textView.textStorage)
         }
         return attachments
     }

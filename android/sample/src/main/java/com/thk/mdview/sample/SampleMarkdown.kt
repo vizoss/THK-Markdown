@@ -13,6 +13,7 @@ val ALT_THEME: THKMDTheme = THKMDTheme(
     codeBlockCornerRadiusDp = 10f,
     blockQuoteBarColor = 0xFFDA9A3C.toInt(),
     blockQuoteTextColor = 0xFF7A5A2E.toInt(),
+    blockQuoteBackgroundColor = 0xFFFBF1DE.toInt(),
     tableBorderColor = 0xFFDA9A3C.toInt(),
     tableHeaderBackgroundColor = 0xFFF6DDB0.toInt(),
     bodyFontSizeSp = 15f,
@@ -164,7 +165,7 @@ private fun kitchenSinkReply(userMessage: String): String = """
     | Feature | Android | iOS |
     | :-- | :-: | --: |
     | Streaming | done | done |
-    | Real table layout | done | planned |
+    | Real table layout | done | done |
 
     ---
 

@@ -1,22 +1,46 @@
 import UIKit
 import THKMDView
 
+// Shared with AssistantMessageCell/UserMessageCell. Matches android/sample's colors.xml
+// (bubble_assistant_background / bubble_assistant_text / bubble_user_background / bubble_user_text).
+enum SampleBubbleColors {
+    static let assistantBackground = UIColor(sampleHex: 0xF0F1F3)
+    static let assistantText = UIColor(sampleHex: 0x1C1C1E)
+    static let userBackground = UIColor(sampleHex: 0x0A84FF)
+    static let userText = UIColor(sampleHex: 0xFFFFFF)
+}
+
+extension UIColor {
+    convenience init(sampleHex hex: UInt32) {
+        self.init(
+            red: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: 1
+        )
+    }
+}
+
 final class MessageListViewController: UIViewController {
     // Demonstrates that `THKMDView.theme` is settable and re-renders in place without a
     // fresh `setMarkdown` call — toggled from the nav bar button set up in `viewDidLoad`.
+    // Matches Android's ALT_THEME (android/sample/.../SampleMarkdown.kt) hex-for-hex, so
+    // toggling the theme looks the same on both platforms rather than landing on iOS-only
+    // arbitrarily-chosen system colors.
     private static let vibrantTheme = THKMDTheme(
-        bodyTextColor: .systemIndigo,
-        headingTextColor: .systemPurple,
-        linkColor: .systemPink,
-        codeTextColor: .systemTeal,
-        codeBackgroundColor: .systemPurple.withAlphaComponent(0.12),
-        codeBlockCornerRadius: 14,
-        blockQuoteBarColor: .systemPink,
-        blockQuoteTextColor: .systemPurple,
-        tableBorderColor: .systemPurple,
-        tableHeaderBackgroundColor: .systemPurple.withAlphaComponent(0.15),
-        bodyFontSize: 18,
-        codeFontSize: 15
+        bodyTextColor: UIColor(sampleHex: 0x2B2118),
+        headingTextColor: UIColor(sampleHex: 0x7A3E00),
+        linkColor: UIColor(sampleHex: 0xB3541E),
+        codeTextColor: UIColor(sampleHex: 0x5C3D00),
+        codeBackgroundColor: UIColor(sampleHex: 0xFCE9C8),
+        codeBlockCornerRadius: 10,
+        blockQuoteBarColor: UIColor(sampleHex: 0xDA9A3C),
+        blockQuoteTextColor: UIColor(sampleHex: 0x7A5A2E),
+        blockQuoteBackgroundColor: UIColor(sampleHex: 0xFBF1DE),
+        tableBorderColor: UIColor(sampleHex: 0xDA9A3C),
+        tableHeaderBackgroundColor: UIColor(sampleHex: 0xF6DDB0),
+        bodyFontSize: 15,
+        codeFontSize: 13
     )
 
     private var currentTheme: THKMDTheme = .default
@@ -41,7 +65,7 @@ final class MessageListViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "THKMDView Example"
+        title = "THKMDView Demo"
         view.backgroundColor = .systemBackground
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(

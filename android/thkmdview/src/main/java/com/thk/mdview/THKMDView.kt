@@ -191,7 +191,9 @@ class THKMDView @JvmOverloads constructor(
     companion object {
         const val NO_MAX_WIDTH = -1
         private const val MAX_IMAGE_WIDTH_DP = 240f
-        private const val MAX_IMAGE_HEIGHT_DP = 180f
+        // Absolute cap only kicks in for unusually tall/narrow images - most images are
+        // sized by MAX_IMAGE_WIDTH_DP + their own real aspect ratio (see AsyncImageSpan).
+        private const val MAX_IMAGE_HEIGHT_DP = 320f
         private const val MIN_IMAGE_WIDTH_DP = 80f
     }
 }

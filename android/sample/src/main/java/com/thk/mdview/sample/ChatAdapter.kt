@@ -41,6 +41,13 @@ class ChatAdapter(
     private val boundAssistantHolders = mutableSetOf<AssistantViewHolder>()
     private var currentTheme: THKMDTheme = THKMDTheme.Default
 
+    // A message only plays its chunk-by-chunk "typewriter" once. Without this, every
+    // RecyclerView rebind of an already-finished message - which happens constantly
+    // while scrolling, since recycled views get rebound on essentially every scroll
+    // frame - would restart the whole streaming coroutine from scratch, competing with
+    // the scroll gesture for main-thread time and re-typing text the user already read.
+    private val fullyStreamedMessageIds = mutableSetOf<Long>()
+
     fun setTheme(theme: THKMDTheme) {
         currentTheme = theme
         boundAssistantHolders.forEach { it.markdownView.theme = theme }
@@ -83,6 +90,11 @@ class ChatAdapter(
         holder.markdownView.theme = currentTheme
         boundAssistantHolders += holder
 
+        if (message.id in fullyStreamedMessageIds) {
+            holder.markdownView.setMarkdown(message.content)
+            return
+        }
+
         holder.streamingJob = holder.scope.launch {
             val chunkSizes = 3..9
             var index = 0
@@ -95,6 +107,7 @@ class ChatAdapter(
                 onAssistantContentUpdated()
                 delay(Random.nextLong(30L, 80L))
             }
+            fullyStreamedMessageIds += message.id
         }
     }
 

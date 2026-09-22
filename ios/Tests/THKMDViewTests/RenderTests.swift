@@ -136,6 +136,30 @@ final class RenderTests: XCTestCase {
         XCTAssertEqual(depth, 2)
     }
 
+    func testBlockQuoteCarriesBackgroundAttribute() {
+        let attributed = singleText("> A wise quote.")
+        XCTAssertNotNil(attributed.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil))
+    }
+
+    // Guards the nested-quote fix: only the OUTERMOST level is tagged, and it's tagged as one
+    // continuous run spanning both the outer text and the nested quote's own text, so
+    // THKBackgroundLayoutManager paints one seamless rounded background instead of a separate,
+    // independently-rounded fill starting where the nested quote begins.
+    func testNestedBlockQuoteBackgroundIsOneContinuousOutermostRangeOnly() {
+        let attributed = singleText("> Outer\n> > Inner")
+        let outerRange = (attributed.string as NSString).range(of: "Outer")
+        let innerRange = (attributed.string as NSString).range(of: "Inner")
+
+        let fullRange = NSRange(location: 0, length: attributed.length)
+        var backgroundRange = NSRange(location: 0, length: 0)
+        let value = attributed.attribute(.thkBlockQuoteBackground, at: outerRange.location, longestEffectiveRange: &backgroundRange, in: fullRange)
+        XCTAssertNotNil(value)
+        XCTAssertTrue(
+            NSLocationInRange(innerRange.location, backgroundRange),
+            "expected one continuous background range spanning both the outer and nested quote text"
+        )
+    }
+
     func testCodeBlockUsesMonospaceFontAndBackgroundAttribute() {
         let attributed = singleText("```\nlet x = 1\nlet y = 2\n```")
         XCTAssertTrue(attributed.string.contains("let x = 1"))
@@ -308,6 +332,7 @@ final class RenderTests: XCTestCase {
             codeBlockCornerRadius: 4,
             blockQuoteBarColor: .systemOrange,
             blockQuoteTextColor: .systemYellow,
+            blockQuoteBackgroundColor: .systemPink,
             tableBorderColor: .brown,
             tableHeaderBackgroundColor: .cyan,
             bodyFontSize: 20,
