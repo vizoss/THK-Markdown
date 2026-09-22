@@ -1,6 +1,25 @@
 import UIKit
+import THKMDView
 
 final class MessageListViewController: UIViewController {
+    // Demonstrates that `THKMDView.theme` is settable and re-renders in place without a
+    // fresh `setMarkdown` call — toggled from the nav bar button set up in `viewDidLoad`.
+    private static let vibrantTheme = THKMDTheme(
+        bodyTextColor: .systemIndigo,
+        headingTextColor: .systemPurple,
+        linkColor: .systemPink,
+        codeTextColor: .systemTeal,
+        codeBackgroundColor: .systemPurple.withAlphaComponent(0.12),
+        codeBlockCornerRadius: 14,
+        blockQuoteBarColor: .systemPink,
+        blockQuoteTextColor: .systemPurple,
+        tableBorderColor: .systemPurple,
+        tableHeaderBackgroundColor: .systemPurple.withAlphaComponent(0.15),
+        bodyFontSize: 18,
+        codeFontSize: 15
+    )
+
+    private var currentTheme: THKMDTheme = .default
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputBar = MessageInputBar()
     private var inputBarBottomConstraint: NSLayoutConstraint!
@@ -25,10 +44,25 @@ final class MessageListViewController: UIViewController {
         title = "THKMDView Example"
         view.backgroundColor = .systemBackground
 
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Theme", style: .plain, target: self, action: #selector(toggleTheme)
+        )
+
         setUpTableView()
         setUpInputBar()
         setUpKeyboardObservers()
         startHeightRefreshTimer() // the seeded greeting message streams in immediately too
+    }
+
+    // Proves `THKMDView.theme` re-renders in place: every currently visible assistant
+    // bubble picks up the new theme immediately, with no `setMarkdown` call.
+    @objc private func toggleTheme() {
+        currentTheme = (currentTheme.headingTextColor == THKMDTheme.default.headingTextColor)
+            ? Self.vibrantTheme
+            : .default
+        for cell in tableView.visibleCells {
+            (cell as? AssistantMessageCell)?.markdownView.theme = currentTheme
+        }
     }
 
     deinit {
@@ -113,7 +147,11 @@ final class MessageListViewController: UIViewController {
     // launch.
     private func startHeightRefreshTimer() {
         heightRefreshTimer?.invalidate()
-        var ticksRemaining = 60 // ~9s, comfortably longer than the longest mock reply stream
+        // The longest mock reply template is a couple thousand characters and streams at
+        // 2-6 chars/30ms, so a slow run (small chunks) can take 20s+; a table/image reply also
+        // keeps growing briefly after the text finishes while the image loads. ~45s here stays
+        // comfortably ahead of both.
+        var ticksRemaining = 300
         heightRefreshTimer = Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] timer in
             guard let self else {
                 timer.invalidate()
@@ -123,6 +161,12 @@ final class MessageListViewController: UIViewController {
             UIView.performWithoutAnimation {
                 self.tableView.beginUpdates()
                 self.tableView.endUpdates()
+            }
+            // Keep the growing bubble pinned to the bottom of the viewport as it streams,
+            // the same way a real chat UI tracks an in-progress reply.
+            if !self.messages.isEmpty {
+                let lastIndexPath = IndexPath(row: self.messages.count - 1, section: 0)
+                self.tableView.scrollToRow(at: lastIndexPath, at: .bottom, animated: false)
             }
             if ticksRemaining <= 0 {
                 timer.invalidate()
@@ -168,6 +212,7 @@ extension MessageListViewController: UITableViewDataSource {
             guard let cell = tableView.dequeueReusableCell(withIdentifier: AssistantMessageCell.reuseIdentifier, for: indexPath) as? AssistantMessageCell else {
                 return UITableViewCell()
             }
+            cell.markdownView.theme = currentTheme
             cell.startStreaming(message.content)
             return cell
         }

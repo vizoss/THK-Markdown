@@ -143,7 +143,82 @@ Chosen approach (implemented in both scaffolds):
    CocoaPods podspec consumed by git tag (see `ios/README.md`). Neither is on Maven
    Central or the CocoaPods trunk registry yet — that's still open if you want it.
 
-## 8. Roadmap
+## 8. v1 addendum: rich rendering architecture (images, real tables, theming)
+
+**Status: implemented on both platforms.** Decided after v0 shipped, in response to a
+request for full Markdown coverage, a real (not fallback) table, cached image loading,
+and a configurable color/text theme. This supersedes the "tables/images are v1, revisit
+later" notes in §7.4/§7.6.
+
+**`THKMDView` becomes a segmented vertical container, not a single text view.** A true
+horizontally-scrollable table needs its own view with independent touch handling —
+something a `Span`/`NSTextAttachment` fundamentally can't provide, since those are
+painted content inside one text view's own canvas, not separately hit-testable views.
+So rendering now walks the top-level block AST and produces a sequence of segments:
+
+- **Text segment** — unchanged from §3/§4: as many consecutive non-table blocks as
+  possible (paragraphs, headings, lists, block quotes, code blocks, thematic breaks)
+  still merge into one `Spanned`/`NSAttributedString` rendered by one internal text
+  view. Most messages (no table) still render as exactly one segment — the original
+  single-view performance argument in §3 holds for the common case.
+- **Table segment** — a new dedicated view (`THKTableView` on both platforms): real
+  column layout, horizontally scrollable independent of the message bubble, themed
+  border/header colors, and — since GFM table cells can contain inline Markdown — each
+  cell's text goes through the same inline-span/attribute builder used everywhere else,
+  not a plain-text shortcut.
+- Segments are rebuilt on every debounced render pass (same buffer+debounce+full-reparse
+  streaming model from §4 — only the render step's *output shape* changed). Segments are
+  matched/reused by `(index, type)` across rebuilds to avoid pure destroy/recreate churn;
+  perfect minimal-diffing is not a v1 requirement.
+
+**Images stay inline** (they don't get their own segment): a custom async-loading
+span/attachment reserves a fixed placeholder box sized to a max width/height (no
+relayout thrash once the real image arrives — it's scaled to fit within the reserved
+box), and swaps in the real bitmap once loading resolves, redrawing just that view.
+
+**Pluggable image loading**: `THKImageLoader` (Android interface) / `THKImageLoading`
+(iOS protocol) — a single `load(url) -> Bitmap?/UIImage?` method. Ships with a
+dependency-free default implementation (in-memory LRU + on-disk cache, built on
+`HttpURLConnection`/`URLSession` — deliberately not Coil/Kingfisher, to avoid adding a
+required third-party dependency and to sidestep any repeat of the swift-markdown-style
+SPM/CocoaPods distribution mismatch). `THKMDView.imageLoader` is settable, so a host app
+that already uses Coil/Kingfisher/Glide can supply an adapter instead of the default.
+
+**Theming**: an immutable `THKMDTheme` value type (colors for body/heading/link/code
+text+background/block-quote bar/table border+header, font sizes) settable on
+`THKMDView`, with a shipped default matching the current look.
+
+**Accepted breaking change**: `THKMDView` is no longer literally an
+`AppCompatTextView`/`UITextView` subclass — it's a container `ViewGroup`/`UIView` that
+owns one or more internal text/table views. Acceptable now because the SDK has no
+external consumers yet (still pre-1.0); flagged here so it isn't mistaken for an
+oversight later.
+
+### Implementation notes (what actually shipped, and known v1 gaps)
+
+- The pluggable `MarkdownRenderer`/`MarkdownRendering` interface's `render(...)` method
+  signature necessarily changed (it now returns a segment list, and on Android also
+  takes the current `theme`/image-bounds config) — only `THKMDView`'s own public methods
+  were kept byte-for-byte stable across v0→v1.
+- Image taps: Android added a dedicated `onImageClick` (falls back to `onLinkClick` with
+  the image URL if unset); iOS added `onImageTap` alongside the existing `onLinkTap`.
+- A `Table` nested inside a block quote or list item (i.e. not a top-level block) isn't
+  rendered as a real table on either platform — a rare-in-practice gap, not implemented.
+- **iOS/CocoaPods-only gap**: Maaku (the CocoaPods-track parser) does not preserve a GFM
+  ordered list's non-1 start index — its `OrderedList` type receives but discards the
+  start number. This is an upstream Maaku limitation; the SPM/swift-markdown track does
+  not have this gap. Covered by a test on the CocoaPods side asserting the actual
+  (renumbered-from-1) behavior rather than pretending it matches SPM.
+- Android's per-image accessibility label is set at the text-segment level (the whole
+  `Spanned`'s content description), not attached to the individual image span — Android
+  `TextView` has no built-in way to expose a per-span accessibility node without a custom
+  accessibility delegate, which was judged not worth the complexity for v1.
+- A real bug was caught and fixed on iOS while adding a nested-block-quote test: the
+  outer quote's bar color/indent were being stamped unconditionally across the whole
+  merged range, clobbering a nested quote's own (deeper) styling. Fixed with an
+  "attribute already set, don't overwrite" merge rule, applied consistently.
+
+## 9. Roadmap
 
 - **v0 (this scaffold)** — project structure, build tooling, core Markdown→spans/
   attributed-string pipeline (bold/italic/strike/inline-code/headings/lists/blockquote/

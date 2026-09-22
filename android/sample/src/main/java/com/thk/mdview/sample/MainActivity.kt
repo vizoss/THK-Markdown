@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.thk.mdview.THKMDTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -19,6 +20,7 @@ import kotlin.random.Random
 class MainActivity : AppCompatActivity() {
 
     private var nextMessageId = 0L
+    private var usingAltTheme = false
     private lateinit var adapter: ChatAdapter
     private lateinit var recyclerView: RecyclerView
 
@@ -36,6 +38,7 @@ class MainActivity : AppCompatActivity() {
 
         val messageInput = findViewById<EditText>(R.id.messageInput)
         val sendButton = findViewById<Button>(R.id.sendButton)
+        val themeToggleButton = findViewById<Button>(R.id.themeToggleButton)
 
         sendButton.setOnClickListener { sendMessage(messageInput) }
         messageInput.setOnEditorActionListener { _, actionId, _ ->
@@ -45,6 +48,12 @@ class MainActivity : AppCompatActivity() {
             } else {
                 false
             }
+        }
+        // Proves THKMDView.theme = ... alone re-renders already-bound bubbles: no
+        // reset()/setMarkdown call happens here, only ChatAdapter.setTheme below.
+        themeToggleButton.setOnClickListener {
+            usingAltTheme = !usingAltTheme
+            adapter.setTheme(if (usingAltTheme) ALT_THEME else THKMDTheme.Default)
         }
     }
 

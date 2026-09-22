@@ -42,9 +42,25 @@ final class StreamingMarkdownBufferTests: XCTestCase {
         assertChunkingPreservesText(chunker: randomSizeChunks(seed: 1_337))
     }
 
+    // Flattens every segment (text and table alike) into one comparable string. Not meant to
+    // be a faithful plain-text rendering, only a deterministic fingerprint of the segments'
+    // content, so two renders of the same buffer are equal iff their segment content matches.
+    private func plainText(_ segments: [THKRenderSegment]) -> String {
+        segments.map { segment -> String in
+            switch segment {
+            case .text(let attributed):
+                return attributed.string
+            case .table(let model):
+                let header = model.headerCells.map(\.string).joined(separator: "|")
+                let rows = model.rows.map { $0.map(\.string).joined(separator: "|") }.joined(separator: "\n")
+                return "\(header)\n\(rows)"
+            }
+        }.joined(separator: "\n")
+    }
+
     func testChunkFuzzFinalRenderMatchesSingleShotRender() {
         let renderer = DefaultMarkdownRenderer()
-        let expectedPlainText = renderer.render(fixture).string
+        let expectedPlainText = plainText(renderer.render(fixture))
 
         let strategies: [[String]] = [
             fixedSizeChunks(of: 7)(fixture),
@@ -58,7 +74,7 @@ final class StreamingMarkdownBufferTests: XCTestCase {
             let buffer = StreamingMarkdownBuffer(debounceInterval: 0.032, scheduler: scheduler)
             var lastRenderedPlainText = ""
             buffer.onRender = { text in
-                lastRenderedPlainText = renderer.render(text).string
+                lastRenderedPlainText = self.plainText(renderer.render(text))
             }
 
             for chunk in chunks {

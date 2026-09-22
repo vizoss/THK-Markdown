@@ -2,12 +2,23 @@ package com.thk.mdview
 
 import android.os.Handler
 import android.os.Looper
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import kotlin.random.Random
+
+private val TEST_IMAGE_BOUNDS = ImageBounds(800, 600)
+
+private fun DefaultMarkdownRenderer.renderText(markdown: String): String =
+    render(markdown, THKMDTheme.Default, TEST_IMAGE_BOUNDS).joinToString("") { segment ->
+        when (segment) {
+            is RenderedSegment.TextSegment -> segment.spanned.toString()
+            is RenderedSegment.TableSegment -> "[table]"
+        }
+    }
 
 @RunWith(AndroidJUnit4::class)
 class StreamingMarkdownBufferTest {
@@ -51,8 +62,8 @@ class StreamingMarkdownBufferTest {
 
     @Test
     fun chunkedStreaming_matchesSingleSetMarkdownRegardlessOfBoundaries() {
-        val renderer = DefaultMarkdownRenderer()
-        val expected = renderer.render(fixture).toString()
+        val renderer = DefaultMarkdownRenderer(ApplicationProvider.getApplicationContext())
+        val expected = renderer.renderText(fixture)
 
         val strategies: List<Pair<String, List<String>>> = listOf(
             "fixedSize-7" to chunksFixedSize(fixture, 7),
@@ -66,7 +77,7 @@ class StreamingMarkdownBufferTest {
             var lastRendered: String? = null
             val handler = Handler(Looper.getMainLooper())
             val buffer = StreamingMarkdownBuffer(debounceMs = 32L, handler = handler) { markdown ->
-                lastRendered = renderer.render(markdown).toString()
+                lastRendered = renderer.renderText(markdown)
             }
 
             for (chunk in chunks) {

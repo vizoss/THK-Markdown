@@ -1,18 +1,32 @@
 package com.thk.mdview
 
-import android.text.SpannableStringBuilder
+import android.content.Context
+import org.commonmark.node.Document
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.ext.task.list.items.TaskListItemsExtension
 import org.commonmark.parser.Parser
 
+/** Pluggable Markdown -> segment renderer; swap in via [THKMDView.setMarkdownRenderer]. */
 interface MarkdownRenderer {
-    fun render(markdown: String): CharSequence
+    /**
+     * Parses [markdown] and returns the ordered top-level segments to display (see
+     * RESEARCH.md §9). [theme] and [imageBounds] are supplied per call (rather than
+     * fixed at construction) because both can change without the caller re-invoking
+     * `setMarkdown` — [THKMDView] re-renders the last buffer content on a theme change
+     * or a view resize.
+     */
+    fun render(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment>
 }
 
+/** Default [MarkdownRenderer]: commonmark-java (+ GFM tables/strikethrough/task-lists). */
 class DefaultMarkdownRenderer(
-    private val linkHandler: (String) -> Boolean = { false }
+    context: Context,
+    private val linkHandler: (String) -> Boolean = { false },
+    private val imageClickHandler: (String) -> Boolean = { false }
 ) : MarkdownRenderer {
+
+    private val density = context.resources.displayMetrics.density
 
     private val parser: Parser = Parser.builder()
         .extensions(
@@ -24,13 +38,19 @@ class DefaultMarkdownRenderer(
         )
         .build()
 
-    override fun render(markdown: String): CharSequence {
-        val document = parser.parse(markdown)
-        val builder = SpannableStringBuilder()
-        document.accept(MarkdownSpanVisitor(builder, linkHandler))
-        while (builder.isNotEmpty() && builder.last() == '\n') {
-            builder.delete(builder.length - 1, builder.length)
-        }
-        return builder
+    override fun render(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment> {
+        val document = parser.parse(markdown) as Document
+        val imageContext = ImageRenderContext(
+            bounds = imageBounds,
+            cornerRadiusPx = theme.codeBlockCornerRadiusDp * density,
+            placeholderColor = IMAGE_PLACEHOLDER_COLOR,
+            clickHandler = imageClickHandler
+        )
+        val visitor = MarkdownSpanVisitor(theme, density, linkHandler, imageContext)
+        return visitor.render(document)
+    }
+
+    private companion object {
+        const val IMAGE_PLACEHOLDER_COLOR = -0x111112 // light gray, ARGB 0xFFEEEEEE
     }
 }

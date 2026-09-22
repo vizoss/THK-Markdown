@@ -1,8 +1,10 @@
 import UIKit
 
-/// A UIView wrapping one non-scrolling, non-editable UITextView that renders Markdown,
-/// including SSE-style streaming updates. Pin/size it like any auto-sizing view (it grows
-/// with its text via `intrinsicContentSize`), and call `reset()` from `prepareForReuse`.
+/// A container view rendering Markdown, including SSE-style streaming updates, as an ordered
+/// vertical stack of segments: non-table blocks merge into one non-scrolling, non-editable
+/// `UITextView` per run (as in v0), and each GFM table gets its own horizontally scrollable
+/// `THKTableView`. Pin/size it like any auto-sizing view (it grows with its content via
+/// `intrinsicContentSize`), and call `reset()` from `prepareForReuse`.
 public final class THKMDView: UIView {
     public var streamingDebounceInterval: TimeInterval {
         get { buffer.debounceInterval }
@@ -10,55 +12,75 @@ public final class THKMDView: UIView {
     }
 
     public var onLinkTap: ((URL) -> Bool)?
+    public var onImageTap: ((URL) -> Bool)?
 
     public var renderer: MarkdownRendering = DefaultMarkdownRenderer() {
-        didSet { rerenderCurrentBuffer() }
+        didSet {
+            renderer.theme = theme
+            rerenderCurrentBuffer()
+        }
     }
 
-    private let textView: UITextView
-    private let layoutManager: THKBackgroundLayoutManager
+    public var imageLoader: THKImageLoading = DefaultTHKImageLoader()
+
+    public var theme: THKMDTheme = .default {
+        didSet {
+            renderer.theme = theme
+            rerenderCurrentBuffer()
+        }
+    }
+
+    private let stack = UIStackView()
     private let buffer = StreamingMarkdownBuffer()
+    private var segmentViews: [SegmentView] = []
+
+    private final class TextSegmentView {
+        let textView: UITextView
+        let layoutManager: THKBackgroundLayoutManager
+        var attachments: [THKAsyncImageTextAttachment] = []
+
+        init(textView: UITextView, layoutManager: THKBackgroundLayoutManager) {
+            self.textView = textView
+            self.layoutManager = layoutManager
+        }
+    }
+
+    private enum SegmentView {
+        case text(TextSegmentView)
+        case table(THKTableView)
+
+        var view: UIView {
+            switch self {
+            case .text(let segment): return segment.textView
+            case .table(let tableView): return tableView
+            }
+        }
+    }
 
     public override init(frame: CGRect) {
-        (textView, layoutManager) = Self.makeTextView()
         super.init(frame: frame)
         commonInit()
     }
 
     public required init?(coder: NSCoder) {
-        (textView, layoutManager) = Self.makeTextView()
         super.init(coder: coder)
         commonInit()
     }
 
-    private static func makeTextView() -> (UITextView, THKBackgroundLayoutManager) {
-        let textStorage = NSTextStorage()
-        let layoutManager = THKBackgroundLayoutManager()
-        textStorage.addLayoutManager(layoutManager)
-        let textContainer = NSTextContainer(size: .zero)
-        textContainer.widthTracksTextView = true
-        textContainer.lineFragmentPadding = 0
-        layoutManager.addTextContainer(textContainer)
-        let textView = UITextView(frame: .zero, textContainer: textContainer)
-        return (textView, layoutManager)
-    }
-
     private func commonInit() {
-        textView.isScrollEnabled = false
-        textView.isEditable = false
-        textView.isSelectable = true
-        textView.dataDetectorTypes = []
-        textView.backgroundColor = .clear
-        textView.textContainerInset = .zero
-        textView.delegate = self
-        textView.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(textView)
+        stack.axis = .vertical
+        stack.alignment = .fill
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stack)
         NSLayoutConstraint.activate([
-            textView.leadingAnchor.constraint(equalTo: leadingAnchor),
-            textView.trailingAnchor.constraint(equalTo: trailingAnchor),
-            textView.topAnchor.constraint(equalTo: topAnchor),
-            textView.bottomAnchor.constraint(equalTo: bottomAnchor)
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stack.topAnchor.constraint(equalTo: topAnchor),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+
+        renderer.theme = theme
 
         buffer.onRender = { [weak self] text in
             self?.applyRenderedText(text)
@@ -76,17 +98,22 @@ public final class THKMDView: UIView {
         buffer.append(chunk)
     }
 
-    /// Clears the buffer and cancels any pending debounced render. Must be safe to call from
-    /// `prepareForReuse`/`onViewRecycled`, since a pending render from a recycled-away cell
-    /// must never land on the view that replaced it.
+    /// Clears the buffer, cancels any pending debounced render, and cancels every in-flight
+    /// image load in every current segment. Must be safe to call from
+    /// `prepareForReuse`/`onViewRecycled`, since none of that recycled-away work may ever land
+    /// on the view after it's rebound to a new message.
     public func reset() {
         buffer.reset()
-        textView.attributedText = NSAttributedString(string: "")
+        for segmentView in segmentViews {
+            removeFromStack(segmentView)
+        }
+        segmentViews = []
         invalidateIntrinsicContentSize()
     }
 
     private func applyRenderedText(_ markdown: String) {
-        textView.attributedText = renderer.render(markdown)
+        let segments = renderer.render(markdown)
+        rebuild(with: segments)
         invalidateIntrinsicContentSize()
     }
 
@@ -95,8 +122,118 @@ public final class THKMDView: UIView {
         applyRenderedText(buffer.text)
     }
 
+    // Reuses an existing arranged subview at the same index when its segment kind matches
+    // (text-for-text, table-for-table), rather than always tearing down and rebuilding every
+    // view. Exact minimal diffing isn't attempted — a kind mismatch at an index just replaces
+    // that one view.
+    private func rebuild(with segments: [THKRenderSegment]) {
+        var newSegmentViews: [SegmentView] = []
+        newSegmentViews.reserveCapacity(segments.count)
+
+        for (index, segment) in segments.enumerated() {
+            let existing = index < segmentViews.count ? segmentViews[index] : nil
+
+            switch segment {
+            case .text(let attributed):
+                let segmentView: TextSegmentView
+                if case .text(let reused)? = existing {
+                    segmentView = reused
+                } else {
+                    if let existing { removeFromStack(existing) }
+                    segmentView = makeTextSegmentView()
+                    stack.insertArrangedSubview(segmentView.textView, at: index)
+                }
+                applyTheme(to: segmentView.layoutManager)
+                segmentView.attachments.forEach { $0.cancelLoading() }
+                segmentView.textView.attributedText = attributed
+                segmentView.attachments = startImageLoads(in: attributed, textStorage: segmentView.textView.textStorage)
+                newSegmentViews.append(.text(segmentView))
+
+            case .table(let model):
+                let tableView: THKTableView
+                if case .table(let reused)? = existing {
+                    tableView = reused
+                } else {
+                    if let existing { removeFromStack(existing) }
+                    tableView = THKTableView()
+                    stack.insertArrangedSubview(tableView, at: index)
+                }
+                tableView.configure(model: model, theme: theme)
+                newSegmentViews.append(.table(tableView))
+            }
+        }
+
+        if segmentViews.count > segments.count {
+            for extra in segmentViews[segments.count...] {
+                removeFromStack(extra)
+            }
+        }
+
+        segmentViews = newSegmentViews
+    }
+
+    private func removeFromStack(_ segmentView: SegmentView) {
+        if case .text(let segment) = segmentView {
+            segment.attachments.forEach { $0.cancelLoading() }
+        }
+        let view = segmentView.view
+        stack.removeArrangedSubview(view)
+        view.removeFromSuperview()
+    }
+
+    private func makeTextSegmentView() -> TextSegmentView {
+        let (textView, layoutManager) = Self.makeTextView()
+        textView.delegate = self
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        return TextSegmentView(textView: textView, layoutManager: layoutManager)
+    }
+
+    private static func makeTextView() -> (UITextView, THKBackgroundLayoutManager) {
+        let textStorage = NSTextStorage()
+        let layoutManager = THKBackgroundLayoutManager()
+        textStorage.addLayoutManager(layoutManager)
+        let textContainer = NSTextContainer(size: .zero)
+        textContainer.widthTracksTextView = true
+        textContainer.lineFragmentPadding = 0
+        layoutManager.addTextContainer(textContainer)
+        let textView = UITextView(frame: .zero, textContainer: textContainer)
+        textView.isScrollEnabled = false
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.dataDetectorTypes = []
+        textView.backgroundColor = .clear
+        textView.textContainerInset = .zero
+        return (textView, layoutManager)
+    }
+
+    private func applyTheme(to layoutManager: THKBackgroundLayoutManager) {
+        layoutManager.codeBlockBackgroundColor = theme.codeBackgroundColor
+        layoutManager.inlineCodeBackgroundColor = theme.codeBackgroundColor
+        layoutManager.blockQuoteBarColor = theme.blockQuoteBarColor
+        layoutManager.codeBlockCornerRadius = theme.codeBlockCornerRadius
+    }
+
+    private func startImageLoads(in attributed: NSAttributedString, textStorage: NSTextStorage) -> [THKAsyncImageTextAttachment] {
+        var attachments: [THKAsyncImageTextAttachment] = []
+        attributed.enumerateAttribute(.attachment, in: NSRange(location: 0, length: attributed.length)) { value, _, _ in
+            if let attachment = value as? THKAsyncImageTextAttachment {
+                attachments.append(attachment)
+            }
+        }
+        for attachment in attachments {
+            attachment.startLoading(imageLoader: imageLoader, into: textStorage)
+        }
+        return attachments
+    }
+
     public override var intrinsicContentSize: CGSize {
-        CGSize(width: UIView.noIntrinsicMetric, height: textView.intrinsicContentSize.height)
+        let targetWidth = bounds.width > 0 ? bounds.width : UIView.layoutFittingCompressedSize.width
+        let fitting = stack.systemLayoutSizeFitting(
+            CGSize(width: targetWidth, height: UIView.layoutFittingCompressedSize.height),
+            withHorizontalFittingPriority: .required,
+            verticalFittingPriority: .fittingSizeLevel
+        )
+        return CGSize(width: UIView.noIntrinsicMetric, height: fitting.height)
     }
 
     public override func layoutSubviews() {
@@ -113,5 +250,15 @@ extension THKMDView: UITextViewDelegate {
         interaction: UITextItemInteraction
     ) -> Bool {
         onLinkTap?(URL) ?? true
+    }
+
+    public func textView(
+        _ textView: UITextView,
+        shouldInteractWith textAttachment: NSTextAttachment,
+        in characterRange: NSRange,
+        interaction: UITextItemInteraction
+    ) -> Bool {
+        guard let imageAttachment = textAttachment as? THKAsyncImageTextAttachment else { return true }
+        return onImageTap?(imageAttachment.url) ?? true
     }
 }

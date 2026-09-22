@@ -26,7 +26,7 @@
 		98090EE07C844B24C7270C35 /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
 		BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMessageCell.swift; sourceTree = "<group>"; };
 		F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewController.swift; sourceTree = "<group>"; };
-		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -110,6 +110,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 36FC72E69D906F48675C62BF /* Build configuration list for PBXProject "Example" */;
 			developmentRegion = en;
@@ -212,7 +214,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = FRBL9GK76M;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Generated/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
@@ -232,7 +233,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = FRBL9GK76M;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Generated/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.0;

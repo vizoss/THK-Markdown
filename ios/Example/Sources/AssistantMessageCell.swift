@@ -23,6 +23,10 @@ final class AssistantMessageCell: UITableViewCell {
             print("Link tapped: \(url)")
             return true
         }
+        markdownView.onImageTap = { url in
+            print("Image tapped: \(url)")
+            return true
+        }
         markdownView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(markdownView)
         NSLayoutConstraint.activate([

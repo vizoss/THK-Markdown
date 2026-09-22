@@ -1,6 +1,7 @@
 package com.thk.mdview
 
 import android.os.Looper
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
@@ -15,12 +16,15 @@ class THKMDViewReuseTest {
         var callCount = 0
         val renderedInputs = mutableListOf<String>()
 
-        override fun render(markdown: String): CharSequence {
+        override fun render(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment> {
             callCount++
             renderedInputs.add(markdown)
-            return markdown
+            return listOf(RenderedSegment.TextSegment(markdown))
         }
     }
+
+    private fun firstSegmentText(view: THKMDView): String =
+        (view.getChildAt(0) as? AppCompatTextView)?.text?.toString().orEmpty()
 
     @Test
     fun resetPreventsAStalePendingRenderFromLandingOnANewlyBoundMessage() {
@@ -35,19 +39,19 @@ class THKMDViewReuseTest {
         assertThat(renderer.callCount).isEqualTo(callsAfterInstall)
 
         view.reset()
-        assertThat(view.text.toString()).isEmpty()
+        assertThat(view.childCount).isEqualTo(0)
 
         // The recycled view is immediately rebound to a different message.
         view.setMarkdown("message B, a totally different message")
 
         // setMarkdown renders synchronously, with no debounce.
-        assertThat(view.text.toString()).isEqualTo("message B, a totally different message")
+        assertThat(firstSegmentText(view)).isEqualTo("message B, a totally different message")
 
         // Flush the looper: if reset() had failed to cancel the pending Runnable from
         // "message A", it would fire here and clobber message B's text.
         shadowOf(Looper.getMainLooper()).runToEndOfTasks()
 
-        assertThat(view.text.toString()).isEqualTo("message B, a totally different message")
+        assertThat(firstSegmentText(view)).isEqualTo("message B, a totally different message")
         assertThat(renderer.renderedInputs).doesNotContain("message A, still streaming...")
     }
 
@@ -56,7 +60,7 @@ class THKMDViewReuseTest {
         val view = THKMDView(ApplicationProvider.getApplicationContext())
         view.reset()
         view.reset()
-        assertThat(view.text.toString()).isEmpty()
+        assertThat(view.childCount).isEqualTo(0)
     }
 
     @Test
@@ -75,6 +79,85 @@ class THKMDViewReuseTest {
         shadowOf(Looper.getMainLooper()).runToEndOfTasks()
 
         assertThat(renderer.callCount).isEqualTo(callsAfterInstall + 1)
-        assertThat(view.text.toString()).isEqualTo("Hello, world!")
+        assertThat(firstSegmentText(view)).isEqualTo("Hello, world!")
+    }
+
+    @Test
+    fun reset_removesTableSegmentsToo() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("| a |\n| --- |\n| 1 |\n")
+        assertThat(view.childCount).isEqualTo(1)
+        assertThat(view.getChildAt(0)).isInstanceOf(THKTableView::class.java)
+
+        view.reset()
+        assertThat(view.childCount).isEqualTo(0)
+    }
+
+    @Test
+    fun rebuildingSegments_reusesATextViewOfTheSameTypeInPlace() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("first")
+        val firstChild = view.getChildAt(0)
+        assertThat(firstChild).isInstanceOf(AppCompatTextView::class.java)
+
+        view.setMarkdown("second, still just text")
+        assertThat(view.childCount).isEqualTo(1)
+        // Same child view instance reused, not torn down and recreated.
+        assertThat(view.getChildAt(0)).isSameInstanceAs(firstChild)
+        assertThat(firstSegmentText(view)).isEqualTo("second, still just text")
+    }
+
+    @Test
+    fun changingSegmentTypeAtAnIndex_replacesRatherThanCrashes() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("just text, no table")
+        assertThat(view.getChildAt(0)).isInstanceOf(AppCompatTextView::class.java)
+
+        view.setMarkdown("| a |\n| --- |\n| 1 |\n")
+        assertThat(view.childCount).isEqualTo(1)
+        assertThat(view.getChildAt(0)).isInstanceOf(THKTableView::class.java)
+    }
+
+    @Test
+    fun settingTheme_reRendersCurrentContentWithNewColorsWithoutAFreshSetMarkdown() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("hello theme")
+
+        val customTheme = THKMDTheme.Default.copy(bodyTextColor = 0xFF123456.toInt())
+        view.theme = customTheme
+
+        val textView = view.getChildAt(0) as AppCompatTextView
+        assertThat(textView.currentTextColor).isEqualTo(0xFF123456.toInt())
+        assertThat(textView.text.toString()).isEqualTo("hello theme")
+    }
+
+    @Test
+    fun imageLoad_fromARecycledAwayView_neverPaintsOntoItsReplacement() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val gate = kotlinx.coroutines.CompletableDeferred<android.graphics.Bitmap?>()
+        val loader = object : THKImageLoader {
+            override suspend fun load(url: String): android.graphics.Bitmap? = gate.await()
+        }
+
+        val view = THKMDView(context)
+        view.imageLoader = loader
+        view.setMarkdown("![alt](https://example.com/pic.png)")
+
+        val recycledTextView = view.getChildAt(0) as AppCompatTextView
+        val span = (recycledTextView.text as android.text.Spanned)
+            .getSpans(0, recycledTextView.text.length, AsyncImageSpan::class.java)
+            .first()
+
+        // Simulate RecyclerView recycling this view mid-load.
+        view.reset()
+        shadowOf(recycledTextView).clearWasInvalidated()
+
+        // The load "completes" only after the view has moved on; because reset()
+        // cancelled the coroutine, this resolution must never reach the old TextView.
+        gate.complete(android.graphics.Bitmap.createBitmap(10, 10, android.graphics.Bitmap.Config.ARGB_8888))
+        shadowOf(Looper.getMainLooper()).runToEndOfTasks()
+
+        assertThat(shadowOf(recycledTextView).wasInvalidated()).isFalse()
+        assertThat(span).isNotNull()
     }
 }

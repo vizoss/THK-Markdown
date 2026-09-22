@@ -2,11 +2,12 @@ import XCTest
 @testable import THKMDView
 
 private final class SpyRenderer: MarkdownRendering {
+    var theme: THKMDTheme = .default
     private(set) var renderedMarkdowns: [String] = []
 
-    func render(_ markdown: String) -> NSAttributedString {
+    func render(_ markdown: String) -> [THKRenderSegment] {
         renderedMarkdowns.append(markdown)
-        return NSAttributedString(string: markdown)
+        return [.text(NSAttributedString(string: markdown))]
     }
 }
 

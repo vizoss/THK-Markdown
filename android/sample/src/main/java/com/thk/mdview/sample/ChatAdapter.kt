@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import com.thk.mdview.THKMDTheme
 import com.thk.mdview.THKMDView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ data class ChatMessage(val id: Long, val role: Role, val content: String)
 
 private const val VIEW_TYPE_USER = 0
 private const val VIEW_TYPE_ASSISTANT = 1
+private const val BUBBLE_MAX_WIDTH_DP = 280f
 
 class ChatAdapter(
     private val messages: MutableList<ChatMessage> = mutableListOf(),
@@ -32,6 +34,17 @@ class ChatAdapter(
         // in-flight streaming Job is cancelled on recycle, not the scope itself.
         val scope = CoroutineScope(Dispatchers.Main.immediate + Job())
         var streamingJob: Job? = null
+    }
+
+    // Bound assistant holders are tracked so setTheme() can update THKMDView.theme on
+    // whatever's currently on screen directly, proving a theme change re-renders in
+    // place without touching streamed content (no reset()/re-stream involved).
+    private val boundAssistantHolders = mutableSetOf<AssistantViewHolder>()
+    private var currentTheme: THKMDTheme = THKMDTheme.Default
+
+    fun setTheme(theme: THKMDTheme) {
+        currentTheme = theme
+        boundAssistantHolders.forEach { it.markdownView.theme = theme }
     }
 
     /** Appends a message and returns its new adapter position. */
@@ -52,7 +65,10 @@ class ChatAdapter(
             UserViewHolder(itemView, itemView.findViewById(R.id.messageText))
         } else {
             val itemView = inflater.inflate(R.layout.item_message_assistant, parent, false)
-            AssistantViewHolder(itemView, itemView.findViewById(R.id.markdownView))
+            val holder = AssistantViewHolder(itemView, itemView.findViewById(R.id.markdownView))
+            val density = parent.resources.displayMetrics.density
+            holder.markdownView.maxContentWidthPx = (BUBBLE_MAX_WIDTH_DP * density).toInt()
+            holder
         }
     }
 
@@ -67,6 +83,8 @@ class ChatAdapter(
     private fun bindAssistant(holder: AssistantViewHolder, message: ChatMessage) {
         holder.streamingJob?.cancel()
         holder.markdownView.reset()
+        holder.markdownView.theme = currentTheme
+        boundAssistantHolders += holder
 
         holder.streamingJob = holder.scope.launch {
             val chunkSizes = 3..9
@@ -88,6 +106,7 @@ class ChatAdapter(
             holder.streamingJob?.cancel()
             holder.streamingJob = null
             holder.markdownView.reset()
+            boundAssistantHolders -= holder
         }
     }
 

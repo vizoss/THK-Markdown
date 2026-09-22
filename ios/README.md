@@ -21,17 +21,27 @@ Markdown parser itself — see "Two distributions, one parser swapped" below.
 
 ## Architecture in one paragraph
 
-`THKMDView` is a `UIView` wrapping a single non-scrolling, non-editable `UITextView`
-pinned to its edges. Markdown text is parsed by `swift-markdown` into an AST, then walked
-by `AttributedStringVisitor` (in `Sources/THKMDView/MarkdownRenderer.swift`) to build one
-`NSAttributedString` — bold/italic become font traits, links become `.link` attributes,
-lists become paragraph-style indent + a literal marker glyph. Constructs with no built-in
-`NSAttributedString` representation (inline code background, code block background,
-block quote bar) are tagged with custom attribute keys and painted by
-`THKBackgroundLayoutManager`, a custom `NSLayoutManager` subclass that overrides
-`drawBackground(forGlyphRange:at:)`. This mirrors Markwon's approach on Android: one
-text view, one attributed string, custom spans/drawing for block constructs — not a
-composite view tree.
+`THKMDView` is a `UIView` owning a vertical `UIStackView` of **segments** (see
+`docs/RESEARCH.md` §9). Markdown text is parsed (by `swift-markdown` on SPM, by Maaku on
+CocoaPods) into an AST, then walked to produce an ordered `[THKRenderSegment]`: as many
+consecutive non-table top-level blocks as possible (paragraphs, headings, lists, block
+quotes, code blocks, thematic breaks) merge into one `.text` segment — a single
+non-scrolling, non-editable `UITextView` with one `NSAttributedString` — the same "one
+attributed string, custom spans for block constructs" model as v0 (bold/italic become
+font traits, links become `.link` attributes, lists become paragraph-style indent + a
+literal marker glyph; inline code background, code block background, and block quote bar
+have no built-in `NSAttributedString` representation, so they're tagged with custom
+attribute keys and painted by `THKBackgroundLayoutManager`, a custom `NSLayoutManager`
+subclass overriding `drawBackground(forGlyphRange:at:)`). Each GFM `Table` block instead
+becomes its own `.table` segment — a `THKTableView`, a real column-aligned, horizontally
+scrollable grid, since a table needs independent touch handling a text view's custom
+spans can't provide. Images stay inline in the text flow as a custom `NSTextAttachment`
+(`THKAsyncImageTextAttachment`) that starts as a placeholder and swaps in the real bitmap
+once `THKImageLoading` resolves it, without re-laying-out the surrounding text. Colors and
+sizes for all of this come from a `THKMDTheme` value threaded into the renderer and into
+`THKBackgroundLayoutManager`/`THKTableView`. This mirrors Markwon's approach on Android for
+the common (no-table) case: one text view, one attributed string, custom spans/drawing for
+block constructs — with a composite-view escape hatch for tables and images, per §9.
 
 ## Two distributions, one parser swapped
 
@@ -90,18 +100,23 @@ entries from different Xcode versions), disambiguate with `id=<UDID>` instead of
 xcodebuild test -scheme THKMDView -destination 'platform=iOS Simulator,id=<UDID>'
 ```
 
-30 tests across three files, all passing as of this writing:
+45 tests across three files, all passing as of this writing:
 
 - **`Tests/THKMDViewTests/RenderTests.swift`** — feeds Markdown fixtures through
-  `DefaultMarkdownRenderer` and asserts plain-text extraction plus the presence of the
-  right attribute at the right range: bold/italic font traits (including combined
-  `***bold italic***`), inline code (monospace font + `.thkInlineCodeBackground`),
-  heading size/boldness (and that deeper levels are smaller), a link's `.link` URL, a
-  block quote's `.thkBlockQuoteBar` + indent, a code block's monospace font +
-  `.thkCodeBlockBackground`, strikethrough, ordered/unordered/task lists, and the
-  plain-monospace GFM table fallback. Also covers two "mid-arrival" cases directly (an
-  unterminated code fence, an unterminated `**`) to confirm they don't crash and degrade
-  sensibly.
+  `DefaultMarkdownRenderer` and asserts, per segment, plain-text extraction plus the
+  presence of the right attribute at the right range: bold/italic font traits (including
+  combined `***bold italic***`), inline code (monospace font +
+  `.thkInlineCodeBackground`), all six heading levels (bold, strictly decreasing size),
+  a link's `.link` URL (inline, autolink, and reference-style), a block quote's
+  `.thkBlockQuoteBar` + indent (including nesting two levels deep), a code block's
+  monospace font + `.thkCodeBlockBackground` + left/right padding (fenced with/without a
+  language tag, and indented), strikethrough, ordered/unordered/task lists (including a
+  non-1 start index and nesting), escaped characters, raw HTML rendering as inert literal
+  text, a real `THKTableModel` table segment (including column alignment and inline
+  Markdown inside a cell), an image becoming a `THKAsyncImageTextAttachment` with its alt
+  text as the accessibility label, and theme colors/sizes flowing through to body/heading/
+  code text. Also covers two "mid-arrival" cases directly (an unterminated code fence, an
+  unterminated `**`) to confirm they don't crash and degrade sensibly.
 - **`Tests/THKMDViewTests/StreamingMarkdownBufferTests.swift`** — the streaming/chunk-fuzz
   and debounce tests, all driven by `FakeScheduler` (in
   `Tests/THKMDViewTests/FakeScheduler.swift`), a controllable stand-in for
@@ -139,11 +154,11 @@ CocoaPods consumers get the **Maaku-backed** renderer
 (`Sources/THKMDView/CocoaPods/MaakuMarkdownRenderer.swift`); SPM consumers get the
 **swift-markdown-backed** one. Both implement the same `MarkdownRendering` protocol,
 expose the same `THKMDView` public API, and are meant to produce equivalent visual output
-for the same v0 node-type coverage (see "What's deferred to v1/v2" below) — a `pod lib
-lint` run for real exercises this via `THKMDView.podspec`'s `test_spec`, which points at
+for the same node-type coverage (see "Known gaps" below) — a `pod lib lint` run for real
+exercises this via `THKMDView.podspec`'s `test_spec`, which points at
 `Tests/THKMDViewCocoaPodsTests/MaakuRenderTests.swift`, a test suite that mirrors
 `Tests/THKMDViewTests/RenderTests.swift` category-for-category against the Maaku
-renderer.
+renderer (with one intentional divergence — see "Known gaps").
 
 Verification commands actually run against this package (both passed):
 
@@ -167,8 +182,14 @@ for this project.
 
 The example is a small UIKit app (`Example/`) — a `UITableViewController` whose cells
 each simulate an SSE stream (random 2–6 character chunks, ~30ms apart, via a `Task`) into
-a `THKMDView`, covering headings, bold/italic, inline code, a code block, strikethrough,
-ordered/unordered/task lists, a block quote, a link, and a GFM table fallback.
+a `THKMDView`. Sending a message cycles round-robin through a pool of six reply templates
+in `Example/Sources/MockAssistantReply.swift`, each exercising a different construct
+cluster: headings/emphasis/links/quotes, code blocks + task lists, nested/ordered lists,
+a real table (mixed column alignment) + a cached image
+(`https://picsum.photos/seed/thkmdview/480/270`), inert raw HTML, and an "everything"
+showcase. The nav bar's **Theme** button toggles `THKMDView.theme` between `.default` and
+a custom `THKMDTheme` on every currently visible bubble, without calling `setMarkdown`
+again, to prove theming re-renders in place.
 
 It's generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen) from
 `Example/project.yml`, and both `project.yml` and the generated `Example.xcodeproj` are
@@ -237,16 +258,39 @@ layer already has.
 public final class THKMDView: UIView {
     public var streamingDebounceInterval: TimeInterval = 0.032
     public var onLinkTap: ((URL) -> Bool)?
+    public var onImageTap: ((URL) -> Bool)?
     public var renderer: MarkdownRendering = DefaultMarkdownRenderer()
+    public var imageLoader: THKImageLoading = DefaultTHKImageLoader()
+    public var theme: THKMDTheme = .default
 
     public func setMarkdown(_ markdown: String)      // full replace, renders immediately
     public func appendMarkdownChunk(_ chunk: String)  // buffers + schedules a debounced render
-    public func reset()                                // clears buffer, cancels pending render
+    public func reset()                                // clears buffer, cancels all pending work
 }
 
-public protocol MarkdownRendering {
-    func render(_ markdown: String) -> NSAttributedString
+public protocol MarkdownRendering: AnyObject {
+    var theme: THKMDTheme { get set }
+    func render(_ markdown: String) -> [THKRenderSegment]
 }
+
+public enum THKRenderSegment {
+    case text(NSAttributedString)
+    case table(THKTableModel)
+}
+
+public enum THKTableColumnAlignment { case leading, center, trailing }
+
+public struct THKTableModel {
+    public let alignments: [THKTableColumnAlignment]
+    public let headerCells: [NSAttributedString]
+    public let rows: [[NSAttributedString]]
+}
+
+public protocol THKImageLoading {
+    func load(url: URL) async -> UIImage?
+}
+
+public final class DefaultTHKImageLoader: THKImageLoading { /* URLSession + NSCache + on-disk cache */ }
 ```
 
 - `setMarkdown` bypasses the debounce entirely — use it for a complete, already-final
@@ -257,14 +301,53 @@ public protocol MarkdownRendering {
   sees the whole buffer each time, so a truncated construct (open fence, open `**`, a
   link missing its closing `)`) is just handled the way any CommonMark parser handles a
   truncated document: as literal/unterminated text until the closing syntax arrives.
-- `reset()` must be called from `prepareForReuse`/`onViewRecycled` (see above).
+- `reset()` must be called from `prepareForReuse`/`onViewRecycled` (see above). It clears
+  the streaming buffer, cancels any pending debounced render, **and** cancels every
+  in-flight image load in every current segment — a recycled-away view's image fetch can
+  never paint onto its replacement, mirroring the existing streamed-text reuse guarantee.
 - `renderer` is swappable — implement `MarkdownRendering` yourself (e.g. to add syntax
-  highlighting or a themed `DefaultMarkdownRenderer(baseFont:)`) and assign it before
-  calling `setMarkdown`/`appendMarkdownChunk`.
+  highlighting) and assign it before calling `setMarkdown`/`appendMarkdownChunk`. It now
+  returns `[THKRenderSegment]` instead of a single `NSAttributedString`: as many
+  consecutive non-table blocks as possible still merge into one `.text` segment; each GFM
+  table becomes its own `.table` segment carrying a `THKTableModel` (column alignments,
+  header cells, row cells — each cell itself an `NSAttributedString` built through the
+  same inline-Markdown helper used everywhere else).
+- `theme: THKMDTheme` is settable and **re-renders the current content in place** when
+  changed — no need to call `setMarkdown` again. It carries body/heading/link/code
+  colors, the code block background + corner radius, the block quote bar/text colors,
+  the table border/header colors, and body/code font sizes. Both `MarkdownRendering`
+  backends read it (via the protocol's `theme` property) instead of hardcoding colors.
+- `imageLoader: THKImageLoading` is settable, so a host app that already uses
+  Kingfisher/SDWebImage/etc. can supply an adapter instead of `DefaultTHKImageLoader`
+  (dependency-free: `URLSession` + an in-memory `NSCache` + an on-disk cache under the
+  caches directory, keyed by a SHA-256 hash of the URL via `CryptoKit`). Images stay
+  inline in the text flow via `THKAsyncImageTextAttachment` — a placeholder box, then the
+  real bitmap scaled to fit within it once loaded, redrawn via
+  `NSTextStorage.edited(.editedAttributes, range:, changeInLength: 0)` without
+  relayouting the surrounding text. Tap-to-open routes through the dedicated
+  `onImageTap: ((URL) -> Bool)?` (separate from `onLinkTap`, since an image attachment
+  isn't a `.link` range).
 
-### What's deferred to v1/v2 (see `docs/RESEARCH.md` §8)
+### `THKTableView`
 
-GFM tables render as plain monospaced text rows, not a real aligned table; images parse
-but aren't loaded (alt text renders as plain text); no syntax highlighting; no
-incremental block-level re-parsing (every debounced render re-parses the whole buffer,
-which is fine at typical chat-message lengths).
+`Sources/THKMDView/THKTableView.swift` is a shared (not parser-specific) `UIScrollView`
+subclass that renders a `THKTableModel` as a real grid: per-column width from each
+column's widest cell (capped at a max width so one huge cell can't blow out the table),
+per-column text alignment, a themed header row, hairline cell borders, and horizontal
+scrolling whenever the natural content width exceeds the view's own width. It overrides
+`intrinsicContentSize` to report its actual rendered height so it sizes correctly as an
+arranged subview of `THKMDView`'s internal vertical `UIStackView`.
+
+### Known gaps
+
+- No syntax highlighting in code blocks (monospace + themed background/padding only).
+- No incremental block-level re-parsing — every debounced render re-parses the whole
+  buffer, which is fine at typical chat-message lengths.
+- A `Table` nested inside a block quote or list item (rather than top-level) is not
+  rendered — only top-level tables become table segments; this is a rare construct in
+  LLM output.
+- **Maaku (CocoaPods) does not preserve a GFM ordered list's non-1 start index** — its
+  `OrderedList` type (upstream, `Sources/Maaku/Core/OrderedList.swift`) receives the
+  starting number during parsing but never stores it, so every ordered list renders
+  renumbered from 1 regardless of source Markdown. The SPM/swift-markdown backend does
+  not have this limitation. See `MaakuRenderTests.testOrderedListStartIndexIsNotPreservedByMaaku`.

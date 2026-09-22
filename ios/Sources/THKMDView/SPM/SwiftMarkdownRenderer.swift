@@ -3,36 +3,46 @@ import Markdown
 
 public final class DefaultMarkdownRenderer: MarkdownRendering {
     public var baseFont: UIFont
+    public var theme: THKMDTheme
 
-    public init(baseFont: UIFont = UIFont.preferredFont(forTextStyle: .body)) {
+    public init(baseFont: UIFont = UIFont.preferredFont(forTextStyle: .body), theme: THKMDTheme = .default) {
         self.baseFont = baseFont
+        self.theme = theme
     }
 
-    public func render(_ markdown: String) -> NSAttributedString {
+    public func render(_ markdown: String) -> [THKRenderSegment] {
         let document = Document(parsing: markdown)
-        var visitor = AttributedStringVisitor(baseFont: baseFont)
-        return visitor.visit(document)
+        var visitor = AttributedStringVisitor(baseFont: baseFont, theme: theme)
+        return visitor.renderSegments(document)
     }
 }
 
-/// Walks the swift-markdown AST and builds one NSMutableAttributedString, mirroring
-/// Markwon's "single Spanned, custom spans for block constructs" approach. Only the
-/// visit methods that need non-default behavior are overridden; MarkupVisitor's
-/// protocol extension routes everything else through `defaultVisit`.
+/// Walks the swift-markdown AST and builds a sequence of `THKRenderSegment`s, mirroring
+/// Markwon's "one Spanned, custom spans for block constructs" approach for everything except
+/// `Table`, which becomes its own segment (see `THKRenderSegment`). Only the visit methods
+/// that need non-default behavior are overridden; MarkupVisitor's protocol extension routes
+/// everything else through `defaultVisit`.
 ///
-/// This is a struct (not a class) because every requirement in `MarkupVisitor` is
-/// `mutating`, and value-type in-place mutation is the natural fit for the depth
-/// counters (`listDepth`/`blockQuoteDepth`) that track nesting during a single
-/// sequential top-to-bottom walk.
+/// This is a struct (not a class) because every requirement in `MarkupVisitor` is `mutating`,
+/// and value-type in-place mutation is the natural fit for the depth counters
+/// (`listDepth`/`blockQuoteDepth`) that track nesting during a single sequential walk.
 struct AttributedStringVisitor: MarkupVisitor {
     typealias Result = NSAttributedString
 
     private let baseFont: UIFont
+    private let theme: THKMDTheme
     private var listDepth = 0
     private var blockQuoteDepth = 0
 
-    init(baseFont: UIFont) {
-        self.baseFont = baseFont
+    init(baseFont: UIFont, theme: THKMDTheme) {
+        // theme.bodyFontSize governs the effective body text size; baseFont still controls
+        // family/weight, so a caller-supplied baseFont's typeface is preserved.
+        self.baseFont = UIFont(descriptor: baseFont.fontDescriptor, size: theme.bodyFontSize)
+        self.theme = theme
+    }
+
+    private var codeFont: UIFont {
+        UIFont.monospacedSystemFont(ofSize: theme.codeFontSize, weight: .regular)
     }
 
     mutating func defaultVisit(_ markup: Markup) -> NSAttributedString {
@@ -41,6 +51,34 @@ struct AttributedStringVisitor: MarkupVisitor {
             result.append(visit(child))
         }
         return result
+    }
+
+    // MARK: - Top-level: split into segments at each Table
+
+    mutating func renderSegments(_ document: Document) -> [THKRenderSegment] {
+        var segments: [THKRenderSegment] = []
+        var pendingBlocks: [Markup] = []
+
+        func flushPending() {
+            guard !pendingBlocks.isEmpty else { return }
+            let attributed = joinBlocks(pendingBlocks)
+            if attributed.length > 0 {
+                addForegroundColorIfMissing(theme.bodyTextColor, to: attributed)
+                segments.append(.text(attributed))
+            }
+            pendingBlocks = []
+        }
+
+        for child in document.children {
+            if let table = child as? Table {
+                flushPending()
+                segments.append(.table(buildTableModel(table)))
+            } else {
+                pendingBlocks.append(child)
+            }
+        }
+        flushPending()
+        return segments
     }
 
     mutating func visitDocument(_ document: Document) -> NSAttributedString {
@@ -70,6 +108,7 @@ struct AttributedStringVisitor: MarkupVisitor {
                 result.addAttribute(.font, value: UIFont(descriptor: descriptor, size: size), range: range)
             }
         }
+        addForegroundColorIfMissing(theme.headingTextColor, to: result)
         return result
     }
 
@@ -102,6 +141,10 @@ struct AttributedStringVisitor: MarkupVisitor {
         return result
     }
 
+    // No default foreground color here: color is filled in bottom-up by the nearest
+    // "coloring" ancestor (link/inline code directly; heading/block quote/table cell/the
+    // top-level segment only where a more specific color isn't already present), so a link
+    // or inline code span nested inside a heading or block quote keeps its own color.
     mutating func visitText(_ text: Text) -> NSAttributedString {
         NSAttributedString(string: text.string, attributes: [.font: baseFont])
     }
@@ -115,26 +158,23 @@ struct AttributedStringVisitor: MarkupVisitor {
     }
 
     mutating func visitInlineCode(_ inlineCode: InlineCode) -> NSAttributedString {
-        let font = UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular)
-        return NSAttributedString(string: inlineCode.code, attributes: [
-            .font: font,
+        NSAttributedString(string: inlineCode.code, attributes: [
+            .font: codeFont,
+            .foregroundColor: theme.codeTextColor,
             .thkInlineCodeBackground: true
         ])
     }
 
     mutating func visitCodeBlock(_ codeBlock: CodeBlock) -> NSAttributedString {
-        let font = UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular)
         var code = codeBlock.code
         if code.hasSuffix("\n") {
             code.removeLast()
         }
-        let paragraphStyle = NSMutableParagraphStyle()
-        paragraphStyle.paragraphSpacingBefore = 4
-        paragraphStyle.paragraphSpacing = 4
         return NSAttributedString(string: code, attributes: [
-            .font: font,
+            .font: codeFont,
+            .foregroundColor: theme.codeTextColor,
             .thkCodeBlockBackground: true,
-            .paragraphStyle: paragraphStyle
+            .paragraphStyle: codeBlockParagraphStyle()
         ])
     }
 
@@ -144,18 +184,20 @@ struct AttributedStringVisitor: MarkupVisitor {
             result.append(visit(child))
         }
         if let destination = link.destination, let url = URL(string: destination), result.length > 0 {
-            result.addAttribute(.link, value: url, range: NSRange(location: 0, length: result.length))
+            let fullRange = NSRange(location: 0, length: result.length)
+            result.addAttribute(.link, value: url, range: fullRange)
+            result.addAttribute(.foregroundColor, value: theme.linkColor, range: fullRange)
         }
         return result
     }
 
     mutating func visitImage(_ image: Image) -> NSAttributedString {
-        // v0: images are not loaded. Fall back to rendering the alt text as plain text.
-        let result = NSMutableAttributedString()
-        for child in image.children {
-            result.append(visit(child))
+        let altText = plainText(ofChildrenOf: image)
+        guard let source = image.source, let url = URL(string: source) else {
+            return NSAttributedString(string: altText, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         }
-        return result
+        let attachment = THKAsyncImageTextAttachment(url: url, altText: altText)
+        return NSAttributedString(attachment: attachment)
     }
 
     mutating func visitBlockQuote(_ blockQuote: BlockQuote) -> NSAttributedString {
@@ -169,9 +211,12 @@ struct AttributedStringVisitor: MarkupVisitor {
             let indent: CGFloat = 16 * CGFloat(depth)
             paragraphStyle.headIndent = indent
             paragraphStyle.firstLineHeadIndent = indent
-            let fullRange = NSRange(location: 0, length: result.length)
-            result.addAttribute(.paragraphStyle, value: paragraphStyle, range: fullRange)
-            result.addAttribute(.thkBlockQuoteBar, value: depth, range: fullRange)
+            // "If missing" only: a nested BlockQuote already stamped its own (deeper) indent
+            // and bar depth on its own sub-range while `result` was being built; this must
+            // not clobber that with the shallower outer depth.
+            addAttributeIfMissing(.paragraphStyle, value: paragraphStyle, to: result)
+            addAttributeIfMissing(.thkBlockQuoteBar, value: depth, to: result)
+            addForegroundColorIfMissing(theme.blockQuoteTextColor, to: result)
         }
         return result
     }
@@ -181,6 +226,14 @@ struct AttributedStringVisitor: MarkupVisitor {
             .font: baseFont,
             .foregroundColor: UIColor.separator
         ])
+    }
+
+    mutating func visitHTMLBlock(_ html: HTMLBlock) -> NSAttributedString {
+        NSAttributedString(string: html.rawHTML, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
+    }
+
+    mutating func visitInlineHTML(_ inlineHTML: InlineHTML) -> NSAttributedString {
+        NSAttributedString(string: inlineHTML.rawHTML, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
     }
 
     mutating func visitUnorderedList(_ unorderedList: UnorderedList) -> NSAttributedString {
@@ -208,41 +261,43 @@ struct AttributedStringVisitor: MarkupVisitor {
         renderListItem(listItem, marker: "\u{2022}")
     }
 
-    mutating func visitTable(_ table: Table) -> NSAttributedString {
-        let font = UIFont.monospacedSystemFont(ofSize: baseFont.pointSize, weight: .regular)
+    // MARK: - Tables (own segment, not attributed-string flow)
 
-        var rows: [[String]] = []
-        var headerRow: [String] = []
+    private mutating func buildTableModel(_ table: Table) -> THKTableModel {
+        let alignments = table.columnAlignments.map { alignment -> THKTableColumnAlignment in
+            switch alignment {
+            case .some(.center): return .center
+            case .some(.right): return .trailing
+            default: return .leading
+            }
+        }
+        var headerCells: [NSAttributedString] = []
         for cell in table.head.cells {
-            headerRow.append(plainText(of: cell))
+            headerCells.append(cellAttributedString(cell, isHeader: true))
         }
-        rows.append(headerRow)
+        var rows: [[NSAttributedString]] = []
         for row in table.body.rows {
-            var bodyRow: [String] = []
+            var rowCells: [NSAttributedString] = []
             for cell in row.cells {
-                bodyRow.append(plainText(of: cell))
+                rowCells.append(cellAttributedString(cell, isHeader: false))
             }
-            rows.append(bodyRow)
+            rows.append(rowCells)
         }
+        return THKTableModel(alignments: alignments, headerCells: headerCells, rows: rows)
+    }
 
-        let columnCount = rows.map(\.count).max() ?? 0
-        var columnWidths = [Int](repeating: 0, count: columnCount)
-        for row in rows {
-            for (index, cell) in row.enumerated() {
-                columnWidths[index] = max(columnWidths[index], cell.count)
-            }
+    // Shared with the normal block flow: a table cell's inline Markdown goes through the same
+    // per-inline-node `visit` dispatch used for paragraphs/list items, not a plain-text shortcut.
+    private mutating func cellAttributedString(_ cell: Table.Cell, isHeader: Bool) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        for child in cell.children {
+            result.append(visit(child))
         }
-
-        let lines = rows.map { row -> String in
-            row.enumerated().map { index, cell in
-                cell.padding(toLength: columnWidths[index], withPad: " ", startingAt: 0)
-            }.joined(separator: " | ")
+        if isHeader, result.length > 0 {
+            applyTrait(.traitBold, to: result)
         }
-
-        return NSAttributedString(string: lines.joined(separator: "\n"), attributes: [
-            .font: font,
-            .thkCodeBlockBackground: true
-        ])
+        addForegroundColorIfMissing(theme.bodyTextColor, to: result)
+        return result
     }
 
     // MARK: - Helpers
@@ -252,6 +307,14 @@ struct AttributedStringVisitor: MarkupVisitor {
         for (index, child) in children.enumerated() {
             if index > 0 {
                 result.append(NSAttributedString(string: "\n\n"))
+            }
+            if let table = child as? Table {
+                // A Table that ends up here (nested inside a block quote/list item, where it
+                // cannot become its own segment) falls back to being rendered inline as its
+                // header/first-row plain text isn't meaningful in that position, so render
+                // nothing rather than guessing — top-level tables are the supported case.
+                _ = table
+                continue
             }
             result.append(visit(child))
         }
@@ -279,7 +342,7 @@ struct AttributedStringVisitor: MarkupVisitor {
             prefix = marker + " "
         }
 
-        let line = NSMutableAttributedString(string: prefix, attributes: [.font: baseFont])
+        let line = NSMutableAttributedString(string: prefix, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         line.append(content)
 
         let indentUnit: CGFloat = 20
@@ -304,8 +367,45 @@ struct AttributedStringVisitor: MarkupVisitor {
         }
     }
 
+    // Fills in `color` only where no `.foregroundColor` is already set, so a more specific
+    // inner color (e.g. a link or inline code inside a heading/block quote) is preserved.
+    private func addForegroundColorIfMissing(_ color: UIColor, to attrString: NSMutableAttributedString) {
+        addAttributeIfMissing(.foregroundColor, value: color, to: attrString)
+    }
+
+    // Fills in `value` for `key` only where that attribute isn't already set, so a nested
+    // block quote's own (more specific) value — indent, bar depth, color — set while
+    // building its own sub-range isn't clobbered when the enclosing quote stamps its value
+    // across the full joined range.
+    private func addAttributeIfMissing(_ key: NSAttributedString.Key, value: Any, to attrString: NSMutableAttributedString) {
+        guard attrString.length > 0 else { return }
+        var rangesNeedingValue: [NSRange] = []
+        attrString.enumerateAttribute(key, in: NSRange(location: 0, length: attrString.length)) { existing, range, _ in
+            if existing == nil {
+                rangesNeedingValue.append(range)
+            }
+        }
+        for range in rangesNeedingValue {
+            attrString.addAttribute(key, value: value, range: range)
+        }
+    }
+
+    private func codeBlockParagraphStyle() -> NSParagraphStyle {
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.paragraphSpacingBefore = 4
+        paragraphStyle.paragraphSpacing = 4
+        paragraphStyle.firstLineHeadIndent = THKCodeBlockMetrics.horizontalPadding
+        paragraphStyle.headIndent = THKCodeBlockMetrics.horizontalPadding
+        paragraphStyle.tailIndent = -THKCodeBlockMetrics.horizontalPadding
+        return paragraphStyle
+    }
+
     private mutating func plainText(of markup: Markup) -> String {
         visit(markup).string.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private mutating func plainText(ofChildrenOf markup: Markup) -> String {
+        markup.children.map { plainText(of: $0) }.joined()
     }
 
     private func headingFontSize(for level: Int) -> CGFloat {

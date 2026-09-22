@@ -8,6 +8,7 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
     var codeBlockBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var inlineCodeBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var blockQuoteBarColor: UIColor = UIColor.systemGray3
+    var codeBlockCornerRadius: CGFloat = 6
 
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
@@ -20,7 +21,7 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
 
         textStorage.enumerateAttribute(.thkCodeBlockBackground, in: charRange) { value, range, _ in
             guard value != nil else { return }
-            drawFullWidthBackground(for: range, color: codeBlockBackgroundColor, origin: origin, cornerRadius: 6)
+            drawFullWidthBackground(for: range, color: codeBlockBackgroundColor, origin: origin, cornerRadius: codeBlockCornerRadius)
         }
 
         textStorage.enumerateAttribute(.thkInlineCodeBackground, in: charRange) { value, range, _ in

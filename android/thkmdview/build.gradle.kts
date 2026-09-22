@@ -40,6 +40,7 @@ android {
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
     implementation("org.commonmark:commonmark:0.22.0")
     implementation("org.commonmark:commonmark-ext-gfm-tables:0.22.0")
@@ -51,6 +52,7 @@ dependencies {
     testImplementation("androidx.test:core:1.6.1")
     testImplementation("androidx.test.ext:junit:1.2.1")
     testImplementation("com.google.truth:truth:1.4.4")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
 // Publishes the "release" AAR to GitHub Packages: https://maven.pkg.github.com/vizoss/THK-Markdown
