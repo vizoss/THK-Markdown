@@ -73,6 +73,25 @@ parser-specific code lives in two mutually-exclusive files that both define a ty
 Only one of the two is ever compiled into a given build, so the duplicate type name never
 collides.
 
+### Nested block quotes, task-list checkboxes, and quote spacing
+
+A nested `> > quote`'s bar is drawn offset to the right by `(depth - 1) *
+THKBlockQuoteMetrics.indentPerLevel` (`THKBackgroundLayoutManager.drawBlockQuoteBar`), so
+each nesting level reads as its own parallel rounded-pill stripe instead of drawing
+underneath/identical-to its parent's bar at the same x-position — matching Android's
+`ThemedQuoteSpan` stacking (there it falls out of `LeadingMarginSpan` margin accumulation;
+here it's applied explicitly, since iOS paints bars at the layout-manager level, not a
+per-line margin level). A block quote's own children (a wrapped paragraph, a following
+paragraph, a nested quote) are joined with a single `"\n"`
+(`joinBlocksTightly`/`visitBlockQuote`), not a blank `"\n\n"` paragraph — otherwise a
+paragraph/nested-quote boundary would pick up a whole extra blank line on top of
+`THKBlockQuoteMetrics.interiorLineSpacing`, reading as a noticeably bigger gap than an
+ordinary wrapped line, unlike Android's uniform flat +2pt rhythm. Task-list checkboxes are
+an `NSTextAttachment`-wrapped SF Symbol image (`checkmark.square.fill`/`square`, same
+family so both share an identical bounding box) rather than literal
+`\u{2611}`/`\u{2610}` ballot-box characters, which don't reliably render at matching
+visual weight across fonts.
+
 ## Building the package
 
 ```sh
@@ -191,10 +210,17 @@ in `Example/Sources/MockAssistantReply.swift`, each exercising a different const
 cluster: headings/emphasis/links/quotes, code blocks + task lists, nested/ordered lists,
 a real table (mixed column alignment) + a cached image
 (`https://picsum.photos/seed/thkmdview/480/270`), inert raw HTML, an "everything"
-showcase, and a live-rendered Mermaid flowchart. The nav bar's **Theme** button toggles
-`THKMDView.theme` between `.default` and
-a custom `THKMDTheme` on every currently visible bubble, without calling `setMarkdown`
-again, to prove theming re-renders in place.
+showcase, and a live-rendered Mermaid flowchart. The nav bar's **Theme** button presents a
+modal settings sheet (`Example/Sources/ThemeSettingsViewController.swift`) with a live
+control for every `THKMDTheme` property — a `UIColorWell` per color, a `UISlider` per size
+— plus two quick-select preset buttons (`.default` and a custom "Vibrant" theme, matching
+Android's `ALT_THEME` hex-for-hex) that populate every control at once. Every control
+change rebuilds a full `THKMDTheme` from all current control values and pushes it onto
+`THKMDView.theme` on every currently visible bubble, without calling `setMarkdown` again,
+to prove theming re-renders in place. The sheet uses `UISheetPresentationController`
+(`.medium()`/`.large()` detents) and `UIColorWell`, so the Example app's own deployment
+target is iOS 15 — higher than the SDK's own iOS 13 minimum, which is fine since the
+Example app is a demo, not part of the shipped package.
 
 It's generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen) from
 `Example/project.yml`, and both `project.yml` and the generated `Example.xcodeproj` are
@@ -356,9 +382,13 @@ arranged subview of `THKMDView`'s internal vertical `UIStackView`.
 
 Fenced/indented code blocks and outermost block quotes (only the outermost level of a
 nested `> > quote` — the same rule the rounded background fill already uses) get a small
-tappable copy-to-clipboard button in their top-right corner, an `SF Symbol` (`doc.on.doc`)
-`UIButton` positioned by `THKMDView` as a direct subview of the internal `UITextView` that
-owns the segment. Each renderer backend tags a copyable range's full extent with a custom
+tappable copy-to-clipboard button in their top-right corner, a `UIButton` positioned by
+`THKMDView` as a direct subview of the internal `UITextView` that owns the segment. The
+button's icon is drawn programmatically (`THKMDView.makeCopyIconImage()`, `UIBezierPath` +
+`UIGraphicsImageRenderer`, cached after the first build) to match Lucide's "copy" icon —
+the same icon Android's copy button uses — rather than the SF Symbol `doc.on.doc`, whose
+different visual design didn't match across platforms. Each renderer backend tags a
+copyable range's full extent with a custom
 `NSAttributedString` key (`.thkCopyableCodeBlock`/`.thkCopyableBlockQuote` in
 `MarkdownRenderer.swift`) and collects them into that segment's `[THKCopyableBlock]` list;
 `THKMDView` places one button per entry using `NSLayoutManager.lineFragmentRect(forGlyphAt:
