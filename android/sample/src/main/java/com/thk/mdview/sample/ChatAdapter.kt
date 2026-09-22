@@ -41,6 +41,11 @@ class ChatAdapter(
     private val boundAssistantHolders = mutableSetOf<AssistantViewHolder>()
     private var currentTheme: THKMDTheme = THKMDTheme.Default
 
+    /** The theme last pushed via [setTheme] - lets a caller (e.g. the theme settings
+     *  sheet) seed its controls from what's actually on screen instead of tracking a
+     *  second copy of the current theme itself. */
+    val theme: THKMDTheme get() = currentTheme
+
     // A message only plays its chunk-by-chunk "typewriter" once. Without this, every
     // RecyclerView rebind of an already-finished message - which happens constantly
     // while scrolling, since recycled views get rebound on essentially every scroll

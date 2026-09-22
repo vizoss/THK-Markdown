@@ -23,11 +23,11 @@ extension UIColor {
 
 final class MessageListViewController: UIViewController {
     // Demonstrates that `THKMDView.theme` is settable and re-renders in place without a
-    // fresh `setMarkdown` call — toggled from the nav bar button set up in `viewDidLoad`.
-    // Matches Android's ALT_THEME (android/sample/.../SampleMarkdown.kt) hex-for-hex, so
-    // toggling the theme looks the same on both platforms rather than landing on iOS-only
-    // arbitrarily-chosen system colors.
-    private static let vibrantTheme = THKMDTheme(
+    // fresh `setMarkdown` call — edited live from the settings sheet opened by the nav bar
+    // button set up in `viewDidLoad`. Matches Android's ALT_THEME (android/sample/.../
+    // SampleMarkdown.kt) hex-for-hex, so this quick-select preset looks the same on both
+    // platforms rather than landing on iOS-only arbitrarily-chosen system colors.
+    static let vibrantTheme = THKMDTheme(
         bodyTextColor: UIColor(sampleHex: 0x2B2118),
         headingTextColor: UIColor(sampleHex: 0x7A3E00),
         linkColor: UIColor(sampleHex: 0xB3541E),
@@ -73,7 +73,7 @@ final class MessageListViewController: UIViewController {
         view.backgroundColor = .systemBackground
 
         navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Theme", style: .plain, target: self, action: #selector(toggleTheme)
+            title: "Theme", style: .plain, target: self, action: #selector(openThemeSettings)
         )
 
         setUpTableView()
@@ -99,14 +99,30 @@ final class MessageListViewController: UIViewController {
         view.endEditing(true)
     }
 
+    // Opens the settings sheet with every THKMDTheme control live-bound to the currently
+    // visible bubbles — see ThemeSettingsViewController.
+    @objc private func openThemeSettings() {
+        let sheet = ThemeSettingsViewController(
+            theme: currentTheme,
+            presets: [("Default", .default), ("Vibrant", Self.vibrantTheme)]
+        )
+        sheet.onThemeChange = { [weak self] theme in
+            self?.applyTheme(theme)
+        }
+        if let sheetPresentation = sheet.sheetPresentationController {
+            sheetPresentation.detents = [.medium(), .large()]
+            sheetPresentation.prefersGrabberVisible = true
+        }
+        present(sheet, animated: true)
+    }
+
     // Proves `THKMDView.theme` re-renders in place: every currently visible assistant
-    // bubble picks up the new theme immediately, with no `setMarkdown` call.
-    @objc private func toggleTheme() {
-        currentTheme = (currentTheme.headingTextColor == THKMDTheme.default.headingTextColor)
-            ? Self.vibrantTheme
-            : .default
+    // bubble picks up the new theme immediately, with no `setMarkdown` call. Reused by both
+    // the settings sheet's live edits and its preset quick-select buttons.
+    private func applyTheme(_ theme: THKMDTheme) {
+        currentTheme = theme
         for cell in tableView.visibleCells {
-            (cell as? AssistantMessageCell)?.markdownView.theme = currentTheme
+            (cell as? AssistantMessageCell)?.markdownView.theme = theme
         }
     }
 

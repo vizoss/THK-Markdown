@@ -10,7 +10,7 @@ only covers building, testing, running, and the public API surface.
 - `thkmdview/` — the library (AAR). All public API lives in `com.thk.mdview`.
 - `sample/` — a runnable example app: a `RecyclerView` of chat bubbles, each one
   streamed in via simulated SSE chunks, with a table+image showcase reply, a Mermaid
-  flowchart reply, and a theme-toggle button.
+  flowchart reply, and a **Theme** button opening a live-editable theme settings sheet.
 
 ## Build
 
@@ -76,9 +76,37 @@ the "THKMDView Sample" icon). Sending a message cycles through a pool of mock as
 replies — headings/emphasis/quotes, code+task lists, nested/ordered lists, a real
 aligned table plus a cached network image, and a full kitchen-sink reply — each streamed
 in via `appendMarkdownChunk` on random 30–80ms delays so you can watch every construct
-render live. The **Theme** button toggles `THKMDView.theme` on every currently-bound
-bubble between the default theme and an alternate one, with no `setMarkdown` call
-involved, to demonstrate live re-theming.
+render live. The **Theme** button opens `ThemeSettingsSheet`, a
+`BottomSheetDialogFragment` exposing every `THKMDTheme` property live — see "Theme
+settings sheet" below.
+
+### Theme settings sheet
+
+`sample/src/main/java/com/thk/mdview/sample/ThemeSettingsSheet.kt` is a
+`BottomSheetDialogFragment` that exposes every configurable `THKMDTheme` property as a
+live-editable control:
+
+- **Colors** (all 11 color properties — body/heading/link/code text, code background,
+  block-quote bar/text/background, table border/header background, and the view
+  background) render as a row: a circular swatch preview + label. Tapping a swatch opens
+  a small dialog with a curated ~16-color grid (a few neutrals, plus a light and a
+  saturated variant of six hues) to pick from — there's no built-in Android color-picker
+  widget, and this project deliberately avoids adding a third-party one (the same reason
+  `DefaultTHKImageLoader` is hand-rolled instead of pulling in Coil), so a curated grid
+  stands in for a full HSV/RGB picker.
+- **Sizes** (`codeBlockCornerRadiusDp` 0–20dp, `bodyFontSizeSp`/`codeFontSizeSp` 10–24sp)
+  render as a row: a label showing the current value + a `Slider`.
+
+Two preset chips ("Default" / "Vibrant") sit above the controls and populate every
+control at once from `THKMDTheme.Default`/`ALT_THEME`. Every control's change listener —
+whether a swatch pick, a slider drag, or a preset tap — rebuilds a whole `THKMDTheme`
+from the *current* value of all controls and passes it to `ChatAdapter.setTheme(...)`,
+the same mechanism `MainActivity`'s old toolbar toggle used (`THKMDView.theme = ...`
+alone re-renders already-bound bubbles, no `setMarkdown` call needed), so there's one
+single code path that ever pushes a theme onto the chat. The sheet opens half-expanded
+(`BottomSheetBehavior.STATE_HALF_EXPANDED` at a 0.6 ratio) rather than full screen, so
+the chat stays visible behind it while dragging a slider or picking a color — the point
+of live-apply is seeing the effect immediately, not just an instantaneous callback.
 
 ## Public API
 

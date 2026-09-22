@@ -121,9 +121,9 @@ struct MaakuAttributedStringVisitor {
         case let orderedList as OrderedList:
             return visitOrderedList(orderedList)
         case let taskItem as TasklistItem:
-            return renderListItem(items: taskItem.items, prefix: taskItem.completed ? "\u{2611} " : "\u{2610} ")
+            return renderListItem(items: taskItem.items, prefix: thkCheckboxPrefixAttributedString(checked: taskItem.completed, font: baseFont, color: theme.bodyTextColor))
         case let listItem as ListItem:
-            return renderListItem(items: listItem.items, prefix: "\u{2022} ")
+            return renderListItem(items: listItem.items, prefix: NSAttributedString(string: "\u{2022} ", attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor]))
         case let htmlBlock as HtmlBlock:
             return NSAttributedString(string: htmlBlock.html, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         case is Table:
@@ -179,7 +179,14 @@ struct MaakuAttributedStringVisitor {
         let isOutermost = blockQuoteDepth == 0
         let depth = blockQuoteDepth + 1
         blockQuoteDepth = depth
-        let result = joinBlocks(blockQuote.items)
+        // joinBlocksTightly (single "\n"), not joinBlocks (a blank "\n\n" paragraph): a quote's
+        // own vertical rhythm must come only from paragraphStyle.lineSpacing below (applied
+        // per-line, uniformly), matching Android's separate()+QuoteInteriorLineSpacingSpan. A
+        // blank paragraph between e.g. this quote's own paragraph and a nested quote would add
+        // a whole extra line's height on top of that, making paragraph/nested-quote boundaries
+        // visibly larger-gapped than an ordinary wrapped line — a real bug, not the intended
+        // "flat +2pt everywhere" rhythm.
+        let result = joinBlocksTightly(blockQuote.items)
         blockQuoteDepth = depth - 1
 
         if result.length > 0 {
@@ -229,9 +236,9 @@ struct MaakuAttributedStringVisitor {
         var items: [NSAttributedString] = []
         for (index, item) in orderedList.items.enumerated() {
             if let listItem = item as? ListItem {
-                items.append(renderListItem(items: listItem.items, prefix: "\(index + 1). "))
+                items.append(renderListItem(items: listItem.items, prefix: NSAttributedString(string: "\(index + 1). ", attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])))
             } else if let taskItem = item as? TasklistItem {
-                items.append(renderListItem(items: taskItem.items, prefix: taskItem.completed ? "\u{2611} " : "\u{2610} "))
+                items.append(renderListItem(items: taskItem.items, prefix: thkCheckboxPrefixAttributedString(checked: taskItem.completed, font: baseFont, color: theme.bodyTextColor)))
             } else {
                 items.append(visit(block: item))
             }
@@ -352,6 +359,22 @@ struct MaakuAttributedStringVisitor {
         return result
     }
 
+    // Same shape as joinBlocks above, but joins sibling blocks with a single "\n" instead of
+    // a blank "\n\n" paragraph — used only for a block quote's own children (see
+    // visitBlockQuote), where Android never inserts a blank line between siblings either
+    // (MarkdownSpanVisitor.separate()), relying solely on QuoteInteriorLineSpacingSpan's flat
+    // per-line spacing for the whole quote's vertical rhythm.
+    private mutating func joinBlocksTightly(_ blocks: [Block]) -> NSMutableAttributedString {
+        let result = NSMutableAttributedString()
+        for (index, block) in blocks.enumerated() {
+            if index > 0 {
+                result.append(NSAttributedString(string: "\n"))
+            }
+            result.append(visit(block: block))
+        }
+        return result
+    }
+
     private func joinLines(_ items: [NSAttributedString]) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for (index, item) in items.enumerated() {
@@ -363,10 +386,10 @@ struct MaakuAttributedStringVisitor {
         return result
     }
 
-    private mutating func renderListItem(items: [Block], prefix: String) -> NSAttributedString {
+    private mutating func renderListItem(items: [Block], prefix: NSAttributedString) -> NSAttributedString {
         let content = joinBlocks(items)
 
-        let line = NSMutableAttributedString(string: prefix, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
+        let line = NSMutableAttributedString(attributedString: prefix)
         line.append(content)
 
         let indentUnit: CGFloat = 20

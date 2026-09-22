@@ -56,6 +56,13 @@ class THKTableView @JvmOverloads constructor(
 
         private val borderPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = borderPx.toFloat() }
 
+        init {
+            // ViewGroups skip onDraw() by default (the "willNotDraw" optimization, since
+            // most ViewGroups only draw children) - without this, the border lines below
+            // were never actually being drawn at all, not just low-contrast.
+            setWillNotDraw(false)
+        }
+
         private var columnCount = 0
         private var rowCount = 0
         private var cells: Array<Array<TextView?>> = arrayOf()

@@ -237,7 +237,14 @@ struct AttributedStringVisitor: MarkupVisitor {
         let isOutermost = blockQuoteDepth == 0
         let depth = blockQuoteDepth + 1
         blockQuoteDepth = depth
-        let result = joinBlocks(Array(blockQuote.children))
+        // joinBlocksTightly (single "\n"), not joinBlocks (a blank "\n\n" paragraph): a quote's
+        // own vertical rhythm must come only from paragraphStyle.lineSpacing below (applied
+        // per-line, uniformly), matching Android's separate()+QuoteInteriorLineSpacingSpan. A
+        // blank paragraph between e.g. this quote's own paragraph and a nested quote would add
+        // a whole extra line's height on top of that, making paragraph/nested-quote boundaries
+        // visibly larger-gapped than an ordinary wrapped line — a real bug, not the intended
+        // "flat +2pt everywhere" rhythm.
+        let result = joinBlocksTightly(Array(blockQuote.children))
         blockQuoteDepth = depth - 1
 
         if result.length > 0 {
@@ -372,6 +379,26 @@ struct AttributedStringVisitor: MarkupVisitor {
         return result
     }
 
+    // Same shape as joinBlocks above, but joins sibling blocks with a single "\n" instead of
+    // a blank "\n\n" paragraph — used only for a block quote's own children (see
+    // visitBlockQuote), where Android never inserts a blank line between siblings either
+    // (MarkdownSpanVisitor.separate()), relying solely on QuoteInteriorLineSpacingSpan's flat
+    // per-line spacing for the whole quote's vertical rhythm.
+    private mutating func joinBlocksTightly(_ children: [Markup]) -> NSMutableAttributedString {
+        let result = NSMutableAttributedString()
+        for (index, child) in children.enumerated() {
+            if index > 0 {
+                result.append(NSAttributedString(string: "\n"))
+            }
+            if let table = child as? Table {
+                _ = table
+                continue
+            }
+            result.append(visit(child))
+        }
+        return result
+    }
+
     private func joinLines(_ items: [NSAttributedString]) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for (index, item) in items.enumerated() {
@@ -386,14 +413,12 @@ struct AttributedStringVisitor: MarkupVisitor {
     private mutating func renderListItem(_ item: ListItem, marker: String) -> NSAttributedString {
         let content = joinBlocks(Array(item.children))
 
-        let prefix: String
+        let line = NSMutableAttributedString()
         if let checkbox = item.checkbox {
-            prefix = checkbox == .checked ? "\u{2611} " : "\u{2610} "
+            line.append(thkCheckboxPrefixAttributedString(checked: checkbox == .checked, font: baseFont, color: theme.bodyTextColor))
         } else {
-            prefix = marker + " "
+            line.append(NSAttributedString(string: marker + " ", attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor]))
         }
-
-        let line = NSMutableAttributedString(string: prefix, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         line.append(content)
 
         let indentUnit: CGFloat = 20

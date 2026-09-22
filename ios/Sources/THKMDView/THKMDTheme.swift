@@ -20,6 +20,10 @@ public struct THKMDTheme {
     public var tableHeaderBackgroundColor: UIColor
     public var bodyFontSize: CGFloat
     public var codeFontSize: CGFloat
+    /// Background painted behind the whole view; clear by default so a host's chat-bubble
+    /// background (e.g. a card view) shows through unless overridden. Matches Android's
+    /// `THKMDTheme.backgroundColor` (default `Color.TRANSPARENT`).
+    public var backgroundColor: UIColor
 
     public init(
         bodyTextColor: UIColor,
@@ -34,7 +38,8 @@ public struct THKMDTheme {
         tableBorderColor: UIColor,
         tableHeaderBackgroundColor: UIColor,
         bodyFontSize: CGFloat,
-        codeFontSize: CGFloat
+        codeFontSize: CGFloat,
+        backgroundColor: UIColor = .clear
     ) {
         self.bodyTextColor = bodyTextColor
         self.headingTextColor = headingTextColor
@@ -49,6 +54,7 @@ public struct THKMDTheme {
         self.tableHeaderBackgroundColor = tableHeaderBackgroundColor
         self.bodyFontSize = bodyFontSize
         self.codeFontSize = codeFontSize
+        self.backgroundColor = backgroundColor
     }
 
     /// A fixed, non-adaptive palette that matches Android's `THKMDTheme.Default`

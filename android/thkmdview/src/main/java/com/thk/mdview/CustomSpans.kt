@@ -128,7 +128,9 @@ internal class ThemedQuoteSpan(
     private val spanStart: Int = 0,
     private val spanEnd: Int = 0,
     private val stripeWidthPx: Int = 6,
-    private val gapWidthPx: Int = 20
+    private val gapWidthPx: Int = 20,
+    private val leftInsetPx: Int = 0,
+    private val barVerticalInsetPx: Int = 0
 ) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
 
     override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
@@ -163,8 +165,12 @@ internal class ThemedQuoteSpan(
         )
     }
 
-    override fun getLeadingMargin(first: Boolean): Int = stripeWidthPx + gapWidthPx
+    override fun getLeadingMargin(first: Boolean): Int = leftInsetPx + stripeWidthPx + gapWidthPx
 
+    // Drawn as a rounded "pill" (only its very top and very bottom corners rounded, same
+    // flat-in-the-middle technique as drawRoundedLineBackground, so a multi-line bar reads
+    // as one continuous shape) inset a little from the block's left/top/bottom edges,
+    // rather than a sharp rectangle flush against them.
     override fun drawLeadingMargin(
         canvas: Canvas,
         paint: Paint,
@@ -179,19 +185,21 @@ internal class ThemedQuoteSpan(
         first: Boolean,
         layout: Layout?
     ) {
-        val originalColor = paint.color
-        val originalStyle = paint.style
-        paint.color = barColor
-        paint.style = Paint.Style.FILL
-        canvas.drawRect(
-            (x).toFloat(),
-            top.toFloat(),
-            (x + dir * stripeWidthPx).toFloat(),
-            bottom.toFloat(),
-            paint
+        val barLeft = (x + dir * leftInsetPx).toFloat()
+        val barRight = barLeft + dir * stripeWidthPx
+        val isFirstLine = start <= spanStart
+        val isLastLine = end >= spanEnd
+        var barTop = top
+        var barBottom = bottom
+        if (isFirstLine) barTop += barVerticalInsetPx
+        if (isLastLine) barBottom -= barVerticalInsetPx
+        drawRoundedLineBackground(
+            canvas, paint,
+            left = minOf(barLeft, barRight).toInt(), right = maxOf(barLeft, barRight).toInt(),
+            top = barTop, bottom = barBottom,
+            color = barColor, cornerRadiusPx = stripeWidthPx / 2f,
+            isFirstLine = isFirstLine, isLastLine = isLastLine
         )
-        paint.color = originalColor
-        paint.style = originalStyle
     }
 }
 

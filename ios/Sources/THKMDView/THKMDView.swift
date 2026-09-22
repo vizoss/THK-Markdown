@@ -26,6 +26,7 @@ public final class THKMDView: UIView {
     public var theme: THKMDTheme = .default {
         didSet {
             renderer.theme = theme
+            backgroundColor = theme.backgroundColor
             rerenderCurrentBuffer()
         }
     }
@@ -90,6 +91,7 @@ public final class THKMDView: UIView {
         ])
 
         renderer.theme = theme
+        backgroundColor = theme.backgroundColor
 
         buffer.onRender = { [weak self] text in
             self?.applyRenderedText(text)
@@ -288,9 +290,44 @@ public final class THKMDView: UIView {
         }
     }
 
+    // Drawn programmatically (Lucide's "copy" icon, ISC license) instead of the SF Symbol
+    // `doc.on.doc`, to match Android's copy-button icon exactly rather than landing on a
+    // different-looking system glyph. Built once and cached rather than bundling an image
+    // asset, which would need separate SPM/CocoaPods resource wiring for one small icon.
+    private static let copyIconImage: UIImage = makeCopyIconImage()
+
+    private static func makeCopyIconImage() -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 24, height: 24))
+        let image = renderer.image { _ in
+            let path = UIBezierPath()
+            path.lineWidth = 2
+            path.lineCapStyle = .round
+            path.lineJoinStyle = .round
+
+            // Front sheet: the SVG's `<rect width="14" height="14" x="8" y="8" rx="2" ry="2" />`.
+            path.append(UIBezierPath(roundedRect: CGRect(x: 8, y: 8, width: 14, height: 14), cornerRadius: 2))
+
+            // Back sheet: an open outline (no right/bottom edge — those are hidden behind the
+            // front sheet), translating the SVG `<path>`'s relative cubic-Bézier ("c") commands
+            // directly into addCurve calls: "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2".
+            let back = UIBezierPath()
+            back.move(to: CGPoint(x: 4, y: 16))
+            back.addCurve(to: CGPoint(x: 2, y: 14), controlPoint1: CGPoint(x: 2.9, y: 16), controlPoint2: CGPoint(x: 2, y: 15.1))
+            back.addLine(to: CGPoint(x: 2, y: 4))
+            back.addCurve(to: CGPoint(x: 4, y: 2), controlPoint1: CGPoint(x: 2, y: 2.9), controlPoint2: CGPoint(x: 2.9, y: 2))
+            back.addLine(to: CGPoint(x: 14, y: 2))
+            back.addCurve(to: CGPoint(x: 16, y: 4), controlPoint1: CGPoint(x: 15.1, y: 2), controlPoint2: CGPoint(x: 16, y: 2.9))
+            path.append(back)
+
+            UIColor.black.setStroke()
+            path.stroke()
+        }
+        return image.withRenderingMode(.alwaysTemplate)
+    }
+
     private func makeCopyButton() -> UIButton {
         let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: "doc.on.doc"), for: .normal)
+        button.setImage(Self.copyIconImage, for: .normal)
         button.tintColor = .secondaryLabel
         button.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
         button.layer.cornerRadius = 8

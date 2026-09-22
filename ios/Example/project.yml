@@ -2,7 +2,7 @@ name: Example
 options:
   bundleIdPrefix: com.thk.mdview.example
   deploymentTarget:
-    iOS: "13.0"
+    iOS: "15.0"
   createIntermediateGroups: true
 targets:
   Example:
@@ -23,7 +23,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.thk.mdview.example
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
-        IPHONEOS_DEPLOYMENT_TARGET: "13.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         GENERATE_INFOPLIST_FILE: NO
     dependencies:
       - package: THKMDView

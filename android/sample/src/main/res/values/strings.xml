@@ -6,4 +6,24 @@
     <string name="message_input_hint">Message…</string>
     <string name="send">Send</string>
     <string name="theme_toggle">Theme</string>
+
+    <string name="theme_settings_title">Theme Settings</string>
+    <string name="theme_preset_default">Default</string>
+    <string name="theme_preset_vibrant">Vibrant</string>
+    <string name="theme_section_colors">Colors</string>
+    <string name="theme_section_sizes">Sizes</string>
+    <string name="theme_prop_body_text">Body text</string>
+    <string name="theme_prop_heading_text">Heading text</string>
+    <string name="theme_prop_link">Link</string>
+    <string name="theme_prop_code_text">Code text</string>
+    <string name="theme_prop_code_background">Code background</string>
+    <string name="theme_prop_quote_bar">Quote bar</string>
+    <string name="theme_prop_quote_text">Quote text</string>
+    <string name="theme_prop_quote_background">Quote background</string>
+    <string name="theme_prop_table_border">Table border</string>
+    <string name="theme_prop_table_header_background">Table header background</string>
+    <string name="theme_prop_view_background">View background</string>
+    <string name="theme_prop_code_corner_radius">Code corner radius</string>
+    <string name="theme_prop_body_font_size">Body font size</string>
+    <string name="theme_prop_code_font_size">Code font size</string>
 </resources>

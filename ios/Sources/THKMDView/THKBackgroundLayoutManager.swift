@@ -41,7 +41,8 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
 
         textStorage.enumerateAttribute(.thkBlockQuoteBar, in: charRange) { value, range, _ in
             guard value != nil else { return }
-            drawBlockQuoteBar(for: range, origin: origin)
+            let depth = value as? Int ?? 1
+            drawBlockQuoteBar(for: range, origin: origin, depth: depth)
         }
 
         textStorage.enumerateAttribute(.thkThematicBreak, in: charRange) { value, range, _ in
@@ -58,9 +59,10 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
     // paragraphSpacingBefore/paragraphSpacing reserved on the first/last line (see
     // codeBlockParagraphStyle in SwiftMarkdownRenderer.swift/MaakuMarkdownRenderer.swift),
     // so unioning the line rects picks up that vertical padding automatically.
-    private func drawFullWidthBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat) {
-        guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
-        let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+    // Shared by drawFullWidthBackground/drawBlockQuoteBar: one rect spanning every line of the
+    // range, in this glyph range's own coordinate space (origin already applied), rather than
+    // each duplicating the "walk line fragments and union them" loop.
+    private func unionOfLineFragmentRects(forGlyphRange glyphRange: NSRange, origin: CGPoint) -> CGRect? {
         var unionRect: CGRect?
         enumerateLineFragments(forGlyphRange: glyphRange) { rect, _, _, _, _ in
             var r = rect
@@ -68,7 +70,13 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             r.origin.y += origin.y
             unionRect = unionRect?.union(r) ?? r
         }
-        guard let rect = unionRect else { return }
+        return unionRect
+    }
+
+    private func drawFullWidthBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat) {
+        guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
+        let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+        guard let rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
         color.setFill()
         let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
         context.addPath(path.cgPath)
@@ -94,17 +102,29 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         context.fillPath()
     }
 
-    private func drawBlockQuoteBar(for charRange: NSRange, origin: CGPoint) {
+    // `depth` (1 for the outermost quote, 2+ for each nested level — see `.thkBlockQuoteBar` in
+    // MarkdownRenderer.swift) offsets the bar rightward by one `indentPerLevel` per extra level,
+    // so a nested quote's bar draws as its own parallel stripe instead of at the exact same
+    // pixels as its parent's. Drawn as a rounded "pill" — same union-then-round technique as
+    // drawFullWidthBackground, just inset from the block's left/top/bottom edges instead of
+    // flush against them — so a multi-line bar reads as one continuous shape.
+    private func drawBlockQuoteBar(for charRange: NSRange, origin: CGPoint, depth: Int) {
         guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
         let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+        guard var rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
+
+        let leftInset: CGFloat = 2
+        let verticalInset: CGFloat = 3
+        rect.origin.x += leftInset + CGFloat(depth - 1) * THKBlockQuoteMetrics.indentPerLevel
+        rect.size.width = THKBlockQuoteMetrics.barWidth
+        rect.origin.y += verticalInset
+        rect.size.height -= verticalInset * 2
+        guard rect.height > 0 else { return }
+
         blockQuoteBarColor.setFill()
-        enumerateLineFragments(forGlyphRange: glyphRange) { rect, _, _, _, _ in
-            var barRect = rect
-            barRect.origin.x += origin.x
-            barRect.origin.y += origin.y
-            barRect.size.width = THKBlockQuoteMetrics.barWidth
-            context.fill(barRect)
-        }
+        let path = UIBezierPath(roundedRect: rect, cornerRadius: THKBlockQuoteMetrics.barWidth / 2)
+        context.addPath(path.cgPath)
+        context.fillPath()
     }
 
     // Draws a real solid divider line (rather than relying on a run of Unicode box-drawing/

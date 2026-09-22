@@ -136,6 +136,32 @@ final class RenderTests: XCTestCase {
         XCTAssertEqual(depth, 2)
     }
 
+    // Guards the nested-bar-offset fix in THKBackgroundLayoutManager: each level needs its
+    // own correctly-attached depth so drawBlockQuoteBar can offset it (depth - 1) *
+    // indentPerLevel to the right, one triple-nested case beyond the single-nesting check
+    // above so a third level isn't accidentally clamped back to 2.
+    func testTripleNestedBlockQuoteIncreasesDepthAtEachLevel() {
+        let attributed = singleText("> Outer\n> > Middle\n> > > Inner")
+        let outerRange = (attributed.string as NSString).range(of: "Outer")
+        let middleRange = (attributed.string as NSString).range(of: "Middle")
+        let innerRange = (attributed.string as NSString).range(of: "Inner")
+
+        XCTAssertEqual(attributed.attribute(.thkBlockQuoteBar, at: outerRange.location, effectiveRange: nil) as? Int, 1)
+        XCTAssertEqual(attributed.attribute(.thkBlockQuoteBar, at: middleRange.location, effectiveRange: nil) as? Int, 2)
+        XCTAssertEqual(attributed.attribute(.thkBlockQuoteBar, at: innerRange.location, effectiveRange: nil) as? Int, 3)
+    }
+
+    // Guards the joinBlocksTightly fix: a paragraph and a following nested quote inside a
+    // block quote must be separated by a single "\n", not a blank "\n\n" paragraph —
+    // matching Android's separate(), which never inserts a blank line between quote
+    // children either. A blank paragraph there would add a whole extra line's height on top
+    // of the uniform per-line lineSpacing, making that boundary look more spaced-out than an
+    // ordinary wrapped line.
+    func testBlockQuoteChildrenAreNotSeparatedByABlankLine() {
+        let attributed = singleText("> Outer\n> > Inner")
+        XCTAssertFalse(attributed.string.contains("\n\n"))
+    }
+
     func testBlockQuoteCarriesBackgroundAttribute() {
         let attributed = singleText("> A wise quote.")
         XCTAssertNotNil(attributed.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil))
@@ -222,10 +248,21 @@ final class RenderTests: XCTestCase {
         XCTAssertTrue(attributed.string.contains("\u{2022} Item 2"))
     }
 
-    func testTaskListRendersCheckboxGlyphs() {
+    // Checkbox prefixes are NSTextAttachments (SF Symbol images), not literal ballot-box
+    // characters — see thkCheckboxPrefixAttributedString in MarkdownRenderer.swift, which
+    // fixed the two ballot-box glyphs rendering at visibly different sizes/weights.
+    func testTaskListRendersCheckboxAttachmentsNotLiteralGlyphs() {
         let attributed = singleText("- [x] Done\n- [ ] Not done")
-        XCTAssertTrue(attributed.string.contains("\u{2611} Done"))
-        XCTAssertTrue(attributed.string.contains("\u{2610} Not done"))
+        XCTAssertFalse(attributed.string.contains("\u{2611}"))
+        XCTAssertFalse(attributed.string.contains("\u{2610}"))
+        XCTAssertTrue(attributed.string.contains("Done"))
+        XCTAssertTrue(attributed.string.contains("Not done"))
+
+        var attachments: [NSTextAttachment] = []
+        attributed.enumerateAttribute(.attachment, in: NSRange(location: 0, length: attributed.length)) { value, _, _ in
+            if let attachment = value as? NSTextAttachment { attachments.append(attachment) }
+        }
+        XCTAssertEqual(attachments.count, 2)
     }
 
     func testEscapedCharactersRenderLiterally() {

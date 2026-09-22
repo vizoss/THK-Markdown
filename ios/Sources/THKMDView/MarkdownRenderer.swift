@@ -105,6 +105,32 @@ enum THKBlockQuoteMetrics {
     static let verticalPadding: CGFloat = THKCodeBlockMetrics.verticalPadding
 }
 
+/// A task-list checkbox prefix as an `NSTextAttachment`-wrapped SF Symbol image, instead of a
+/// literal `\u{2611}`/`\u{2610}` (BALLOT BOX WITH CHECK / BALLOT BOX) character pair. Those two
+/// glyphs are not designed to match each other's visual weight/size in most fonts — the checked
+/// box commonly renders visibly larger/bolder than the empty outline. Both `checkmark.square.fill`
+/// and `square` come from the same SF Symbol family, so they share an identical bounding box;
+/// only the fill state differs. Shared by both renderer backends so the glyph choice can't drift
+/// between them.
+func thkCheckboxPrefixAttributedString(checked: Bool, font: UIFont, color: UIColor) -> NSAttributedString {
+    let symbolName = checked ? "checkmark.square.fill" : "square"
+    let configuration = UIImage.SymbolConfiguration(font: font)
+    let image = (UIImage(systemName: symbolName, withConfiguration: configuration) ?? UIImage())
+        .withTintColor(color, renderingMode: .alwaysOriginal)
+
+    let attachment = NSTextAttachment()
+    attachment.image = image
+    // Centers the glyph on the text's cap-height rather than its baseline, matching how the
+    // bullet/number markers it replaces sit relative to the following text.
+    let yOffset = (font.capHeight - image.size.height).rounded() / 2
+    attachment.bounds = CGRect(x: 0, y: yOffset, width: image.size.width, height: image.size.height)
+
+    let result = NSMutableAttributedString(attachment: attachment)
+    result.addAttribute(.font, value: font, range: NSRange(location: 0, length: result.length))
+    result.append(NSAttributedString(string: " ", attributes: [.font: font]))
+    return result
+}
+
 /// True when a fenced code block's language/info tag names Mermaid (case-insensitive, tolerant
 /// of surrounding whitespace) — the one case where a "code block" becomes a `.diagram` segment
 /// instead. Shared by both renderer backends so the detection rule can't drift between them.

@@ -169,7 +169,9 @@ internal class MarkdownSpanVisitor(
                     spanStart = start,
                     spanEnd = end,
                     stripeWidthPx = (QUOTE_BAR_WIDTH_DP * densityPx).toInt(),
-                    gapWidthPx = (QUOTE_BAR_GAP_DP * densityPx).toInt()
+                    gapWidthPx = (QUOTE_BAR_GAP_DP * densityPx).toInt(),
+                    leftInsetPx = (QUOTE_BAR_LEFT_INSET_DP * densityPx).toInt(),
+                    barVerticalInsetPx = (QUOTE_BAR_VERTICAL_INSET_DP * densityPx).toInt()
                 ),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
@@ -305,9 +307,33 @@ internal class MarkdownSpanVisitor(
         else -> THKTableAlignment.START
     }
 
+    // Ensures the buffer ends with a full blank line (not just a single line break) before
+    // a new sibling block starts, so paragraph/heading/list/code-block/quote spacing
+    // matches iOS's equivalent top-level block joiner, which inserts a blank "\n\n"
+    // between siblings (see SwiftMarkdownRenderer.joinBlocks) - a single '\n' here left
+    // Android's block-to-block gaps visibly tighter than iOS's.
+    //
+    // Inside a block quote (blockQuoteDepth > 0) or a list (listStack not empty) this
+    // intentionally stays tight (a single '\n', no blank line) instead. A quote's vertical
+    // rhythm comes entirely from QuoteInteriorLineSpacingSpan's flat, uniform per-line
+    // spacing, matching iOS's joinBlocksTightly used for the same reason - a blank-line
+    // gap between e.g. two paragraphs inside the same quote would make that boundary
+    // visibly larger-gapped than an ordinary wrapped line. Lists need the same treatment
+    // because commonmark-java wraps every list item's text in a Paragraph node even for a
+    // "tight" list - visit(paragraph) calling separate() unconditionally would otherwise
+    // inject a blank line between every pair of list items (each item's own content is a
+    // Paragraph), not just between top-level sibling blocks.
     private fun separate() {
-        if (builder.isNotEmpty() && builder.last() != '\n') {
-            builder.append('\n')
+        if (builder.isEmpty()) return
+        if (blockQuoteDepth > 0 || listStack.isNotEmpty()) {
+            if (builder.last() != '\n') builder.append('\n')
+            return
+        }
+        while (builder.isNotEmpty() && builder.last() == '\n') {
+            builder.delete(builder.length - 1, builder.length)
+        }
+        if (builder.isNotEmpty()) {
+            builder.append("\n\n")
         }
     }
 
@@ -329,6 +355,8 @@ internal class MarkdownSpanVisitor(
         private const val BLOCK_VERTICAL_PADDING_DP = 8f
         private const val QUOTE_BAR_WIDTH_DP = 4f
         private const val QUOTE_BAR_GAP_DP = 12f
+        private const val QUOTE_BAR_LEFT_INSET_DP = 2f
+        private const val QUOTE_BAR_VERTICAL_INSET_DP = 3f
         private const val QUOTE_INTERIOR_LINE_SPACING_DP = 2f
         private const val THEMATIC_BREAK_THICKNESS_DP = 1.5f
     }
