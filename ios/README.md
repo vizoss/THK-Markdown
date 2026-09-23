@@ -111,17 +111,20 @@ against an iOS Simulator destination via `xcodebuild`, as below.
 ```sh
 cd ios
 xcrun simctl list devices available   # find a simulator name/id on your machine
-xcodebuild test -scheme THKMDView -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
+xcodebuild test -project Example/Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
 If you have more than one simulator with the same name (e.g. two "iPhone 17 Pro"
 entries from different Xcode versions), disambiguate with `id=<UDID>` instead of `name=`:
 
 ```sh
-xcodebuild test -scheme THKMDView -destination 'platform=iOS Simulator,id=<UDID>'
+xcodebuild test -project Example/Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,id=<UDID>'
 ```
 
-56 tests across four files, all passing as of this writing:
+The Example scheme includes the SDK and shared P0 tests. Regenerate the project with
+`xcodegen generate --spec Example/project.yml` after changing test target configuration.
+See [P0 acceptance](../docs/P0-acceptance-2026-09-23.md) for current results and scope.
+The original test groups include:
 
 - **`Tests/THKMDViewTests/RenderTests.swift`** — feeds Markdown fixtures through
   `DefaultMarkdownRenderer` and asserts, per segment, plain-text extraction plus the
@@ -191,7 +194,7 @@ Verification commands actually run against this package (both passed):
 # SPM regression check — confirms the SPM/ CocoaPods/ file split didn't break anything
 cd ios
 xcodebuild build -scheme THKMDView -destination 'generic/platform=iOS Simulator'
-xcodebuild test -scheme THKMDView -destination 'platform=iOS Simulator,id=<UDID>'
+xcodebuild test -project Example/Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,id=<UDID>'
 
 # CocoaPods validation — compiles the pod against Maaku and runs the Maaku test spec
 cd ..

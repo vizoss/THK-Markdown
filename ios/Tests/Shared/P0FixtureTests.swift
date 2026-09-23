@@ -6,6 +6,47 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testP0LayoutMatrixAndRebinding() throws {
+        let fixtures = try MarkdownFixture.load()
+        let view = THKMDView(frame: .zero)
+        for width in [CGFloat(180), 340, 720] {
+            for fontSize in [CGFloat(15), 24] {
+                var theme = THKMDTheme.default
+                theme.bodyFontSize = fontSize
+                theme.codeFontSize = fontSize
+                theme.bodyTextColor = .brown
+                view.theme = theme
+                for fixture in fixtures {
+                    view.reset()
+                    view.frame = CGRect(x: 0, y: 0, width: width, height: 2000)
+                    view.setMarkdown(fixture.markdown)
+                    view.layoutIfNeeded()
+                    XCTAssertTrue(view.intrinsicContentSize.height.isFinite, fixture.id)
+                    XCTAssertGreaterThanOrEqual(view.intrinsicContentSize.height, 0, fixture.id)
+                    // A recycled view must discard pending chunks when rebound.
+                    view.appendMarkdownChunk("旧片段")
+                    view.reset()
+                    view.setMarkdown("新消息")
+                    view.layoutIfNeeded()
+                }
+            }
+        }
+    }
+
+    func testCopyButtonsPreserveFixturePayloadExactly() throws {
+        func descendants(_ parent: UIView) -> [UIView] { parent.subviews.flatMap { [$0] + descendants($0) } }
+        for fixture in try MarkdownFixture.load() where !fixture.expected.copyTexts.isEmpty {
+            let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 2000))
+            view.setMarkdown(fixture.markdown)
+            view.layoutIfNeeded()
+            var values: [String] = []
+            for button in descendants(view).compactMap({ $0 as? UIButton }) {
+                button.sendActions(for: .touchUpInside)
+                values.append(UIPasteboard.general.string ?? "")
+            }
+            for expected in fixture.expected.copyTexts { XCTAssertTrue(values.contains(expected), fixture.id) }
+        }
+    }
     func testListContainerPreservesNestedQuoteSpacing() throws {
         let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-09" })
         guard case .text(let text, _) = DefaultMarkdownRenderer().render(fixture.markdown).first else {

@@ -13,6 +13,27 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun p0LayoutMatrixAndRebinding() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val view = THKMDView(context)
+        for (widthDp in listOf(180, 340, 720)) for (font in listOf(15f, 24f)) {
+            view.theme = THKMDTheme.Default.copy(bodyFontSizeSp = font, codeFontSizeSp = font, bodyTextColor = 0xFF804020.toInt())
+            val width = (widthDp * context.resources.displayMetrics.density).toInt()
+            for (fixture in cases()) {
+                view.reset()
+                view.setMarkdown(fixture.getString("markdown"))
+                view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                    android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED))
+                view.layout(0, 0, width, view.measuredHeight)
+                assertTrue(view.measuredHeight > 0)
+                view.appendMarkdownChunk("旧片段")
+                view.reset()
+                view.setMarkdown("新消息")
+                shadowOf(Looper.getMainLooper()).runToEndOfTasks()
+                assertEquals("新消息", (view.getChildAt(0) as TextSegmentFrame).textView.text.toString())
+            }
+        }
+    }
     @Test fun emptyStreamingFenceDoesNotInvalidateEnclosingQuoteCopyRange() {
         val text = (render("> 引用说明。\n>\n> ```swift\n").first() as RenderedSegment.TextSegment)
         assertTrue(text.copyableBlocks.isNotEmpty())
