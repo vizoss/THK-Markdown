@@ -170,6 +170,9 @@ class THKMDView @JvmOverloads constructor(
         val spanned = segment.spanned as? Spanned
         val quoteGutter = spanned?.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
             ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
+        spanned?.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)?.forEach {
+            it.drawsInHost = it.backgroundColor != null && !it.containerBackground
+        }
         val codeGutter = spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)
             ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
         val lanes = segment.copyableBlocks.maxOfOrNull { block ->
@@ -323,6 +326,23 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
         val layout = textView.layout
         val text = textView.text as? Spanned
         if (layout != null && text != null) {
+            text.getSpans(0, text.length, ThemedQuoteSpan::class.java)
+                .filter { it.drawsInHost }.forEach { span ->
+                    val start = text.getSpanStart(span)
+                    val end = text.getSpanEnd(span)
+                    val first = layout.getLineForOffset(start)
+                    val last = layout.getLineForOffset((end - 1).coerceAtLeast(start))
+                    val indent = text.getSpans(start, start + 1, android.text.style.LeadingMarginSpan::class.java)
+                        .filterNot { it is ThemedQuoteSpan }.sumOf { it.getLeadingMargin(true) }
+                    val rect = android.graphics.RectF(
+                        (textView.left + textView.paddingLeft + indent).toFloat(),
+                        (textView.top + textView.paddingTop + layout.getLineTop(first)).toFloat(),
+                        textView.right.toFloat(),
+                        (textView.top + textView.paddingTop + layout.getLineBottom(last)).toFloat()
+                    )
+                    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = span.backgroundColor!! }
+                    canvas.drawRoundRect(rect, span.cornerRadiusPx, span.cornerRadiusPx, paint)
+                }
             text.getSpans(0, text.length, CodeBlockBackgroundSpan::class.java)
                 .filter { it.drawsInHost && !it.containerBackground }.forEach { span ->
                     val start = text.getSpanStart(span)

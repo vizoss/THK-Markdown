@@ -6,6 +6,16 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testListContainerPreservesNestedQuoteSpacing() throws {
+        let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-09" })
+        guard case .text(let text, _) = DefaultMarkdownRenderer().render(fixture.markdown).first else {
+            return XCTFail("Expected text")
+        }
+        let offset = (text.string as NSString).range(of: "内层引用").location
+        let style = try XCTUnwrap(text.attribute(.paragraphStyle, at: offset, effectiveRange: nil) as? NSParagraphStyle)
+        XCTAssertEqual(style.paragraphSpacingBefore, THKBlockQuoteMetrics.secondLevelTopSpacing)
+        XCTAssertGreaterThanOrEqual(style.paragraphSpacing, THKBlockQuoteMetrics.secondLevelBottomSpacing)
+    }
     func testQuotedCodeCopyButtonsShareTrailingColumn() throws {
         let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 360, height: 240))
         view.setMarkdown("> 引用说明。\n>\n> ```swift\n> let value = 42\n> ```\n> 引用结束。")

@@ -10,6 +10,16 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class THKMDViewReuseTest {
+    @Test fun listQuoteBackgroundIncludesTheCopyGutter() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("- 外层列表\n\n  > 引用第一段。\n  > > 内层引用。\n\n- 列表结尾")
+        val text = (view.getChildAt(0) as TextSegmentFrame).textView.text as android.text.Spanned
+        val outer = text.getSpans(0, text.length, ThemedQuoteSpan::class.java).single { it.backgroundColor != null }
+        assertThat(outer.drawsInHost).isTrue()
+        assertThat(outer.containerBackground).isFalse()
+        val ending = text.toString().indexOf("列表结尾")
+        assertThat(text.getSpans(ending, ending + 1, ThemedQuoteSpan::class.java)).isEmpty()
+    }
 
     @Test
     fun quotedCodeCopyButtonsStayInOneColumnWithoutOverlapping() {

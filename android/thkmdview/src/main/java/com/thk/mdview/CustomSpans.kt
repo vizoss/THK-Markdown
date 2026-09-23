@@ -133,8 +133,8 @@ internal class CodeBlockPaddingSpan(private val paddingPx: Int) : LeadingMarginS
 // of what should be one continuous rounded block. Nested levels still get their own bar.
 internal class ThemedQuoteSpan(
     private val barColor: Int,
-    private val backgroundColor: Int? = null,
-    private val cornerRadiusPx: Float = 0f,
+    val backgroundColor: Int? = null,
+    val cornerRadiusPx: Float = 0f,
     private val topPaddingPx: Int = 0,
     private val bottomPaddingPx: Int = 0,
     private val spanStart: Int = 0,
@@ -148,6 +148,7 @@ internal class ThemedQuoteSpan(
     private val nestedTopPaddingPx: Int = 0,
     private val nestedBottomPaddingPx: Int = 0
 ) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
+    var drawsInHost: Boolean = false
 
     private var expandedAscent: Int? = null
     private var expandedTop: Int? = null
@@ -207,7 +208,7 @@ internal class ThemedQuoteSpan(
         end: Int,
         lineNumber: Int
     ) {
-        if (backgroundColor == null || containerBackground) return
+        if (backgroundColor == null || containerBackground || drawsInHost) return
         drawRoundedLineBackground(
             canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
             isFirstLine = start <= spanStart, isLastLine = end >= spanEnd

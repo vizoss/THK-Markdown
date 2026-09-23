@@ -188,7 +188,7 @@ internal class MarkdownSpanVisitor(
                     nestedBottomPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0
                 ),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or
-                    ((255 - blockQuoteDepth).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)
+                    ((254 - blockQuoteDepth).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)
             )
             builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             // A little extra leading between wrapped/multi-paragraph lines *inside* the
@@ -280,9 +280,10 @@ internal class MarkdownSpanVisitor(
             ownRanges += start until end
         }
         for ((index, range) in ownRanges.withIndex()) {
-            builder.setSpan(LeadingMarginSpan.Standard(indentPx), range.first, range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            val flags = Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or (255 shl Spannable.SPAN_PRIORITY_SHIFT)
+            builder.setSpan(LeadingMarginSpan.Standard(indentPx), range.first, range.last + 1, flags)
             val span = if (index == 0) markerSpan else LeadingMarginSpan.Standard(markerSpan.getLeadingMargin(true))
-            builder.setSpan(span, range.first, range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            builder.setSpan(span, range.first, range.last + 1, flags)
         }
     }
 
