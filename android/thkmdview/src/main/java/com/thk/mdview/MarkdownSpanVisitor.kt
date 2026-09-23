@@ -71,7 +71,10 @@ internal class MarkdownSpanVisitor(
     }
 
     private fun flushTextSegment() {
-        while (builder.isNotEmpty() && builder.last() == '\n') {
+        // Trailing newlines inside a copyable block belong to that block. Removing
+        // them after collecting ranges invalidates streaming states (e.g. an empty fence).
+        while (builder.isNotEmpty() && builder.last() == '\n' &&
+            copyableBlocks.none { builder.length - 1 in it.range }) {
             builder.delete(builder.length - 1, builder.length)
         }
         if (builder.isNotEmpty()) {

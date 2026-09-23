@@ -13,6 +13,14 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun emptyStreamingFenceDoesNotInvalidateEnclosingQuoteCopyRange() {
+        val text = (render("> 引用说明。\n>\n> ```swift\n").first() as RenderedSegment.TextSegment)
+        assertTrue(text.copyableBlocks.isNotEmpty())
+        for (block in text.copyableBlocks) {
+            assertTrue(block.range.last < text.spanned.length)
+            assertEquals(block.text, text.spanned.subSequence(block.range.first, block.range.last + 1).toString())
+        }
+    }
     @Test fun nestedTableFallbackKeepsHeaderBoldWithoutBoldingBody() {
         for (id in listOf("P0-12", "P0-13")) {
             val fixture = cases().single { it.getString("id") == id }
