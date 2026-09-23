@@ -6,6 +6,27 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testEmptyCodeBlocksDoNotAddParagraphSeparators() {
+        let renderer = DefaultMarkdownRenderer()
+        let empty = "```text\n```"
+        for (source, expected) in [
+            (empty + "\n\n尾部正文", "尾部正文"),
+            ("前文\n\n" + empty, "前文"),
+            ("前文\n\n" + empty + "\n\n尾部正文", "前文\n\n尾部正文"),
+            (empty + "\n\n" + empty + "\n\n尾部正文", "尾部正文"),
+            ("> ```text\n> ```\n>\n> 尾部正文", "> 尾部正文")
+        ] {
+            let segments = renderer.render(source)
+            XCTAssertEqual(fingerprint(segments), fingerprint(renderer.render(expected)), source)
+            for segment in segments {
+                if case .text(_, let copies) = segment {
+                    XCTAssertTrue(copies.allSatisfy { !$0.text.isEmpty }, source)
+                }
+            }
+        }
+        XCTAssertTrue(renderer.render(empty).isEmpty)
+    }
+
     func testChineseEmphasisKeepsSkewAcrossContainers() {
         let renderer = DefaultMarkdownRenderer()
         for source in ["*中文 English* 普通", "***中文 English*** 普通",

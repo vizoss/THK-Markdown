@@ -123,10 +123,12 @@ internal class MarkdownSpanVisitor(
     }
 
     private fun renderCodeBlock(literal: String) {
+        val content = literal.trimEnd('\n')
+        // Empty fences must not flush surrounding text or insert a separator.
+        if (content.isEmpty()) return
         val standalone = blockQuoteDepth == 0 && listStack.isEmpty()
         if (standalone) flushTextSegment()
         separate()
-        val content = literal.trimEnd('\n')
         val start = builder.length
         builder.append(content)
         val end = builder.length

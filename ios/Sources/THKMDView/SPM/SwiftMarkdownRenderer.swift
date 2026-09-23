@@ -364,8 +364,15 @@ struct AttributedStringVisitor: MarkupVisitor {
 
     private mutating func joinBlocks(_ children: [Markup]) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
-        for (index, child) in children.enumerated() {
-            if index > 0 {
+        for child in children {
+            let rendered: NSAttributedString
+            if let table = child as? Table {
+                rendered = thkNestedTableText(buildTableModel(table))
+            } else {
+                rendered = visit(child)
+            }
+            guard rendered.length > 0 else { continue }
+            if result.length > 0 {
                 // TextKit uses the terminating newline's font for line metrics.
                 // An unstyled newline defaults to 12pt and clips a larger heading.
                 let previousFont = result.length > 0
@@ -374,11 +381,7 @@ struct AttributedStringVisitor: MarkupVisitor {
                 result.append(NSAttributedString(string: "\n", attributes: [.font: previousFont]))
                 result.append(NSAttributedString(string: "\n", attributes: [.font: baseFont]))
             }
-            if let table = child as? Table {
-                result.append(thkNestedTableText(buildTableModel(table)))
-                continue
-            }
-            result.append(visit(child))
+            result.append(rendered)
         }
         return result
     }
@@ -390,8 +393,15 @@ struct AttributedStringVisitor: MarkupVisitor {
     // per-line spacing for the whole quote's vertical rhythm.
     private mutating func joinBlocksTightly(_ children: [Markup]) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
-        for (index, child) in children.enumerated() {
-            if index > 0 {
+        for child in children {
+            let rendered: NSAttributedString
+            if let table = child as? Table {
+                rendered = thkNestedTableText(buildTableModel(table))
+            } else {
+                rendered = visit(child)
+            }
+            guard rendered.length > 0 else { continue }
+            if result.length > 0 {
                 // Keep the preceding paragraph's font metrics at its terminator.
                 // A bare newline compresses large quote text to the default 12pt.
                 let font = result.length > 0
@@ -399,11 +409,7 @@ struct AttributedStringVisitor: MarkupVisitor {
                     : baseFont
                 result.append(NSAttributedString(string: "\n", attributes: [.font: font]))
             }
-            if let table = child as? Table {
-                result.append(thkNestedTableText(buildTableModel(table)))
-                continue
-            }
-            result.append(visit(child))
+            result.append(rendered)
         }
         return result
     }

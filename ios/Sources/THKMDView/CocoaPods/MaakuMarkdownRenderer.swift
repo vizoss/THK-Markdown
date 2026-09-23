@@ -350,8 +350,10 @@ struct MaakuAttributedStringVisitor {
 
     private mutating func joinBlocks(_ blocks: [Block]) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
-        for (index, block) in blocks.enumerated() {
-            if index > 0 {
+        for block in blocks {
+            let rendered = visit(block: block)
+            guard rendered.length > 0 else { continue }
+            if result.length > 0 {
                 // TextKit uses the terminating newline's font for line metrics.
                 // An unstyled newline defaults to 12pt and clips a larger heading.
                 let previousFont = result.length > 0
@@ -360,7 +362,7 @@ struct MaakuAttributedStringVisitor {
                 result.append(NSAttributedString(string: "\n", attributes: [.font: previousFont]))
                 result.append(NSAttributedString(string: "\n", attributes: [.font: baseFont]))
             }
-            result.append(visit(block: block))
+            result.append(rendered)
         }
         return result
     }
@@ -372,8 +374,10 @@ struct MaakuAttributedStringVisitor {
     // per-line spacing for the whole quote's vertical rhythm.
     private mutating func joinBlocksTightly(_ blocks: [Block]) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
-        for (index, block) in blocks.enumerated() {
-            if index > 0 {
+        for block in blocks {
+            let rendered = visit(block: block)
+            guard rendered.length > 0 else { continue }
+            if result.length > 0 {
                 // Keep the preceding paragraph's font metrics at its terminator.
                 // A bare newline compresses large quote text to the default 12pt.
                 let font = result.length > 0
@@ -381,7 +385,7 @@ struct MaakuAttributedStringVisitor {
                     : baseFont
                 result.append(NSAttributedString(string: "\n", attributes: [.font: font]))
             }
-            result.append(visit(block: block))
+            result.append(rendered)
         }
         return result
     }

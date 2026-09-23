@@ -134,6 +134,21 @@ class P0FixtureTest {
         }
     }
 
+    @Test fun emptyCodeBlocksDoNotAddParagraphSeparators() {
+        val empty = "```text\n```"
+        val examples = listOf(
+            "$empty\n\n尾部正文" to "尾部正文",
+            "前文\n\n$empty" to "前文",
+            "前文\n\n$empty\n\n尾部正文" to "前文\n\n尾部正文",
+            "$empty\n\n$empty\n\n尾部正文" to "尾部正文",
+            "> ```text\n> ```\n>\n> 尾部正文" to "> 尾部正文"
+        )
+        for ((source, expected) in examples) {
+            assertEquals(source, fingerprint(render(expected)), fingerprint(render(source)))
+        }
+        assertTrue(render(empty).isEmpty())
+    }
+
     @Test fun allSharedCasesRenderEveryPrefixAndMatchTheirContracts() {
         assertCatalog("p0", 18)
     }
