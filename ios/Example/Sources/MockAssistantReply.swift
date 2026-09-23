@@ -29,12 +29,14 @@ enum DemoUI {
 // Fixture content is provided by the MarkdownFixtures package product, never interpolated.
 final class FixtureControls: UIStackView {
     var onSelect: (() -> Void)?
+    var onNext: (() -> Void)?
     var onFull: (() -> Void)?
     var onPlay: (() -> Void)?
     var onPause: (() -> Void)?
     var onStep: (() -> Void)?
     var onDetails: (() -> Void)?
     private let select = UIButton(type: .system)
+    private let next = UIButton(type: .system)
     private let status = UIButton(type: .system)
 
     override init(frame: CGRect) { super.init(frame: frame); setUp() }
@@ -46,9 +48,17 @@ final class FixtureControls: UIStackView {
         DemoUI.style(select)
         select.titleLabel?.lineBreakMode = .byTruncatingTail
         select.heightAnchor.constraint(equalToConstant: DemoUI.control).isActive = true
-select.setTitle("选择 Markdown 用例", for: .normal)
+        select.setTitle("选择 Markdown 用例", for: .normal)
         select.addTarget(self, action: #selector(selectTapped), for: .touchUpInside)
-        addArrangedSubview(select)
+        let selection = UIStackView(arrangedSubviews: [select, next])
+        selection.spacing = 8
+        select.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        DemoUI.style(next)
+        next.setTitle("下一条", for: .normal)
+        next.isEnabled = false
+        next.widthAnchor.constraint(equalToConstant: 76).isActive = true
+        next.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
+        addArrangedSubview(selection)
         let actions = UIStackView()
         actions.distribution = .fillEqually
         actions.spacing = 8
@@ -71,11 +81,13 @@ select.setTitle("选择 Markdown 用例", for: .normal)
         status.addTarget(self, action: #selector(detailsTapped), for: .touchUpInside)
         addArrangedSubview(status)
     }
-    func update(title: String, state: String) {
+    func update(title: String, state: String, canGoNext: Bool = false) {
+        next.isEnabled = canGoNext
         select.setTitle(title + " ▾", for: .normal)
         status.setTitle(state + " · 点击查看原文与验收要求", for: .normal)
     }
     @objc private func selectTapped() { onSelect?() }
+    @objc private func nextTapped() { onNext?() }
     @objc private func fullTapped() { onFull?() }
     @objc private func playTapped() { onPlay?() }
     @objc private func pauseTapped() { onPause?() }
