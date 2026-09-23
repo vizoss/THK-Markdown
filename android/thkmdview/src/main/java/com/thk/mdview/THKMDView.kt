@@ -100,6 +100,7 @@ class THKMDView @JvmOverloads constructor(
     // clears the segment child views.
     fun reset() {
         buffer.reset()
+        (renderer as? DefaultMarkdownRenderer)?.clearIncrementalState()
         cancelActiveImageLoads()
         for (i in 0 until childCount) {
             destroySegmentViewIfNeeded(getChildAt(i))
@@ -182,7 +183,7 @@ class THKMDView @JvmOverloads constructor(
         val textView = frame.textView
         textView.setTextColor(theme.bodyTextColor)
         textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.bodyFontSizeSp)
-        textView.text = segment.spanned
+        updateOrdinaryText(textView, segment.spanned)
 
         val spanned = segment.spanned as? Spanned
         val quoteGutter = spanned?.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
@@ -250,6 +251,24 @@ class THKMDView @JvmOverloads constructor(
                 }
             }
         }
+    }
+
+    private fun updateOrdinaryText(view: android.widget.TextView, next: CharSequence) {
+        fun plain(value: CharSequence): Boolean = value !is Spanned ||
+            value.getSpans(0, value.length, Any::class.java).all { it is android.text.NoCopySpan }
+        // Unknown spans, links, images and formatted paragraphs retain the full bind path.
+        if (!plain(next) || !plain(view.text)) { view.text = next; return }
+        val editable = view.text as? android.text.Editable
+        if (editable == null) { view.setText(next, android.widget.TextView.BufferType.EDITABLE); return }
+        val old = editable.toString()
+        val value = next.toString()
+        if (old == value) return
+        var prefix = 0
+        while (prefix < minOf(old.length, value.length) && old[prefix] == value[prefix]) prefix++
+        if (prefix > 0 && prefix < value.length && Character.isLowSurrogate(value[prefix])) prefix--
+        // Prefix preserves completed paragraphs and already typed characters. Keep the
+        // existing Editable/selection rather than assigning a new buffer each chunk.
+        editable.replace(prefix, editable.length, value.substring(prefix))
     }
 
     private fun bindDiagramSegment(index: Int, segment: RenderedSegment.DiagramSegment) {

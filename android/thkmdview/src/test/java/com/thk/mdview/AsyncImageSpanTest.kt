@@ -58,8 +58,12 @@ class AsyncImageSpanTest {
         }
     }
 
-    @Test fun loadedImageRebuildsLineHeightAndWrapping() {
+    @Test
+    @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+    fun loadedImageRebuildsLineHeightAndWrapping() {
         val textView = TextView(ApplicationProvider.getApplicationContext())
+        // Match a real container: TextView.checkForRelayout reads LayoutParams.
+        textView.layoutParams = android.view.ViewGroup.LayoutParams(240, android.view.ViewGroup.LayoutParams.WRAP_CONTENT)
         val span = AsyncImageSpan("mock", "image", 300, 400, 0f, Color.GRAY)
         val text = SpannableString("A\uFFFCB")
         text.setSpan(span, 1, 2, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -71,14 +75,15 @@ class AsyncImageSpanTest {
         }
         measure()
         val oldHeight = textView.height
-        val oldLayout = textView.layout
+        val oldLineCount = textView.lineCount
         val loader = object : THKImageLoader {
             override suspend fun load(url: String): Bitmap = Bitmap.createBitmap(120, 64, Bitmap.Config.ARGB_8888)
         }
         span.attach(loader, CoroutineScope(Dispatchers.Unconfined), textView)
         measure()
-        assertNotSame(oldLayout, textView.layout)
-        assertEquals(1, textView.lineCount)
+        // TextView may reuse a Layout instance. Assert actual reflow, not allocation.
+        assertTrue("The oversized placeholder must wrap before loading", oldLineCount > 1)
+        assertEquals("spanWidth=${span.getSize(textView.paint, textView.text, 1, 2, null)}, textSize=${textView.textSize}, width=${textView.width}, height=$oldHeight -> ${textView.height}", 1, textView.lineCount)
         assertTrue(textView.height < oldHeight)
         assertEquals("A\uFFFCB", textView.text.toString())
         assertSame(span, (textView.text as Spanned).getSpans(1, 2, AsyncImageSpan::class.java).single())

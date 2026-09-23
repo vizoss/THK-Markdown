@@ -47,6 +47,7 @@ class THKTableViewTest {
     }
 
     @Test
+    @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
     fun columnLimitsAndBordersUseSharedLogicalWidths() {
         val table = measuredTable(THKTableData(listOf(THKTableAlignment.START, THKTableAlignment.START),
             listOf("", ""), listOf(listOf("", "x".repeat(200)))))

@@ -18,6 +18,34 @@ private func makeImage(width: CGFloat, height: CGFloat) -> UIImage {
 }
 
 final class THKAsyncImageTextAttachmentTests: XCTestCase {
+    @MainActor func testFormulaRequestsCoalesceAndCancellationDoesNotCancelOtherSubscriber() async {
+        var requests: [[String: Any]] = []
+        let engine = THKMathEngine(requestSink: { requests.append($0) })
+        let url = URL(string: "thk-math://inline/eA")!
+        let first = Task { await engine.render(url, theme: .default) }
+        let second = Task { await engine.render(url, theme: .default) }
+        for _ in 0..<100 {
+            if engine.pendingSubscriberCount == 2 { break }
+            await Task.yield()
+        }
+        guard engine.pendingSubscriberCount == 2 else {
+            first.cancel(); second.cancel()
+            return XCTFail("Subscriptions did not register")
+        }
+        XCTAssertEqual(requests.count, 1)
+        first.cancel()
+        let cancelled = await first.value
+        XCTAssertNil(cancelled)
+        let image = makeImage(width: 12, height: 12)
+        guard let id = requests.first?["id"] as? String else { second.cancel(); return XCTFail("No request") }
+        engine.finish(id, result: THKMathEngine.Result(image, descent: 0))
+        let completed = await second.value
+        XCTAssertNotNil(completed)
+        let cached = await engine.render(url, theme: .default)
+        XCTAssertNotNil(cached)
+        XCTAssertEqual(requests.count, 1)
+    }
+
     @MainActor func testPendingLoadDoesNotRetainDiscardedAttachment() async {
         final class SuspendedLoader: THKImageLoading {
             let started = XCTestExpectation(description: "load started")

@@ -5,6 +5,37 @@ import UIKit
 public final class DefaultMarkdownRenderer: MarkdownRendering {
     public var baseFont: UIFont
     public var theme: THKMDTheme
+    private var previousSource = ""
+    private var sealedSource = ""
+    private var sealedNodes: [BlockMarkup] = []
+    internal private(set) var lastParsedCharacters = 0
+    internal var incrementalParsingEnabled = true
+    private static let blockStart = try! NSRegularExpression(pattern: "^ {0,3}(?:[#>+*_=~`|\\-]|[0-9]+[.)](?: |$))")
+
+    private func parse(_ source: String) -> Document {
+        let safe = incrementalParsingEnabled && !source.contains(where: { "[]<>$\\`\r\t".contains($0) }) &&
+            !source.components(separatedBy: "\n").contains { line in
+                line.hasPrefix("    ") || line.hasPrefix("\t") ||
+                    Self.blockStart.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)) != nil
+            }
+        if !safe || !source.hasPrefix(previousSource) { sealedSource = ""; sealedNodes.removeAll() }
+        previousSource = source
+        lastParsedCharacters = 0
+        guard safe else {
+            lastParsedCharacters = source.utf16.count
+            return Document(parsing: THKMarkdownExtensions.prepare(source))
+        }
+        let prefix = source.range(of: "\n\n", options: .backwards).map { String(source[..<$0.upperBound]) } ?? ""
+        if prefix.utf16.count > sealedSource.utf16.count {
+            let part = String(prefix.dropFirst(sealedSource.count))
+            lastParsedCharacters += part.utf16.count
+            sealedNodes += Document(parsing: part).children.compactMap { $0 as? BlockMarkup }
+            sealedSource = prefix
+        }
+        let tail = String(source.dropFirst(sealedSource.count))
+        lastParsedCharacters += tail.utf16.count
+        return Document(sealedNodes + Document(parsing: tail).children.compactMap { $0 as? BlockMarkup })
+    }
 
     public init(baseFont: UIFont = UIFont.preferredFont(forTextStyle: .body), theme: THKMDTheme = .default) {
         self.baseFont = baseFont
@@ -12,9 +43,13 @@ public final class DefaultMarkdownRenderer: MarkdownRendering {
     }
 
     public func render(_ markdown: String) -> [THKRenderSegment] {
-        let document = Document(parsing: THKMarkdownExtensions.prepare(markdown))
+        let document = parse(markdown)
         var visitor = AttributedStringVisitor(baseFont: baseFont, theme: theme)
         return visitor.renderSegments(document)
+    }
+
+    internal func clearIncrementalState() {
+        previousSource = ""; sealedSource = ""; sealedNodes.removeAll()
     }
 }
 

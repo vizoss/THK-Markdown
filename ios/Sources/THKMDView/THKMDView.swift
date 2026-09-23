@@ -137,6 +137,7 @@ public final class THKMDView: UIView {
     /// on the view after it's rebound to a new message.
     public func reset() {
         buffer.reset()
+        (renderer as? DefaultMarkdownRenderer)?.clearIncrementalState()
         for segmentView in segmentViews {
             removeFromStack(segmentView)
         }
@@ -227,7 +228,11 @@ public final class THKMDView: UIView {
                 segmentView.textView.textContainerInset = UIEdgeInsets(top: leadingPadding, left: 0, bottom: trailingPadding, right: 0)
                 segmentView.layoutManager.leadingQuotePadding = leadingPadding
                 segmentView.layoutManager.trailingQuotePadding = trailingPadding
-                segmentView.textView.attributedText = displayText
+                if segmentView.attachments.isEmpty && copyableBlocks.isEmpty && segmentView.copyableBlocks.isEmpty {
+                    updateOrdinaryText(displayText, in: segmentView.textView)
+                } else {
+                    segmentView.textView.attributedText = displayText
+                }
                 segmentView.textView.invalidateIntrinsicContentSize()
                 segmentView.textView.setNeedsLayout()
                 segmentView.textView.setNeedsDisplay()
@@ -303,6 +308,28 @@ public final class THKMDView: UIView {
         let view = segmentView.view
         stack.removeArrangedSubview(view)
         view.removeFromSuperview()
+    }
+
+    /// Keep unchanged complete paragraphs in TextKit; rebind the mutable tail only.
+    /// Attribute equality prevents hiding formatting/theme changes with identical text.
+    private func updateOrdinaryText(_ next: NSAttributedString, in view: UITextView) {
+        let storage = view.textStorage
+        if storage.isEqual(to: next) { return }
+        let oldString = storage.string as NSString
+        let newString = next.string as NSString
+        var prefix = 0
+        while prefix < min(oldString.length, newString.length) {
+            let a = oldString.range(of: "\n\n", range: NSRange(location: prefix, length: oldString.length - prefix))
+            let b = newString.range(of: "\n\n", range: NSRange(location: prefix, length: newString.length - prefix))
+            guard a.location != NSNotFound, a == b else { break }
+            let range = NSRange(location: prefix, length: NSMaxRange(a) - prefix)
+            guard storage.attributedSubstring(from: range).isEqual(to: next.attributedSubstring(from: range)) else { break }
+            prefix = NSMaxRange(a)
+        }
+        storage.beginEditing()
+        storage.replaceCharacters(in: NSRange(location: prefix, length: storage.length - prefix),
+            with: next.attributedSubstring(from: NSRange(location: prefix, length: next.length - prefix)))
+        storage.endEditing()
     }
 
     private func makeTextSegmentView() -> TextSegmentView {

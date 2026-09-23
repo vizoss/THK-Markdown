@@ -24,11 +24,13 @@ import java.util.UUID
 /** One offline rasterizer, bounded cache/pending queue. No Activity or message retained. */
 internal object THKMathEngine {
     data class Result(val bitmap: Bitmap, val descentPx: Float)
-    private data class Pending(val key: String, val request: JSONObject, val complete: (Result?) -> Unit)
+    private data class Pending(val key: String, val request: JSONObject,
+        val subscribers: MutableMap<String, (Result?) -> Unit> = linkedMapOf())
     private val handler = Handler(Looper.getMainLooper())
     private var web: WebView? = null
     private var loaded = false
     private val waiting = linkedMapOf<String, Pending>()
+    private val inFlight = mutableMapOf<String, String>()
     private var cacheLimitBytes = 8 * 1024 * 1024
     fun configureCache(maxBytes: Int) {
         check(Looper.myLooper() == Looper.getMainLooper()) { "Call on the main thread" }
@@ -60,18 +62,26 @@ internal object THKMathEngine {
         val color = "rgba(${Color.red(theme.bodyTextColor)},${Color.green(theme.bodyTextColor)},${Color.blue(theme.bodyTextColor)},${Color.alpha(theme.bodyTextColor) / 255.0})"
         val key = "$url|$size|$color|${metrics.density}"
         cache.get(key)?.let { return@withContext it }
-        if (waiting.size >= 64) return@withContext null
+        if ((key !in inFlight && waiting.size >= 64) || waiting.values.sumOf { it.subscribers.size } >= 256) return@withContext null
         start(context.applicationContext)
         suspendCancellableCoroutine { continuation ->
-            val id = UUID.randomUUID().toString()
-            val request = JSONObject().put("id", id).put("tex", tex).put("display", Uri.parse(url).host == "display")
-                .put("size", size).put("color", color).put("scale", metrics.density)
-            waiting[id] = Pending(key, request) { result ->
+            val subscriber = UUID.randomUUID().toString()
+            val existing = inFlight[key]
+            val id = existing ?: UUID.randomUUID().toString()
+            val entry = waiting[id] ?: Pending(key, JSONObject().put("id", id).put("tex", tex)
+                .put("display", Uri.parse(url).host == "display").put("size", size).put("color", color).put("scale", metrics.density))
+            entry.subscribers[subscriber] = { result ->
                 if (continuation.isActive) continuation.resumeWith(kotlin.Result.success(result))
             }
-            if (loaded) send(request)
-            continuation.invokeOnCancellation { handler.post { waiting.remove(id) } }
-            handler.postDelayed({ finish(id, null) }, 10_000)
+            waiting[id] = entry
+            inFlight[key] = id
+            if (existing == null) {
+                if (loaded) send(entry.request)
+                handler.postDelayed({ finish(id, null) }, 10_000)
+            }
+            // Keep the underlying render until completion/timeout, even if all current
+            // subscribers cancel: a stream rebind can join it instead of enqueueing again.
+            continuation.invokeOnCancellation { handler.post { waiting[id]?.subscribers?.remove(subscriber) } }
         }
     }
 
@@ -101,8 +111,9 @@ internal object THKMathEngine {
     private fun send(request: JSONObject) { web?.evaluateJavascript("window.renderMath($request)", null) }
     private fun finish(id: String, result: Result?) {
         val item = waiting.remove(id) ?: return
+        inFlight.remove(item.key)
         if (result != null && cacheLimitBytes > 0 && result.bitmap.byteCount <= cacheLimitBytes) cache.put(item.key, result)
-        item.complete(result)
+        item.subscribers.values.forEach { it(result) }
     }
     private class Bridge(private val density: Float) {
         @JavascriptInterface fun result(json: String) {

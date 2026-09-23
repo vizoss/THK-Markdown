@@ -119,7 +119,12 @@ Repeated assignment of an equal theme skips rendering. Fixed extension patterns 
 compiled once. Unchanged text-only tables reuse cells (formatting, alignment and theme
 are compared); image/formula cells and unsupported custom Android spans conservatively
 rebind. The iOS demo coalesces height updates from content notifications instead of
-polling throughout playback. Full-document parsing is still used for correctness.
+polling throughout playback. Append-only ordinary paragraphs reuse completed paragraph
+syntax trees and parse the remaining tail; complex block syntax, references and extensions
+fall back to full-document parsing. Source validation and rendering still visit the full
+document, so this is not a general-purpose incremental CommonMark parser.
+Ordinary text updates retain an unchanged prefix where safe. Concurrent identical math
+requests share one render; cancelling a subscriber does not cancel other subscribers.
 
 Temporary list detachment does not clear the displayed content. Call `reset()` when
 discarding/recycling Android views to destroy Mermaid WebViews; the sample activities

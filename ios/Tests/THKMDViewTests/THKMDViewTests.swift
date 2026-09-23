@@ -12,6 +12,62 @@ private final class SpyRenderer: MarkdownRendering {
 }
 
 final class THKMDViewTests: XCTestCase {
+    func testOrdinaryParagraphUpdateLeavesCompletedPrefixUntouched() {
+        final class Edits: NSObject, NSTextStorageDelegate {
+            var locations: [Int] = []
+            func textStorage(_ storage: NSTextStorage, didProcessEditing mask: NSTextStorage.EditActions,
+                             range: NSRange, changeInLength: Int) {
+                if mask.contains(.editedCharacters) { locations.append(range.location) }
+            }
+        }
+        let view = THKMDView(frame: .zero)
+        view.setMarkdown("第一段。\n\n第二段")
+        func textView(in root: UIView) -> UITextView? {
+            if let text = root as? UITextView { return text }
+            return root.subviews.compactMap { textView(in: $0) }.first
+        }
+        guard let text = textView(in: view) else { return XCTFail("Missing text view") }
+        let edits = Edits()
+        text.textStorage.delegate = edits
+        view.setMarkdown("第一段。\n\n第二段增加🙂")
+        XCTAssertFalse(edits.locations.isEmpty)
+        XCTAssertTrue(edits.locations.allSatisfy { $0 >= ("第一段。\n\n" as NSString).length })
+        XCTAssertEqual(text.text, "第一段。\n\n第二段增加🙂")
+    }
+
+    func testIncrementalParsingMatchesFullParsingAndFallsBackForDefinitions() {
+        let incremental = DefaultMarkdownRenderer()
+        let full = DefaultMarkdownRenderer()
+        full.incrementalParsingEnabled = false
+        let cases = ["中文🙂第一段。\n\n第二段 **加粗**\n\n末段", "plain\n\nparagraph\n---",
+                     "plain\n\n[link][ref]\n\n[ref]: https://example.com", "plain\n\n> quote\n\n- list", "plain\n\n$x$"]
+        for source in cases {
+            for end in 1...source.count {
+                let prefix = String(source.prefix(end))
+                func texts(_ renderer: DefaultMarkdownRenderer) -> [NSAttributedString] {
+                    renderer.render(prefix).compactMap {
+                        guard case .text(let text, _) = $0 else { return nil }
+                        let normalized = NSMutableAttributedString(attributedString: text)
+                        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+                            if let image = value as? THKAsyncImageTextAttachment {
+                                normalized.removeAttribute(.attachment, range: range)
+                                normalized.addAttribute(NSAttributedString.Key("testImageURL"), value: image.url.absoluteString, range: range)
+                            }
+                        }
+                        return normalized
+                    }
+                }
+                let a = texts(incremental), b = texts(full)
+                XCTAssertEqual(a.count, b.count)
+                for (x, y) in zip(a, b) { XCTAssertTrue(x.isEqual(to: y), prefix) }
+            }
+        }
+        let prefix = String(repeating: "stable paragraph\n\n", count: 100)
+        _ = incremental.render(prefix + "tail")
+        _ = incremental.render(prefix + "tail more")
+        XCTAssertEqual(incremental.lastParsedCharacters, "tail more".utf16.count)
+    }
+
     func testUnchangedThemeSkipsRenderingButChangedThemeRenders() {
         let spy = SpyRenderer()
         let view = THKMDView(frame: .zero)

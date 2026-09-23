@@ -10,6 +10,38 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class THKMDViewReuseTest {
+    @Test fun ordinaryParagraphAppendPreservesEditableBuffer() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("第一段。\n\n第二段")
+        val text = (view.getChildAt(0) as TextSegmentFrame).textView
+        val buffer = text.text
+        view.appendMarkdownChunk("增加文字🙂")
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1))
+        assertThat(text.text).isSameInstanceAs(buffer)
+        assertThat(text.text.toString()).isEqualTo("第一段。\n\n第二段增加文字🙂")
+    }
+
+    @Test fun incrementalPlainParsingMatchesFullParsingAndFallsBackForSyntaxChanges() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val incremental = DefaultMarkdownRenderer(context)
+        val full = DefaultMarkdownRenderer(context).apply { incrementalParsingEnabled = false }
+        val bounds = ImageBounds(240, 320)
+        val cases = listOf("中文🙂第一段。\n\n第二段 **加粗**\n\n末段", "plain\n\nparagraph\n---",
+            "plain\n\n[link][ref]\n\n[ref]: https://example.com", "plain\n\n> quote\n\n- list", "plain\n\n\$x\$")
+        for (source in cases) {
+            for (end in 1..source.length) {
+                val prefix = source.substring(0, end)
+                fun render(renderer: DefaultMarkdownRenderer) = renderer.render(prefix, THKMDTheme.Default, bounds)
+                    .filterIsInstance<RenderedSegment.TextSegment>().joinToString("|") { it.spanned.toString() }
+                assertThat(render(incremental)).isEqualTo(render(full))
+            }
+        }
+        val prefix = "stable paragraph\n\n".repeat(100)
+        incremental.render(prefix + "tail", THKMDTheme.Default, bounds)
+        incremental.render(prefix + "tail more", THKMDTheme.Default, bounds)
+        assertThat(incremental.lastParsedCharacters).isEqualTo("tail more".length)
+    }
+
     @Test fun temporaryDetachKeepsViewsAndResumesPendingText() {
         val controller = org.robolectric.Robolectric.buildActivity(android.app.Activity::class.java).setup().visible()
         val activity = controller.get()
