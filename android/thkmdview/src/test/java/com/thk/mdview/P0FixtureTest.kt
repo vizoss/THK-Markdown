@@ -13,6 +13,18 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun nestedCopyButtonsUseParentFirstOrderWithoutChangingPayloads() {
+        val frame = TextSegmentFrame(ApplicationProvider.getApplicationContext())
+        val copied = mutableListOf<String>()
+        frame.updateCopyButtons(
+            listOf(CopyableBlock(5..9, "code"), CopyableBlock(0..14, "quote")),
+            THKMDTheme.Default, { copied.add(it) }
+        )
+        frame.getChildAt(1).performClick()
+        frame.getChildAt(2).performClick()
+        assertEquals(listOf("quote", "code"), copied)
+    }
+
     @Test fun nestedQuoteBarsEndAtTextRatherThanSharedBottomPadding() {
         val second = ThemedQuoteSpan(barColor = 0, nestedBottomPaddingPx = 10)
         val third = ThemedQuoteSpan(barColor = 0)

@@ -23,6 +23,12 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
 
         context.saveGState()
 
+        // Parent backgrounds must be painted before child code backgrounds.
+        textStorage.enumerateAttribute(.thkBlockQuoteBackground, in: charRange) { value, range, _ in
+            guard value != nil else { return }
+            drawFullWidthBackground(for: range, color: blockQuoteBackgroundColor, origin: origin, cornerRadius: codeBlockCornerRadius, includesQuotePadding: true)
+        }
+
         textStorage.enumerateAttribute(.thkCodeBlockBackground, in: charRange) { value, range, _ in
             guard value != nil else { return }
             drawFullWidthBackground(for: range, color: codeBlockBackgroundColor, origin: origin, cornerRadius: codeBlockCornerRadius)
@@ -31,14 +37,6 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         textStorage.enumerateAttribute(.thkInlineCodeBackground, in: charRange) { value, range, _ in
             guard value != nil else { return }
             drawInlineBackground(for: range, color: inlineCodeBackgroundColor, origin: origin, cornerRadius: 3)
-        }
-
-        // Drawn before the bar so the bar paints on top of the fill, and reuses
-        // drawFullWidthBackground/codeBlockCornerRadius — same "one continuous rounded shape"
-        // logic as a code block, just a different attribute/color.
-        textStorage.enumerateAttribute(.thkBlockQuoteBackground, in: charRange) { value, range, _ in
-            guard value != nil else { return }
-            drawFullWidthBackground(for: range, color: blockQuoteBackgroundColor, origin: origin, cornerRadius: codeBlockCornerRadius)
         }
 
         // A depth attribute describes the deepest quote at each character. Collect
@@ -93,16 +91,16 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         return unionRect
     }
 
-    private func drawFullWidthBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat) {
+    private func drawFullWidthBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat, includesQuotePadding: Bool = false) {
         guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
         let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
         guard var rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
-        if charRange.location == 0, leadingQuotePadding > 0,
+        if includesQuotePadding, charRange.location == 0, leadingQuotePadding > 0,
            textStorage?.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil {
             rect.origin.y -= leadingQuotePadding
             rect.size.height += leadingQuotePadding
         }
-        if let storage = textStorage, NSMaxRange(charRange) == storage.length,
+        if includesQuotePadding, let storage = textStorage, NSMaxRange(charRange) == storage.length,
            trailingQuotePadding > 0,
            storage.attribute(.thkBlockQuoteBackground, at: storage.length - 1, effectiveRange: nil) != nil {
             rect.size.height += trailingQuotePadding

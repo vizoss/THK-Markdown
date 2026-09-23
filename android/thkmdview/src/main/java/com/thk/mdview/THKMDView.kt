@@ -301,9 +301,11 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
     fun updateCopyButtons(blocks: List<CopyableBlock>, theme: THKMDTheme, onCopy: (String) -> Unit) {
         copyButtons.forEach { removeView(it) }
         copyButtons.clear()
-        copyBlocks = blocks
+        // Place the enclosing/earlier block first, matching iOS. Otherwise a
+        // recursively collected child code block pushes its parent button left.
+        copyBlocks = blocks.sortedWith(compareBy<CopyableBlock> { it.range.first }.thenByDescending { it.range.last })
         val sizePx = (COPY_BUTTON_SIZE_DP * resources.displayMetrics.density).toInt()
-        for (block in blocks) {
+        for (block in copyBlocks) {
             val button = createCopyButton(context, theme) { onCopy(block.text) }
             addView(button, LayoutParams(sizePx, sizePx))
             copyButtons += button
