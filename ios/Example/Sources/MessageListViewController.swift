@@ -319,10 +319,32 @@ fixtures = try MarkdownFixture.loadAll()
     }
 
     private func selectFixture() {
-let sheet = DemoDialogController(title: "Markdown 用例",
-            choices: fixtures.map { $0.id + " · " + $0.title }, selected: selectedFixture) { [weak self] index in
-            self?.selectedFixture = index
-            self?.showFixture(full: true)
+        let groups = ["P0", "P1"]
+        let currentID = fixtures.indices.contains(selectedFixture) ? fixtures[selectedFixture].id : ""
+        let labels = groups.map { group in
+            "\(group) · \(fixtures.filter { $0.id.hasPrefix(group + "-") }.count) 个用例  ›"
+        }
+        let sheet = DemoDialogController(title: "Markdown 用例", choices: labels,
+            selected: groups.firstIndex { currentID.hasPrefix($0 + "-") } ?? -1) { [weak self] index in
+            self?.selectFixture(in: groups[index])
+        }
+        present(sheet, animated: true)
+    }
+
+    private func selectFixture(in group: String) {
+        // Preserve catalog indices when displaying only one suite.
+        let indices = fixtures.indices.filter { fixtures[$0].id.hasPrefix(group + "-") }
+        let labels = ["‹ 返回 P0 / P1"] + indices.map { fixtures[$0].id + " · " + fixtures[$0].title }
+        let selected = indices.firstIndex(of: selectedFixture).map { $0 + 1 } ?? -1
+        let sheet = DemoDialogController(title: group + " 用例", choices: labels,
+            selected: selected) { [weak self] row in
+            guard let self else { return }
+            if row == 0 {
+                self.selectFixture()
+            } else {
+                self.selectedFixture = indices[row - 1]
+                self.showFixture(full: true)
+            }
         }
         present(sheet, animated: true)
     }

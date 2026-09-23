@@ -130,10 +130,7 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
 
     private fun installFixtureControls() {
         findViewById<Button>(R.id.selectFixture).setOnClickListener {
-            DemoDialog.show(this, "Markdown 用例", choices = fixtures.map { "${it.id} · ${it.title}" }, selected = selectedFixture) { index ->
-                selectedFixture = index
-                showFixture(full = true)
-            }
+            selectFixtureGroup()
         }
         findViewById<Button>(R.id.fixtureFull).setOnClickListener { showFixture(full = true) }
         findViewById<Button>(R.id.fixturePlay).setOnClickListener { playFixture() }
@@ -149,6 +146,32 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
             val fixture = fixtures[selectedFixture]
             DemoDialog.show(this, fixture.id + " · " + fixture.title,
                 body = "验收要求\n" + fixture.summary + "\n\nMarkdown 原文\n" + fixture.markdown)
+        }
+    }
+
+    private fun selectFixtureGroup() {
+        val groups = listOf("P0", "P1")
+        val currentID = fixtures.getOrNull(selectedFixture)?.id
+        DemoDialog.show(this, "Markdown 用例", choices = groups.map { group ->
+            "$group · ${fixtures.count { it.id.startsWith("$group-") }} 个用例  ›"
+        }, selected = groups.indexOfFirst { currentID?.startsWith("$it-") == true }) { index ->
+            selectFixtureInGroup(groups[index])
+        }
+    }
+
+    private fun selectFixtureInGroup(group: String) {
+        // Keep catalog indices: selecting P1 must not accidentally select a P0 row.
+        val indices = fixtures.indices.filter { fixtures[it].id.startsWith("$group-") }
+        val current = indices.indexOf(selectedFixture)
+        DemoDialog.show(this, "$group 用例",
+            choices = listOf("‹ 返回 P0 / P1") + indices.map { "${fixtures[it].id} · ${fixtures[it].title}" },
+            selected = if (current >= 0) current + 1 else -1) { row ->
+            if (row == 0) {
+                selectFixtureGroup()
+            } else {
+                selectedFixture = indices[row - 1]
+                showFixture(full = true)
+            }
         }
     }
 
