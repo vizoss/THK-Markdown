@@ -7,6 +7,7 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
     public var onSizeChange: (() -> Void)?
     public var imageLoader: THKImageLoading = DefaultTHKImageLoader()
     private let contentContainer = UIView()
+    private let gridLayer = CAShapeLayer()
     private let cellPadding = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
     private let maxColumnWidth: CGFloat = 240
     private var renderedHeight: CGFloat = 0
@@ -21,6 +22,7 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
         showsHorizontalScrollIndicator = true
         showsVerticalScrollIndicator = false
         addSubview(contentContainer)
+        contentContainer.layer.addSublayer(gridLayer)
     }
 
     public func cancelImageLoads() {
@@ -33,6 +35,8 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
         contentContainer.subviews.forEach { $0.removeFromSuperview() }
         rows.removeAll()
         cells.removeAll()
+        gridLayer.path = nil
+        gridLayer.fillColor = theme.tableBorderColor.cgColor
         let allRows = [model.headerCells] + model.rows
         let columns = max(model.alignments.count, allRows.map(\.count).max() ?? 0)
         guard columns > 0 else {
@@ -57,6 +61,7 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
                 text.backgroundColor = .clear
                 text.textContainerInset = .zero
                 text.delegate = self
+                text.linkTextAttributes = [.foregroundColor: theme.linkColor, .underlineStyle: NSUnderlineStyle.single.rawValue]
                 let value = NSMutableAttributedString(attributedString: column < values.count ? values[column] : NSAttributedString(string: ""))
                 let alignment = column < model.alignments.count ? model.alignments[column] : .leading
                 value.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: value.length)) { existing, range, _ in
@@ -71,8 +76,6 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
                 text.attributedText = value
                 let cell = UIView()
                 cell.backgroundColor = rowIndex == 0 ? theme.tableHeaderBackgroundColor : .clear
-                cell.layer.borderWidth = 1 / max(UIScreen.main.scale, 1)
-                cell.layer.borderColor = theme.tableBorderColor.cgColor
                 cell.addSubview(text)
                 contentContainer.addSubview(cell)
                 textRow.append(text)
@@ -130,6 +133,21 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
         let width = widths.reduce(0, +)
         renderedHeight = y
         contentContainer.frame = CGRect(x: 0, y: 0, width: width, height: y)
+        // Paint each grid edge once, on physical pixels; adjacent cells must not
+        // double the internal border while the outside border remains single-width.
+        let pixel = 1 / max(UIScreen.main.scale, 1)
+        let path = UIBezierPath()
+        for row in cells {
+            if let cell = row.first { path.append(UIBezierPath(rect: CGRect(x: 0, y: cell.frame.minY, width: width, height: pixel))) }
+        }
+        path.append(UIBezierPath(rect: CGRect(x: 0, y: max(0, y - pixel), width: width, height: pixel)))
+        for cell in cells.first ?? [] {
+            path.append(UIBezierPath(rect: CGRect(x: cell.frame.minX, y: 0, width: pixel, height: y)))
+        }
+        path.append(UIBezierPath(rect: CGRect(x: max(0, width - pixel), y: 0, width: pixel, height: y)))
+        gridLayer.frame = contentContainer.bounds
+        gridLayer.path = path.cgPath
+        gridLayer.zPosition = 1
         contentSize = CGSize(width: width, height: y)
         invalidateIntrinsicContentSize()
     }

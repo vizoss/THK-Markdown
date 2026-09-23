@@ -11,6 +11,20 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class THKTableViewTest {
+    @Test
+    @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+    fun outerBordersOccupyOneCompletePixelWithoutClipping() {
+        val table = measuredTable(THKTableData(listOf(THKTableAlignment.START), listOf("H"), listOf(listOf("body"))))
+        val grid = table.getChildAt(0)
+        val bitmap = android.graphics.Bitmap.createBitmap(grid.width, grid.height, android.graphics.Bitmap.Config.ARGB_8888)
+        grid.draw(android.graphics.Canvas(bitmap))
+        val body = table.cellViewAt(1, 0)!!
+        val y = body.top + body.height / 2
+        assertThat(bitmap.getPixel(0, y)).isEqualTo(theme.tableBorderColor)
+        assertThat(bitmap.getPixel(grid.width - 1, y)).isEqualTo(theme.tableBorderColor)
+        assertThat(bitmap.getPixel(1, y)).isNotEqualTo(theme.tableBorderColor)
+        assertThat(bitmap.getPixel(grid.width - 2, y)).isNotEqualTo(theme.tableBorderColor)
+    }
 
     private val context: Context = ApplicationProvider.getApplicationContext()
     private val theme = THKMDTheme.Default

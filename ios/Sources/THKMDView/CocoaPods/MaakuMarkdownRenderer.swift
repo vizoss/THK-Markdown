@@ -324,6 +324,7 @@ struct MaakuAttributedStringVisitor {
             if let url = link.url, result.length > 0 {
                 let fullRange = NSRange(location: 0, length: result.length)
                 result.addAttribute(.link, value: url, range: fullRange)
+                result.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: fullRange)
                 result.addAttribute(.foregroundColor, value: theme.linkColor, range: fullRange)
             }
             return result

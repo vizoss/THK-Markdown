@@ -166,6 +166,7 @@ public final class THKMDView: UIView {
                     stack.insertArrangedSubview(segmentView.textView, at: index)
                 }
                 applyTheme(to: segmentView.layoutManager)
+                segmentView.textView.linkTextAttributes = [.foregroundColor: theme.linkColor, .underlineStyle: NSUnderlineStyle.single.rawValue]
                 segmentView.attachments.forEach { $0.cancelLoading() }
                 // TextKit ignores paragraphSpacingBefore at the container's start.
                 // Transfer leading quote padding into a real container inset without

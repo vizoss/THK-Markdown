@@ -219,6 +219,7 @@ struct AttributedStringVisitor: MarkupVisitor {
         if let destination = link.destination, let url = URL(string: destination), result.length > 0 {
             let fullRange = NSRange(location: 0, length: result.length)
             result.addAttribute(.link, value: url, range: fullRange)
+            result.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: fullRange)
             result.addAttribute(.foregroundColor, value: theme.linkColor, range: fullRange)
         }
         return result

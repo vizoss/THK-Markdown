@@ -47,14 +47,15 @@ class THKTableView @JvmOverloads constructor(
     private class TableGrid(context: Context) : ViewGroup(context) {
 
         private val density = context.resources.displayMetrics.density
-        private val borderPx = (1 * density).toInt().coerceAtLeast(1)
+        // One physical pixel, matching the iOS grid (not one density-scaled dp).
+        private val borderPx = 1
         private val minColumnWidthPx = (48 * density).toInt()
         private val maxColumnWidthPx = (260 * density).toInt()
         private val minRowHeightPx = (36 * density).toInt()
         private val cellPaddingHPx = (10 * density).toInt()
         private val cellPaddingVPx = (8 * density).toInt()
 
-        private val borderPaint = Paint().apply { style = Paint.Style.STROKE; strokeWidth = borderPx.toFloat() }
+        private val borderPaint = Paint().apply { style = Paint.Style.FILL }
 
         init {
             // ViewGroups skip onDraw() by default (the "willNotDraw" optimization, since
@@ -192,14 +193,13 @@ class THKTableView @JvmOverloads constructor(
         override fun onDraw(canvas: Canvas) {
             super.onDraw(canvas)
             if (columnCount == 0 || rowCount == 0) return
-            val half = borderPx / 2f
             val totalWidth = xBoundaries.last().toFloat()
             val totalHeight = yBoundaries.last().toFloat()
             for (y in yBoundaries) {
-                canvas.drawLine(0f, y - half, totalWidth, y - half, borderPaint)
+                canvas.drawRect(0f, (y - borderPx).toFloat(), totalWidth, y.toFloat(), borderPaint)
             }
             for (x in xBoundaries) {
-                canvas.drawLine(x - half, 0f, x - half, totalHeight, borderPaint)
+                canvas.drawRect((x - borderPx).toFloat(), 0f, x.toFloat(), totalHeight, borderPaint)
             }
         }
     }
