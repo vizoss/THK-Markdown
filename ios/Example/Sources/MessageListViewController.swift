@@ -44,7 +44,7 @@ final class MessageListViewController: UIViewController {
         codeFontSize: 13
     )
 
-    private var currentTheme: THKMDTheme = .default
+    private var currentTheme: THKMDTheme = DemoThemeStore.load()
     // Keep SSE progress independent of cell visibility and reuse.
     private var streamedContent: [UUID: String] = [:]
     private var playback: Task<Void, Never>?
@@ -167,6 +167,7 @@ fixtures = try MarkdownFixture.loadAll()
     // the settings sheet's live edits and its preset quick-select buttons.
     private func applyTheme(_ theme: THKMDTheme) {
         currentTheme = theme
+        DemoThemeStore.save(theme)
         for cell in tableView.visibleCells {
             (cell as? AssistantMessageCell)?.markdownView.theme = theme
         }

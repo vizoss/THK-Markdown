@@ -1,6 +1,71 @@
 import UIKit
 import THKMDView
 
+/// Demo-only persistence; does not impose storage policy on SDK consumers.
+enum DemoThemeStore {
+    private static let key = "markdown_theme_v1"
+    private static let colors: [String: WritableKeyPath<THKMDTheme, UIColor>] = [
+        "bodyTextColor": \.bodyTextColor,
+        "headingTextColor": \.headingTextColor,
+        "linkColor": \.linkColor,
+        "codeTextColor": \.codeTextColor,
+        "codeBackgroundColor": \.codeBackgroundColor,
+        "blockQuoteBarColor": \.blockQuoteBarColor,
+        "blockQuoteTextColor": \.blockQuoteTextColor,
+        "blockQuoteBackgroundColor": \.blockQuoteBackgroundColor,
+        "tableBorderColor": \.tableBorderColor,
+        "tableHeaderBackgroundColor": \.tableHeaderBackgroundColor,
+        "backgroundColor": \.backgroundColor,
+        "imagePlaceholderColor": \.imagePlaceholderColor,
+        "copyFeedbackTextColor": \.copyFeedbackTextColor,
+        "copyFeedbackBackgroundColor": \.copyFeedbackBackgroundColor
+    ]
+    private static let sizes: [String: WritableKeyPath<THKMDTheme, CGFloat>] = [
+        "codeBlockCornerRadius": \.codeBlockCornerRadius,
+        "bodyFontSize": \.bodyFontSize,
+        "codeFontSize": \.codeFontSize,
+        "copyFeedbackFontSize": \.copyFeedbackFontSize,
+        "heading1Scale": \.heading1Scale,
+        "heading2Scale": \.heading2Scale,
+        "heading3Scale": \.heading3Scale,
+        "heading4Scale": \.heading4Scale,
+        "heading5Scale": \.heading5Scale,
+        "heading6Scale": \.heading6Scale
+    ]
+
+    static func load() -> THKMDTheme {
+        var theme = THKMDTheme.default
+        guard let values = UserDefaults.standard.dictionary(forKey: key) else { return theme }
+        for (name, path) in colors {
+            guard let rgba = values[name] as? [Double], rgba.count == 4,
+                  rgba.allSatisfy({ $0.isFinite && (0...1).contains($0) }) else { continue }
+            theme[keyPath: path] = UIColor(red: CGFloat(rgba[0]), green: CGFloat(rgba[1]),
+                                          blue: CGFloat(rgba[2]), alpha: CGFloat(rgba[3]))
+        }
+        for (name, path) in sizes {
+            guard let number = values[name] as? NSNumber else { continue }
+            let value = number.doubleValue
+            guard value.isFinite, value >= 0, value > 0 || name == "codeBlockCornerRadius" else { continue }
+            theme[keyPath: path] = CGFloat(value)
+        }
+        return theme
+    }
+
+    static func save(_ theme: THKMDTheme) {
+        var values: [String: Any] = [:]
+        for (name, path) in colors {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            // Settings choose concrete colors; retain alpha, including transparent backgrounds.
+            if theme[keyPath: path].getRed(&r, green: &g, blue: &b, alpha: &a) {
+                values[name] = [Double(r), Double(g), Double(b), Double(a)]
+            }
+        }
+        for (name, path) in sizes { values[name] = Double(theme[keyPath: path]) }
+        UserDefaults.standard.set(values, forKey: key)
+    }
+}
+
+
 /// A modal settings sheet exposing every `THKMDTheme` property as a live-editable control —
 /// colors via `UIColorWell`, sizes via `UISlider` — mirroring a parallel
 /// `BottomSheetDialogFragment` feature on Android this round. Every control change rebuilds a

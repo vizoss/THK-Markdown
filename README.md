@@ -108,6 +108,12 @@ tested or visually accepted; fixture coverage is not a conformance claim.
 
 ### Example UI
 
+Demo Markdown theme edits and preset selections are saved locally and restored on
+the next launch (Android SharedPreferences / iOS UserDefaults), including color alpha,
+font sizes, corner radius and heading scales. Select Default to save the default
+theme again. Uninstalling or clearing app data removes these preferences.
+Persistence belongs to the demos, not the SDK.
+
 The Android/iOS demo chrome uses a shared flat visual specification, independent of
 the Markdown theme. Edit Android `sample/src/main/res/values/demo_ui.xml` and iOS
 `DemoUI` in `Example/Sources/MockAssistantReply.swift` together: white surface,

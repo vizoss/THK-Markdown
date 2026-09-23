@@ -39,11 +39,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         findViewById<Button>(R.id.themeButton).setOnClickListener {
-            ThemeSettingsSheet.show(supportFragmentManager, adapter.theme) { adapter.setTheme(it) }
+            ThemeSettingsSheet.show(supportFragmentManager, adapter.theme) {
+                adapter.setTheme(it)
+                DemoThemeStore.save(this, it)
+            }
         }
 
         recyclerView = findViewById(R.id.messageList)
         adapter = ChatAdapter(onAssistantContentUpdated = ::scrollToBottom)
+        adapter.setTheme(DemoThemeStore.load(this))
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.setHasFixedSize(false)
         recyclerView.adapter = adapter
