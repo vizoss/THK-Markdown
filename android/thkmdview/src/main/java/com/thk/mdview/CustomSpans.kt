@@ -63,8 +63,8 @@ private fun drawRoundedLineBackground(
 // copy-button overlay in its top-right corner (see THKMDView.TextSegmentFrame), and the
 // button needs somewhere to sit that isn't directly on top of the first line's actual text.
 internal class CodeBlockBackgroundSpan(
-    private val backgroundColor: Int,
-    private val cornerRadiusPx: Float,
+    val backgroundColor: Int,
+    val cornerRadiusPx: Float,
     private val topPaddingPx: Int,
     private val bottomPaddingPx: Int,
     private val spanStart: Int,
@@ -72,6 +72,7 @@ internal class CodeBlockBackgroundSpan(
     val copyButtonGutterPx: Int = 0,
     val containerBackground: Boolean = false
 ) : LineBackgroundSpan, LineHeightSpan {
+    var drawsInHost: Boolean = false
 
     override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
         val isFirstLine = start <= spanStart
@@ -99,9 +100,13 @@ internal class CodeBlockBackgroundSpan(
         end: Int,
         lineNumber: Int
     ) {
-        if (containerBackground) return // The full-width container paints this background.
+        if (containerBackground || drawsInHost) return // The host paints beyond TextView's clip.
+        val indent = (text as? android.text.Spanned)
+            ?.getSpans(start, end, LeadingMarginSpan::class.java)
+            ?.filterNot { it is CodeBlockPaddingSpan }
+            ?.sumOf { it.getLeadingMargin(true) } ?: 0
         drawRoundedLineBackground(
-            canvas, paint, left, right, top, bottom, backgroundColor, cornerRadiusPx,
+            canvas, paint, left + indent, right, top, bottom, backgroundColor, cornerRadiusPx,
             isFirstLine = start <= spanStart, isLastLine = end >= spanEnd
         )
     }

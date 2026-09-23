@@ -176,6 +176,11 @@ class THKMDView @JvmOverloads constructor(
             segment.copyableBlocks.count { block.range.first in it.range }
         } ?: 0
         val gutter = maxOf(quoteGutter, codeGutter, if (lanes > 0) dp(36f * lanes + 4f) else 0)
+        spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)?.forEach {
+            // Paint quoted code in the host so TextView's clip cannot cut off the copy lanes.
+            it.drawsInHost = spanned.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
+                .any { quote -> quote.containerBackground }
+        }
         frame.isQuote = spanned?.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
             ?.any { it.containerBackground } == true
         val standaloneCode = spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)
@@ -311,6 +316,31 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
             copyButtons += button
         }
         requestLayout()
+    }
+
+    override fun dispatchDraw(canvas: android.graphics.Canvas) {
+        val layout = textView.layout
+        val text = textView.text as? Spanned
+        if (layout != null && text != null) {
+            text.getSpans(0, text.length, CodeBlockBackgroundSpan::class.java)
+                .filter { it.drawsInHost && !it.containerBackground }.forEach { span ->
+                    val start = text.getSpanStart(span)
+                    val end = text.getSpanEnd(span)
+                    val first = layout.getLineForOffset(start)
+                    val last = layout.getLineForOffset((end - 1).coerceAtLeast(start))
+                    val indent = text.getSpans(start, start + 1, android.text.style.LeadingMarginSpan::class.java)
+                        .filterNot { it is CodeBlockPaddingSpan }.sumOf { it.getLeadingMargin(true) }
+                    val rect = android.graphics.RectF(
+                        (textView.left + textView.paddingLeft + indent).toFloat(),
+                        (textView.top + textView.paddingTop + layout.getLineTop(first)).toFloat(),
+                        textView.right.toFloat(),
+                        (textView.top + textView.paddingTop + layout.getLineBottom(last)).toFloat()
+                    )
+                    val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = span.backgroundColor }
+                    canvas.drawRoundRect(rect, span.cornerRadiusPx, span.cornerRadiusPx, paint)
+                }
+        }
+        super.dispatchDraw(canvas)
     }
 
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
