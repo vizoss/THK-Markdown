@@ -54,6 +54,7 @@ final class MessageListViewController: UIViewController {
     private var chunkIndex = 0
     private let fixtureControls = FixtureControls()
     private var followsLatestMessage = true
+    private var isScrollingToTop = false
     private var finalHeightRefreshes = 0
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputBar = MessageInputBar()
@@ -228,7 +229,7 @@ final class MessageListViewController: UIViewController {
             // Don't fight a drag/deceleration with self-sizing row updates. The next
             // idle tick catches up using the message's latest streamed content.
             guard !self.tableView.isTracking, !self.tableView.isDragging,
-                  !self.tableView.isDecelerating else { return }
+                  !self.tableView.isDecelerating, !self.isScrollingToTop else { return }
             let oldOffset = self.tableView.contentOffset
             UIView.performWithoutAnimation {
                 self.tableView.beginUpdates()
@@ -311,6 +312,7 @@ final class MessageListViewController: UIViewController {
         streamedContent[message.id] = full ? fixture.markdown : ""
         messages.append(message)
         followsLatestMessage = true
+        isScrollingToTop = false
         tableView.reloadData()
         tableView.layoutIfNeeded()
         scrollToLatestMessage()
@@ -430,6 +432,7 @@ extension MessageListViewController: UITableViewDataSource {
 
 extension MessageListViewController: UITableViewDelegate {
     func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        isScrollingToTop = false
         followsLatestMessage = false
     }
 
@@ -443,6 +446,13 @@ extension MessageListViewController: UITableViewDelegate {
 
     func scrollViewShouldScrollToTop(_ scrollView: UIScrollView) -> Bool {
         followsLatestMessage = false
+        // UIKit's status-bar scroll is animated but is neither a drag nor
+        // deceleration. Offset restoration during that animation would cancel it.
+        isScrollingToTop = true
         return true
+    }
+
+    func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+        isScrollingToTop = false
     }
 }
