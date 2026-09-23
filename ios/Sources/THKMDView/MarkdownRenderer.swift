@@ -79,11 +79,20 @@ func thkReserveQuoteCopyGutter(in text: NSMutableAttributedString) {
     guard full.length > 0 else { return }
     var hasCode = false
     text.enumerateAttribute(.thkCopyableCodeBlock, in: full) { value, _, _ in if value != nil { hasCode = true } }
-    let gutter: CGFloat = hasCode ? 76 : 40
+    let startsWithCode = text.attribute(.thkCopyableCodeBlock, at: 0, effectiveRange: nil) != nil
+    let gutter: CGFloat = hasCode ? (startsWithCode ? 84 : 48) : 40
     text.enumerateAttribute(.paragraphStyle, in: full) { value, range, _ in
         let style = (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
         style.tailIndent = min(style.tailIndent, -gutter)
         text.addAttribute(.paragraphStyle, value: style, range: range)
+    }
+    if hasCode && !startsWithCode {
+        // Reserve a real header row for the enclosing quote's 32pt hit target.
+        // The child button can then stay in the same trailing column.
+        let first = (text.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
+        let style = (text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        style.minimumLineHeight = max(style.minimumLineHeight, THKCopyButtonMetrics.size + THKCopyButtonMetrics.margin)
+        text.addAttribute(.paragraphStyle, value: style, range: first)
     }
 }
 

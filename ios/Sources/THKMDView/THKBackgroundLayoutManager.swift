@@ -100,7 +100,8 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             // The background starts at the containing quote/list content edge;
             // the code's own horizontal padding stays inside that background.
             let left = origin.x + max(0, style.headIndent - THKCodeBlockMetrics.horizontalPadding)
-            let right = rect.maxX
+            let quoted = textStorage?.attribute(.thkBlockQuoteBackground, at: charRange.location, effectiveRange: nil) != nil
+            let right = rect.maxX - (quoted ? THKCodeBlockMetrics.horizontalPadding : 0)
             rect.origin.x = left
             rect.size.width = max(0, right - left)
         }

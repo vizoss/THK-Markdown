@@ -112,8 +112,16 @@ internal class CodeBlockBackgroundSpan(
     }
 }
 
-// Adds left inset inside a code block's background so text doesn't touch the rounded
-// edge; a plain LeadingMarginSpan with no drawing, purely for the padding.
+// Reserve enough height for the quote copy target before a child code block begins.
+internal class QuoteCopyHeaderSpan(private val minimumHeightPx: Int) : LineHeightSpan {
+    override fun chooseHeight(text: CharSequence, start: Int, end: Int, spanstartv: Int, v: Int, fm: Paint.FontMetricsInt) {
+        val extra = (minimumHeightPx - (fm.descent - fm.ascent)).coerceAtLeast(0)
+        fm.descent += extra
+        fm.bottom = maxOf(fm.bottom, fm.descent)
+    }
+}
+
+// Adds left inset inside a code block's rounded background without drawing anything.
 internal class CodeBlockPaddingSpan(private val paddingPx: Int) : LeadingMarginSpan {
     override fun getLeadingMargin(first: Boolean): Int = paddingPx
     override fun drawLeadingMargin(

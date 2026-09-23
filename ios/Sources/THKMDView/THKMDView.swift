@@ -347,6 +347,11 @@ public final class THKMDView: UIView {
             // The line fragment excludes the paragraph's reserved trailing gutter.
             // Anchor to the view's right edge, not the text's right edge.
             var x = textView.bounds.width - textView.textContainerInset.right - size - margin
+            // Use one trailing column inside the quoted code's 8pt inset.
+            if textView.textStorage.attribute(.thkBlockQuoteBackground, at: block.range.location, effectiveRange: nil) != nil,
+               segmentView.copyableBlocks.count > 1 {
+                x -= THKCodeBlockMetrics.horizontalPadding
+            }
             let leadingQuote = block.range.location == 0 && textView.textStorage.attribute(.thkCopyableBlockQuote, at: 0, effectiveRange: nil) != nil
             let y = (leadingQuote ? 0 : textView.textContainerInset.top) + firstLineRect.minY + margin
             while x > 0 && occupied.contains(where: { $0.intersects(CGRect(x: x, y: y, width: size, height: size)) }) {

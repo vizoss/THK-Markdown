@@ -173,9 +173,10 @@ class THKMDView @JvmOverloads constructor(
         val codeGutter = spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)
             ?.maxOfOrNull { it.copyButtonGutterPx } ?: 0
         val lanes = segment.copyableBlocks.maxOfOrNull { block ->
-            segment.copyableBlocks.count { block.range.first in it.range }
+            segment.copyableBlocks.count { block.range.first == it.range.first }
         } ?: 0
-        val gutter = maxOf(quoteGutter, codeGutter, if (lanes > 0) dp(36f * lanes + 4f) else 0)
+        val quotedCodeInset = if (quoteGutter > 0 && codeGutter > 0) dp(8f) else 0
+        val gutter = maxOf(quoteGutter, codeGutter, if (lanes > 0) dp(36f * lanes + 4f) else 0) + quotedCodeInset
         spanned?.getSpans(0, spanned.length, CodeBlockBackgroundSpan::class.java)?.forEach {
             // Paint quoted code in the host so TextView's clip cannot cut off the copy lanes.
             it.drawsInHost = spanned.getSpans(0, spanned.length, ThemedQuoteSpan::class.java)
@@ -333,7 +334,7 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
                     val rect = android.graphics.RectF(
                         (textView.left + textView.paddingLeft + indent).toFloat(),
                         (textView.top + textView.paddingTop + layout.getLineTop(first)).toFloat(),
-                        textView.right.toFloat(),
+                        textView.right.toFloat() - 8 * resources.displayMetrics.density,
                         (textView.top + textView.paddingTop + layout.getLineBottom(last)).toFloat()
                     )
                     val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = span.backgroundColor }
@@ -354,6 +355,7 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
             val offset = block.range.first.coerceIn(0, layout.text.length)
             val line = layout.getLineForOffset(offset)
             var x = (textView.right - sizePx - marginPx).coerceAtLeast(0)
+            if (isQuote && copyBlocks.size > 1) x = (x - (8 * density).toInt()).coerceAtLeast(0)
             val y = textView.top + (if (hasCopyGutter && offset == 0) 0 else textView.paddingTop) +
                 layout.getLineTop(line) + marginPx
             while (x > 0 && positioned.any { android.graphics.Rect.intersects(it, android.graphics.Rect(x, y, x + sizePx, y + sizePx)) }) {

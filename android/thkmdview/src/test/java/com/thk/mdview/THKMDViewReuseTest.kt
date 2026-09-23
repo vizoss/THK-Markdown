@@ -11,6 +11,21 @@ import org.robolectric.Shadows.shadowOf
 @RunWith(AndroidJUnit4::class)
 class THKMDViewReuseTest {
 
+    @Test
+    fun quotedCodeCopyButtonsStayInOneColumnWithoutOverlapping() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        view.setMarkdown("> 引用说明。\n>\n> ```swift\n> let value = 42\n> ```\n> 引用结束。")
+        val width = (360 * view.resources.displayMetrics.density).toInt()
+        view.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED))
+        view.layout(0, 0, width, view.measuredHeight)
+        val frame = view.getChildAt(0) as TextSegmentFrame
+        val buttons = (0 until frame.childCount).map { frame.getChildAt(it) }.filterIsInstance<android.widget.ImageButton>()
+        assertThat(buttons).hasSize(2)
+        assertThat(buttons[0].left).isEqualTo(buttons[1].left)
+        assertThat(buttons[1].top).isAtLeast(buttons[0].bottom)
+    }
+
     private class RecordingRenderer : MarkdownRenderer {
         var callCount = 0
         val renderedInputs = mutableListOf<String>()

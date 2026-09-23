@@ -6,6 +6,20 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testQuotedCodeCopyButtonsShareTrailingColumn() throws {
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 360, height: 240))
+        view.setMarkdown("> 引用说明。\n>\n> ```swift\n> let value = 42\n> ```\n> 引用结束。")
+        view.layoutIfNeeded()
+        func descendants(_ parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants($0) }
+        }
+        let buttons = descendants(view).compactMap { $0 as? UIButton }.sorted { $0.frame.minY < $1.frame.minY }
+        XCTAssertEqual(buttons.count, 2)
+        guard buttons.count == 2 else { return }
+        XCTAssertEqual(buttons[0].frame.minX, buttons[1].frame.minX, accuracy: 0.5)
+        XCTAssertGreaterThanOrEqual(buttons[1].frame.minY, buttons[0].frame.maxY)
+    }
+
     func testThemeControlsHeadingScaleAndMermaidFont() throws {
         var theme = THKMDTheme.default
         theme.bodyFontSize = 20
