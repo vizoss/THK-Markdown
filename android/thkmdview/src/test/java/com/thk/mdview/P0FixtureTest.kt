@@ -181,6 +181,18 @@ class P0FixtureTest {
         assertCatalog("p1", 60)
     }
 
+    @Test fun p2SharedCasesRenderEveryPrefixAndMatchTheirContracts() {
+        assertCatalog("p2", 25)
+    }
+
+    @Test fun combinedCatalogSuiteBoundaries() {
+        val ids = listOf("p0", "p1", "p2").flatMap { cases(it) }.map { it.getString("id") }
+        assertEquals(103, ids.size)
+        assertEquals(listOf("P0-18", "P1-01"), ids.subList(17, 19))
+        assertEquals(listOf("P1-60", "P2-01"), ids.subList(77, 79))
+        assertEquals("P2-25", ids.last())
+    }
+
     private fun assertCatalog(suite: String, count: Int) {
         val fixtures = cases(suite)
         assertEquals(count, fixtures.size)

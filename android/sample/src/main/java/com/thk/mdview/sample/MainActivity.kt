@@ -164,7 +164,7 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
     }
 
     private fun selectFixtureGroup() {
-        val groups = listOf("P0", "P1")
+        val groups = listOf("P0", "P1", "P2")
         val currentID = fixtures.getOrNull(selectedFixture)?.id
         DemoDialog.show(this, "Markdown 用例", choices = groups.map { group ->
             "$group · ${fixtures.count { it.id.startsWith("$group-") }} 个用例  ›"
@@ -178,7 +178,7 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
         val indices = fixtures.indices.filter { fixtures[it].id.startsWith("$group-") }
         val current = indices.indexOf(selectedFixture)
         DemoDialog.show(this, "$group 用例",
-            choices = listOf("‹ 返回 P0 / P1") + indices.map { "${fixtures[it].id} · ${fixtures[it].title}" },
+            choices = listOf("‹ 返回分组") + indices.map { "${fixtures[it].id} · ${fixtures[it].title}" },
             selected = if (current >= 0) current + 1 else -1) { row ->
             if (row == 0) {
                 selectFixtureGroup()
@@ -226,15 +226,13 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
     }
 
     private fun previousFixtureIndex(): Int? {
-        val current = fixtures.getOrNull(selectedFixture) ?: return null
-        val group = current.id.substringBefore('-')
-        return fixtures.indices.lastOrNull { it < selectedFixture && fixtures[it].id.startsWith("$group-") }
+        if (selectedFixture !in fixtures.indices) return null
+        return (selectedFixture - 1).takeIf { it in fixtures.indices }
     }
 
     private fun nextFixtureIndex(): Int? {
-        val current = fixtures.getOrNull(selectedFixture) ?: return null
-        val group = current.id.substringBefore('-')
-        return fixtures.indices.firstOrNull { it > selectedFixture && fixtures[it].id.startsWith("$group-") }
+        if (selectedFixture !in fixtures.indices) return null
+        return (selectedFixture + 1).takeIf { it in fixtures.indices }
     }
 
     private fun updateFixtureStatus(state: String) {

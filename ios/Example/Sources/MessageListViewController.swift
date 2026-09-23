@@ -358,7 +358,7 @@ fixtures = try MarkdownFixture.loadAll()
     }
 
     private func selectFixture() {
-        let groups = ["P0", "P1"]
+        let groups = ["P0", "P1", "P2"]
         let currentID = fixtures.indices.contains(selectedFixture) ? fixtures[selectedFixture].id : ""
         let labels = groups.map { group in
             "\(group) · \(fixtures.filter { $0.id.hasPrefix(group + "-") }.count) 个用例  ›"
@@ -373,7 +373,7 @@ fixtures = try MarkdownFixture.loadAll()
     private func selectFixture(in group: String) {
         // Preserve catalog indices when displaying only one suite.
         let indices = fixtures.indices.filter { fixtures[$0].id.hasPrefix(group + "-") }
-        let labels = ["‹ 返回 P0 / P1"] + indices.map { fixtures[$0].id + " · " + fixtures[$0].title }
+        let labels = ["‹ 返回分组"] + indices.map { fixtures[$0].id + " · " + fixtures[$0].title }
         let selected = indices.firstIndex(of: selectedFixture).map { $0 + 1 } ?? -1
         let sheet = DemoDialogController(title: group + " 用例", choices: labels,
             selected: selected) { [weak self] row in
@@ -444,15 +444,13 @@ fixtures = try MarkdownFixture.loadAll()
     }
 
     private func previousFixtureIndex() -> Int? {
-        guard fixtures.indices.contains(selectedFixture),
-              let group = fixtures[selectedFixture].id.split(separator: "-").first else { return nil }
-        return fixtures.indices.last { $0 < selectedFixture && fixtures[$0].id.hasPrefix(String(group) + "-") }
+        guard fixtures.indices.contains(selectedFixture), selectedFixture > 0 else { return nil }
+        return selectedFixture - 1
     }
 
     private func nextFixtureIndex() -> Int? {
-        guard fixtures.indices.contains(selectedFixture),
-              let group = fixtures[selectedFixture].id.split(separator: "-").first else { return nil }
-        return fixtures.indices.first { $0 > selectedFixture && fixtures[$0].id.hasPrefix(String(group) + "-") }
+        guard fixtures.indices.contains(selectedFixture), selectedFixture + 1 < fixtures.count else { return nil }
+        return selectedFixture + 1
     }
 
     private func updateFixtureStatus(_ state: String) {

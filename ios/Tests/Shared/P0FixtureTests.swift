@@ -488,6 +488,18 @@ final class P0FixtureTests: XCTestCase {
         try assertCatalog(suite: "p1", count: 60)
     }
 
+    func testP2CatalogRendersEveryPrefixAndFinalContracts() throws {
+        try assertCatalog(suite: "p2", count: 25)
+    }
+
+    func testCombinedCatalogSuiteBoundaries() throws {
+        let ids = try MarkdownFixture.loadAll().map(\.id)
+        XCTAssertEqual(ids.count, 103)
+        XCTAssertEqual(Array(ids[17...18]), ["P0-18", "P1-01"])
+        XCTAssertEqual(Array(ids[77...78]), ["P1-60", "P2-01"])
+        XCTAssertEqual(ids.last, "P2-25")
+    }
+
     private func assertCatalog(suite: String, count: Int) throws {
         let fixtures = try MarkdownFixture.load(suite: suite)
         XCTAssertEqual(fixtures.count, count)

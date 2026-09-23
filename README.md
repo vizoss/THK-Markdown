@@ -100,10 +100,13 @@ and [iOS](ios/Sources/THKMDView/THKMDTheme.swift) definitions, and the
 
 ## Status
 
-The demos share 18 P0 regression fixtures and 60 P1 CommonMark/GFM fixtures,
+The demos share 18 P0 regression fixtures, 60 P1 CommonMark/GFM fixtures and
+25 P2 Unicode, layout, image and scrolling fixtures,
 with full-text and deterministic streaming playback. Both platforms load the same
 JSON sources. See the [P1 coverage and acceptance guide](docs/P1.zh-CN.md) (Chinese).
-P1 is wired into the regression test entry points but has not yet been built,
+See also the [P2 acceptance guide](docs/P2.zh-CN.md). Previous/next navigation crosses
+suite boundaries in P0 → P1 → P2 order, stopping only at the catalog ends.
+P1/P2 are wired into the regression test entry points but have not yet been built,
 tested or visually accepted; fixture coverage is not a conformance claim.
 
 ### Example UI
