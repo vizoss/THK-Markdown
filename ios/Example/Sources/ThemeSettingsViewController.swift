@@ -70,6 +70,19 @@ enum DemoThemeStore {
         for (name, path) in sizes { values[name] = Double(theme[keyPath: path]) }
         UserDefaults.standard.set(values, forKey: key)
     }
+
+    /// Compare all persisted fields, including settings not exposed by this page.
+    /// RGBA comparison also handles colors restored with a different UIColor representation.
+    static func matches(_ theme: THKMDTheme, _ preset: THKMDTheme) -> Bool {
+        let colorsMatch = colors.values.allSatisfy { path in
+            var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+            var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+            guard theme[keyPath: path].getRed(&r1, green: &g1, blue: &b1, alpha: &a1),
+                  preset[keyPath: path].getRed(&r2, green: &g2, blue: &b2, alpha: &a2) else { return false }
+            return zip([r1, g1, b1, a1], [r2, g2, b2, a2]).allSatisfy { abs($0 - $1) < 0.00001 }
+        }
+        return colorsMatch && sizes.values.allSatisfy { abs(theme[keyPath: $0] - preset[keyPath: $0]) < 0.00001 }
+    }
 }
 
 
@@ -84,6 +97,7 @@ final class ThemeSettingsViewController: DemoPageViewController {
 
     private let scrollView = UIScrollView()
     private let stack = UIStackView()
+    private var presetButtons: [UIButton] = []
 
     // Each row keeps both a getter and setter closure (not just a setter) so a preset
     // quick-select can pull that row's new value back out of the preset theme and push it
@@ -166,8 +180,20 @@ final class ThemeSettingsViewController: DemoPageViewController {
                 self?.applyPreset(preset.theme)
             }, for: .touchUpInside)
             row.addArrangedSubview(button)
+            presetButtons.append(button)
         }
         stack.addArrangedSubview(row)
+        updatePresetSelection()
+    }
+
+    private func updatePresetSelection() {
+        for (button, preset) in zip(presetButtons, presets) {
+            let selected = DemoThemeStore.matches(theme, preset.theme)
+            DemoUI.style(button, primary: selected)
+            button.isSelected = selected
+            button.setTitle((selected ? "✓ " : "") + preset.name, for: .normal)
+            button.accessibilityTraits = selected ? [.button, .selected] : [.button]
+        }
     }
 
     private func applyPreset(_ newTheme: THKMDTheme) {
@@ -181,6 +207,7 @@ final class ThemeSettingsViewController: DemoPageViewController {
             row.valueLabel.text = Self.formatValue(value)
         }
         DemoThemeStore.save(theme)
+        updatePresetSelection()
         onThemeChange?(theme)
     }
 
@@ -304,6 +331,7 @@ final class ThemeSettingsViewController: DemoPageViewController {
         guard let row = colorRows.first(where: { $0.well === sender }) else { return }
         row.set(&theme, sender.selectedColor ?? .clear)
         DemoThemeStore.save(theme)
+        updatePresetSelection()
         onThemeChange?(theme)
     }
 
@@ -312,6 +340,7 @@ final class ThemeSettingsViewController: DemoPageViewController {
         row.valueLabel.text = Self.formatValue(sender.value)
         row.set(&theme, sender.value)
         DemoThemeStore.save(theme)
+        updatePresetSelection()
         onThemeChange?(theme)
     }
 }

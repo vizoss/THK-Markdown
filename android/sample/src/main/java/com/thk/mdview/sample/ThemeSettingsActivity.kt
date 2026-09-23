@@ -97,7 +97,7 @@ class ThemeSettingsActivity : DemoPageActivity() {
 
         val sizeContainer = root.findViewById<LinearLayout>(R.id.sizeRowContainer)
         SizeProperty.values().forEach { prop -> sizeContainer.addView(buildSizeRow(inflater, sizeContainer, prop)) }
-
+        updatePresetSelection(initialTheme)
     }
 
     private fun loadValues(theme: THKMDTheme) {
@@ -216,7 +216,26 @@ class ThemeSettingsActivity : DemoPageActivity() {
     }
 
     private fun pushTheme() {
-        onThemeChanged(buildTheme())
+        val theme = buildTheme()
+        onThemeChanged(theme)
+        updatePresetSelection(theme)
+    }
+
+    /** Derive selection from the saved values, not the last tapped button. */
+    private fun updatePresetSelection(theme: THKMDTheme) {
+        listOf(
+            Triple(R.id.presetDefaultButton, R.string.theme_preset_default, THKMDTheme.Default),
+            Triple(R.id.presetVibrantButton, R.string.theme_preset_vibrant, ALT_THEME)
+        ).forEach { (id, label, preset) ->
+            findViewById<android.widget.Button>(id).apply {
+                val selected = theme == preset
+                isSelected = selected
+                text = (if (selected) "✓ " else "") + getString(label)
+                setBackgroundResource(if (selected) R.drawable.demo_primary else R.drawable.demo_control)
+                setTextColor(androidx.core.content.ContextCompat.getColor(context,
+                    if (selected) R.color.demo_surface else R.color.demo_ink))
+            }
+        }
     }
 
     private fun buildTheme(): THKMDTheme = initialTheme.copy(

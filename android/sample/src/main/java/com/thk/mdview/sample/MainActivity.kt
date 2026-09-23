@@ -25,6 +25,12 @@ class MainActivity : DemoPageActivity() {
             val button = AppCompatButton(this, null, 0).apply {
                 text = label + "  ›"
                 isAllCaps = false
+                gravity = android.view.Gravity.CENTER
+                includeFontPadding = false
+                setPadding(0, 0, 0, 0)
+                minWidth = 0
+                minHeight = 0
+                typeface = android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL)
                 setTextSize(android.util.TypedValue.COMPLEX_UNIT_PX, resources.getDimension(R.dimen.demo_font))
                 setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.demo_ink))
                 setBackgroundResource(R.drawable.demo_control)

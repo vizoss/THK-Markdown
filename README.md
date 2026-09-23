@@ -136,6 +136,9 @@ the next launch (Android SharedPreferences / iOS UserDefaults), including color 
 font sizes, corner radius and heading scales. Select Default to save the default
 theme again. Uninstalling or clearing app data removes these preferences.
 Persistence belongs to the demos, not the SDK.
+Default/Vibrant buttons show a blue background and checkmark when the saved values
+match that preset. Custom values leave both unselected; reopening the page recomputes
+selection from the saved theme rather than remembering only the last button tapped.
 
 The Android/iOS demo chrome uses a shared flat visual specification, independent of
 the Markdown theme. Edit Android `sample/src/main/res/values/demo_ui.xml` and iOS
