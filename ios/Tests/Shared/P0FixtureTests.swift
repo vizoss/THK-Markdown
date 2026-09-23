@@ -6,6 +6,25 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testHostLinkInterceptionMatchesBodyAndEmbeddedTable() throws {
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 240))
+        view.setMarkdown("| 链接 |\n| --- |\n| [示例](https://example.com) |")
+        func descendants(_ parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants($0) }
+        }
+        let table = try XCTUnwrap(descendants(view).compactMap { $0 as? THKTableView }.first)
+        let url = try XCTUnwrap(URL(string: "https://example.com"))
+        for allow in [false, true] {
+            var received: [URL] = []
+            view.onLinkTap = { received.append($0); return allow }
+            XCTAssertEqual(view.textView(UITextView(), shouldInteractWith: url,
+                in: NSRange(location: 0, length: 1), interaction: .invokeDefaultAction), allow)
+            XCTAssertEqual(table.textView(UITextView(), shouldInteractWith: url,
+                in: NSRange(location: 0, length: 1), interaction: .invokeDefaultAction), allow)
+            XCTAssertEqual(received, [url, url])
+        }
+    }
+
     func testEmptyCodeBlocksDoNotAddParagraphSeparators() {
         let renderer = DefaultMarkdownRenderer()
         let empty = "```text\n```"

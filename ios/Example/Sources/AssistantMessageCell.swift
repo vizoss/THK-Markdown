@@ -21,11 +21,11 @@ final class AssistantMessageCell: UITableViewCell {
         selectionStyle = .none
         markdownView.onLinkTap = { url in
             print("Link tapped: \(url)")
-            return true
+            return false
         }
         markdownView.onImageTap = { url in
             print("Image tapped: \(url)")
-            return true
+            return false
         }
         // Matches Android's assistant bubble (item_message_assistant.xml: a MaterialCardView,
         // 14dp corner radius, bubble_assistant_background, 14dp padding around THKMDView).

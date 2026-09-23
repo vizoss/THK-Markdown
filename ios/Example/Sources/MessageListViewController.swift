@@ -45,6 +45,34 @@ final class MessageListViewController: UIViewController {
     )
 
     private var currentTheme: THKMDTheme = DemoThemeStore.load()
+    private var interactionNotice: UILabel?
+
+    private func showInteractionNotice(_ message: String) {
+        interactionNotice?.removeFromSuperview()
+        let label = UILabel()
+        label.text = message
+        label.numberOfLines = 3
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: DemoUI.caption)
+        label.textColor = DemoUI.surface
+        label.backgroundColor = DemoUI.ink
+        label.layer.cornerRadius = DemoUI.radius
+        label.clipsToBounds = true
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        interactionNotice = label
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: DemoUI.gutter),
+            label.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -DemoUI.gutter),
+            label.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -80),
+            label.heightAnchor.constraint(greaterThanOrEqualToConstant: DemoUI.control)
+        ])
+        UIAccessibility.post(notification: .announcement, argument: message)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self, weak label] in
+            label?.removeFromSuperview()
+            if self?.interactionNotice === label { self?.interactionNotice = nil }
+        }
+    }
     // Keep SSE progress independent of cell visibility and reuse.
     private var streamedContent: [UUID: String] = [:]
     private var playback: Task<Void, Never>?
@@ -499,8 +527,8 @@ extension MessageListViewController: UITableViewDataSource {
             cell.markdownView.theme = currentTheme
             cell.markdownView.imageLoader = FixtureImageLoader()
             cell.markdownView.onContentSizeChange = { [weak self] in self?.requestHeightRefresh() }
-            cell.markdownView.onLinkTap = { [weak self] url in self?.updateFixtureStatus("链接：" + url.absoluteString); return true }
-            cell.markdownView.onImageTap = { [weak self] url in self?.updateFixtureStatus("图片：" + url.absoluteString); return true }
+            cell.markdownView.onLinkTap = { [weak self] url in self?.showInteractionNotice("链接：" + url.absoluteString); return false }
+            cell.markdownView.onImageTap = { [weak self] url in self?.showInteractionNotice("图片：" + url.absoluteString); return false }
             cell.showContent(streamedContent[message.id] ?? message.content)
             return cell
         }

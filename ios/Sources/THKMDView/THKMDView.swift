@@ -14,7 +14,9 @@ public final class THKMDView: UIView {
         set { buffer.debounceInterval = newValue }
     }
 
+    /// Return false to intercept; true permits UIKit's default interaction. Nil permits it.
     public var onLinkTap: ((URL) -> Bool)?
+    /// Same return convention as onLinkTap: false means handled by the host.
     public var onImageTap: ((URL) -> Bool)?
 
     public var renderer: MarkdownRendering = DefaultMarkdownRenderer() {
@@ -223,10 +225,12 @@ public final class THKMDView: UIView {
                     stack.insertArrangedSubview(tableView, at: index)
                 }
                 tableView.imageLoader = imageLoader
-                tableView.onLinkTap = { [weak self] url in self?.onLinkTap?(url) ?? false }
+                // THKTableView uses handled=true; the public THKMDView callback
+                // follows UITextViewDelegate (allow=true), so invert at this boundary.
+                tableView.onLinkTap = { [weak self] url in !(self?.onLinkTap?(url) ?? true) }
                 tableView.onImageTap = { [weak self] url in
                     guard let self else { return false }
-                    return (self.onImageTap ?? self.onLinkTap)?(url) ?? false
+                    return !((self.onImageTap ?? self.onLinkTap)?(url) ?? true)
                 }
                 tableView.onSizeChange = { [weak self] in
                     self?.invalidateIntrinsicContentSize()
