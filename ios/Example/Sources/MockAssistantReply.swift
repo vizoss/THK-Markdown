@@ -36,7 +36,7 @@ final class FixtureControls: UIStackView {
     var onStep: (() -> Void)?
     var onDetails: (() -> Void)?
     private let select = UIButton(type: .system)
-    private let next = UIButton(type: .system)
+    private let nextButton = UIButton(type: .system)
     private let status = UIButton(type: .system)
 
     override init(frame: CGRect) { super.init(frame: frame); setUp() }
@@ -50,14 +50,14 @@ final class FixtureControls: UIStackView {
         select.heightAnchor.constraint(equalToConstant: DemoUI.control).isActive = true
         select.setTitle("选择 Markdown 用例", for: .normal)
         select.addTarget(self, action: #selector(selectTapped), for: .touchUpInside)
-        let selection = UIStackView(arrangedSubviews: [select, next])
+        let selection = UIStackView(arrangedSubviews: [select, nextButton])
         selection.spacing = 8
         select.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        DemoUI.style(next)
-        next.setTitle("下一条", for: .normal)
-        next.isEnabled = false
-        next.widthAnchor.constraint(equalToConstant: 76).isActive = true
-        next.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
+        DemoUI.style(nextButton)
+        nextButton.setTitle("下一条", for: .normal)
+        nextButton.isEnabled = false
+        nextButton.widthAnchor.constraint(equalToConstant: 76).isActive = true
+        nextButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
         addArrangedSubview(selection)
         let actions = UIStackView()
         actions.distribution = .fillEqually
@@ -82,7 +82,7 @@ final class FixtureControls: UIStackView {
         addArrangedSubview(status)
     }
     func update(title: String, state: String, canGoNext: Bool = false) {
-        next.isEnabled = canGoNext
+        nextButton.isEnabled = canGoNext
         select.setTitle(title + " ▾", for: .normal)
         status.setTitle(state + " · 点击查看原文与验收要求", for: .normal)
     }
