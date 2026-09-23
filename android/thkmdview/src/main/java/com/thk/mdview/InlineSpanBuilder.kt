@@ -130,7 +130,10 @@ internal object InlineSpanBuilder {
             placeholderColor = imageContext.placeholderColor
         )
         val start = builder.length
-        builder.append(' ')
+        // An image is an inline object, not whitespace. Android may omit trailing
+        // spaces from line drawing while still reserving ReplacementSpan metrics.
+        // U+FFFC keeps loading/failed images drawable at a wrap or paragraph end.
+        builder.append('\uFFFC')
         val end = builder.length
         builder.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         builder.setSpan(LinkClickableSpan(url, imageContext.clickHandler), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
