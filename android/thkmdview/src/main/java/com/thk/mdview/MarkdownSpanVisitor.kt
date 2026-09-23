@@ -366,12 +366,12 @@ internal class MarkdownSpanVisitor(
     }
 
     private fun sizeForLevel(level: Int): Float = when (level) {
-        1 -> 1.6f
-        2 -> 1.4f
-        3 -> 1.25f
-        4 -> 1.15f
-        5 -> 1.05f
-        else -> 1.0f
+        1 -> theme.heading1Scale
+        2 -> theme.heading2Scale
+        3 -> theme.heading3Scale
+        4 -> theme.heading4Scale
+        5 -> theme.heading5Scale
+        else -> theme.heading6Scale
     }
 
     companion object {

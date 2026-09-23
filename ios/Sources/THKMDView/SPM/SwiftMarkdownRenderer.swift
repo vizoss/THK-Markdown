@@ -229,7 +229,7 @@ struct AttributedStringVisitor: MarkupVisitor {
         guard let source = image.source, let url = URL(string: source) else {
             return NSAttributedString(string: altText, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         }
-        let attachment = THKAsyncImageTextAttachment(url: url, altText: altText)
+        let attachment = THKAsyncImageTextAttachment(url: url, altText: altText, theme: theme)
         return NSAttributedString(attachment: attachment)
     }
 
@@ -526,17 +526,17 @@ struct AttributedStringVisitor: MarkupVisitor {
     // bodyFontSize (a fixed-point-offset ramp, used previously, drifts away from Android's
     // ratios whenever bodyFontSize differs from the value it was tuned against).
     private func headingFontSize(for level: Int) -> CGFloat {
-        baseFont.pointSize * Self.headingSizeRatio(for: level)
+        baseFont.pointSize * headingSizeRatio(for: level)
     }
 
-    private static func headingSizeRatio(for level: Int) -> CGFloat {
+    private func headingSizeRatio(for level: Int) -> CGFloat {
         switch level {
-        case 1: return 1.6
-        case 2: return 1.4
-        case 3: return 1.25
-        case 4: return 1.15
-        case 5: return 1.05
-        default: return 1.0
+        case 1: return theme.heading1Scale
+        case 2: return theme.heading2Scale
+        case 3: return theme.heading3Scale
+        case 4: return theme.heading4Scale
+        case 5: return theme.heading5Scale
+        default: return theme.heading6Scale
         }
     }
 }

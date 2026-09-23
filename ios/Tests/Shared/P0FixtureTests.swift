@@ -6,6 +6,19 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testThemeControlsHeadingScaleAndMermaidFont() throws {
+        var theme = THKMDTheme.default
+        theme.bodyFontSize = 20
+        theme.heading1Scale = 2
+        let renderer = DefaultMarkdownRenderer(theme: theme)
+        guard case .text(let text, _) = renderer.render("# Title").first else {
+            return XCTFail("Expected heading text")
+        }
+        XCTAssertEqual((text.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)?.pointSize, 40)
+        let variables = try XCTUnwrap(theme.mermaidConfiguration["themeVariables"] as? [String: String])
+        XCTAssertEqual(variables["fontSize"], "20.0px")
+    }
+
     func testMermaidTemplateDoesNotCloseScriptInsideAComment() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()

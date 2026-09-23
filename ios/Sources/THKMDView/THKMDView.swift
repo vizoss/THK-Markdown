@@ -389,6 +389,7 @@ public final class THKMDView: UIView {
             back.addCurve(to: CGPoint(x: 16, y: 4), controlPoint1: CGPoint(x: 15.1, y: 2), controlPoint2: CGPoint(x: 16, y: 2.9))
             path.append(back)
 
+            // Template-image alpha mask only; visible color comes from theme.codeTextColor.
             UIColor.black.setStroke()
             path.stroke()
         }
@@ -420,15 +421,15 @@ public final class THKMDView: UIView {
     private func showCopyFeedback(near button: UIButton, in textView: UITextView) {
         let label = UILabel()
         label.text = "Copied"
-        label.font = .systemFont(ofSize: 12, weight: .medium)
-        label.textColor = .white
-        label.backgroundColor = UIColor.black.withAlphaComponent(0.75)
+        label.font = .systemFont(ofSize: theme.copyFeedbackFontSize, weight: .medium)
+        label.textColor = theme.copyFeedbackTextColor
+        label.backgroundColor = theme.copyFeedbackBackgroundColor
         label.textAlignment = .center
         label.layer.cornerRadius = 6
         label.clipsToBounds = true
         label.alpha = 0
-        let width: CGFloat = 64
-        let height: CGFloat = 22
+        let width = label.intrinsicContentSize.width + 20
+        let height = label.intrinsicContentSize.height + 8
         label.frame = CGRect(x: button.frame.maxX - width, y: button.frame.maxY + 4, width: width, height: height)
         textView.addSubview(label)
         UIView.animate(withDuration: 0.15, animations: {

@@ -28,12 +28,12 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
     /// re-measure the text view's internal layout, not the Auto Layout constraints above it.
     public var onSizeChange: (() -> Void)?
 
-    public init(url: URL, altText: String) {
+    public init(url: URL, altText: String, theme: THKMDTheme = .default) {
         self.url = url
         self.altText = altText
         super.init(data: nil, ofType: nil)
         let placeholderSize = Self.placeholderSize()
-        self.image = Self.placeholderImage(size: placeholderSize)
+        self.image = Self.placeholderImage(size: placeholderSize, color: theme.imagePlaceholderColor)
         self.bounds = CGRect(origin: .zero, size: placeholderSize)
         self.accessibilityLabel = altText
     }
@@ -116,11 +116,11 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
         CGSize(width: maxWidth, height: (maxWidth * placeholderAspectRatio).rounded())
     }
 
-    private static func placeholderImage(size: CGSize) -> UIImage {
+    private static func placeholderImage(size: CGSize, color: UIColor) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: size)
         return renderer.image { _ in
             let path = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: 12)
-            UIColor.systemGray5.setFill()
+            color.setFill()
             path.fill()
         }
     }

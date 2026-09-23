@@ -20,6 +20,7 @@ public final class THKMermaidView: UIView {
     private var messageHandlerProxy: ScriptMessageHandlerProxy?
     private var renderedSize = CGSize(width: 0, height: 160)
     private var currentSource: String?
+    private var currentConfiguration: Data?
     private var theme: THKMDTheme = .default
 
     // WKUserContentController retains whatever object is added as a script message handler,
@@ -90,7 +91,9 @@ public final class THKMermaidView: UIView {
     /// reloading an unchanged WebView would flash/re-render the SVG for nothing.
     public func configure(source: String, theme: THKMDTheme) {
         self.theme = theme
-        guard source != currentSource else { return }
+        let configuration = try? JSONSerialization.data(withJSONObject: theme.mermaidConfiguration, options: [.sortedKeys])
+        guard source != currentSource || configuration != currentConfiguration else { return }
+        currentConfiguration = configuration
         currentSource = source
         fallbackTextView.isHidden = true
         webView.isHidden = false
@@ -111,6 +114,7 @@ public final class THKMermaidView: UIView {
         }
         let base64 = sourceData.base64EncodedString()
         let html = templateHTML.replacingOccurrences(of: "THK_MERMAID_SOURCE_B64", with: base64)
+            .replacingOccurrences(of: "THK_MERMAID_THEME_B64", with: currentConfiguration?.base64EncodedString() ?? "")
         webView.loadHTMLString(html, baseURL: templateURL.deletingLastPathComponent())
     }
 

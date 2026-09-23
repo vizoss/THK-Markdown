@@ -3,22 +3,71 @@ import UIKit
 /// Colors and text sizes used across both `MarkdownRendering` backends and `THKTableView`.
 /// Settable on `THKMDView.theme`; changing it re-renders the current content in place.
 public struct THKMDTheme {
+    /// 图片加载中或失败时的占位背景色。
+    public var imagePlaceholderColor: UIColor = UIColor(thkHex: 0xE5E5EA)
+    /// 复制成功提示文字颜色（iOS 自绘提示）。
+    public var copyFeedbackTextColor: UIColor = .white
+    /// 复制成功提示背景色（包含透明度）。
+    public var copyFeedbackBackgroundColor: UIColor = UIColor.black.withAlphaComponent(0.75)
+    /// 复制成功提示字号，单位 pt。
+    public var copyFeedbackFontSize: CGFloat = 12
+    /// H1 标题相对正文字号的倍率。
+    public var heading1Scale: CGFloat = 1.6
+    /// H2 标题相对正文字号的倍率。
+    public var heading2Scale: CGFloat = 1.4
+    /// H3 标题相对正文字号的倍率。
+    public var heading3Scale: CGFloat = 1.25
+    /// H4 标题相对正文字号的倍率。
+    public var heading4Scale: CGFloat = 1.15
+    /// H5 标题相对正文字号的倍率。
+    public var heading5Scale: CGFloat = 1.05
+    /// H6 标题相对正文字号的倍率。
+    public var heading6Scale: CGFloat = 1
+    /// Mermaid 图形配置：字号取 bodyFontSize，文字取 bodyTextColor，节点底色取
+    /// codeBackgroundColor，边框/连线取 tableBorderColor，次级区域取引用/表头背景。
+    /// 通过 JSON/base64 传入模板，不拼接未转义的 JavaScript 字符串。
+    internal var mermaidConfiguration: [String: Any] {
+        func css(_ color: UIColor) -> String {
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            color.resolvedColor(with: .current).getRed(&r, green: &g, blue: &b, alpha: &a)
+            return "rgba(\(Int(r * 255)),\(Int(g * 255)),\(Int(b * 255)),\(a))"
+        }
+        return ["startOnLoad": false, "securityLevel": "strict", "theme": "base",
+                "themeVariables": ["fontSize": "\(bodyFontSize)px", "textColor": css(bodyTextColor),
+                    "primaryColor": css(codeBackgroundColor), "primaryTextColor": css(bodyTextColor),
+                    "primaryBorderColor": css(tableBorderColor), "lineColor": css(tableBorderColor),
+                    "secondaryColor": css(blockQuoteBackgroundColor), "tertiaryColor": css(tableHeaderBackgroundColor),
+                    "edgeLabelBackground": css(codeBackgroundColor)]]
+    }
+    /// 正文和列表文字颜色，也用于表格正文。
     public var bodyTextColor: UIColor
+    /// 标题与表格表头文字颜色。
     public var headingTextColor: UIColor
+    /// 链接文字颜色。
     public var linkColor: UIColor
+    /// 行内代码、代码块及复制图标颜色。
     public var codeTextColor: UIColor
+    /// 行内代码和代码块背景色。
     public var codeBackgroundColor: UIColor
+    /// 代码和引用背景圆角半径，单位 pt。
     public var codeBlockCornerRadius: CGFloat
+    /// 引用竖条及水平分隔线颜色。
     public var blockQuoteBarColor: UIColor
+    /// 引用正文颜色，不覆盖链接和代码颜色。
     public var blockQuoteTextColor: UIColor
     /// Fill behind a block quote, painted as one continuous rounded shape (reuses
     /// `codeBlockCornerRadius` rather than adding a second radius knob). Only the outermost
     /// level of a nested `> > quote` gets this fill — see `blockQuoteDepth` in
     /// SwiftMarkdownRenderer.swift/MaakuMarkdownRenderer.swift.
+    /// 最外层引用背景色，内层引用共享背景。
     public var blockQuoteBackgroundColor: UIColor
+    /// 表格网格边框颜色。
     public var tableBorderColor: UIColor
+    /// 表格表头背景色。
     public var tableHeaderBackgroundColor: UIColor
+    /// 正文基准字号，单位 pt；标题使用此字号乘以主题比例。
     public var bodyFontSize: CGFloat
+    /// 代码字号，单位 pt。
     public var codeFontSize: CGFloat
     /// Background painted behind the whole view; clear by default so a host's chat-bubble
     /// background (e.g. a card view) shows through unless overridden. Matches Android's

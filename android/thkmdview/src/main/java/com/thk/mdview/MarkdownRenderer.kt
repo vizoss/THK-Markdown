@@ -43,14 +43,11 @@ class DefaultMarkdownRenderer(
         val imageContext = ImageRenderContext(
             bounds = imageBounds,
             cornerRadiusPx = theme.codeBlockCornerRadiusDp * density,
-            placeholderColor = IMAGE_PLACEHOLDER_COLOR,
+            placeholderColor = theme.imagePlaceholderColor,
             clickHandler = imageClickHandler
         )
         val visitor = MarkdownSpanVisitor(theme, density, linkHandler, imageContext)
         return visitor.render(document)
     }
 
-    private companion object {
-        const val IMAGE_PLACEHOLDER_COLOR = -0x1a1a16 // ARGB 0xFFE5E5EA; visible against light message bubbles
-    }
 }

@@ -49,6 +49,7 @@ class THKMermaidView @JvmOverloads constructor(
     }
 
     private var currentSource: String? = null
+    private var currentTheme: THKMDTheme? = null
     private var pageLoaded = false
 
     init {
@@ -70,7 +71,8 @@ class THKMermaidView @JvmOverloads constructor(
         fallbackText.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.codeFontSizeSp)
         // A closing fence can rebind identical source after the SVG has reported its
         // height. Keep that measured height (and any error fallback) on a no-op bind.
-        if (currentSource == source && pageLoaded) return
+        if (currentSource == source && currentTheme == theme && pageLoaded) return
+        currentTheme = theme
         fallbackText.visibility = View.GONE
         webView.visibility = View.VISIBLE
         webView.layoutParams = webView.layoutParams.apply { height = dp(DEFAULT_HEIGHT_DP) }
@@ -96,7 +98,8 @@ class THKMermaidView @JvmOverloads constructor(
         // string literal - safe to splice directly into a JS call even if the Mermaid
         // source contains quotes/backticks/newlines/`</script>`-looking text.
         val encoded = org.json.JSONObject.quote(source)
-        webView.evaluateJavascript("renderDiagram($encoded)", null)
+        val configuration = (currentTheme ?: THKMDTheme.Default).mermaidConfiguration()
+        webView.evaluateJavascript("renderDiagram($encoded, $configuration)", null)
     }
 
     // cssWidthPx is unused: the WebView's own width is already MATCH_PARENT-capped to the

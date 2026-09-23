@@ -46,7 +46,7 @@
 
   try {
     var source = JSON.parse(thkDecodeBase64Utf8('THK_MERMAID_SOURCE_B64'))[0];
-    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+    mermaid.initialize(JSON.parse(thkDecodeBase64Utf8('THK_MERMAID_THEME_B64')));
     mermaid.render('thkMermaidSvg', source).then(function (result) {
       var container = document.getElementById('thkMermaidContainer');
       container.innerHTML = result.svg;

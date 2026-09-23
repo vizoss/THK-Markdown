@@ -39,9 +39,9 @@
   // with `source` already JSON-string-escaped on the Kotlin side (org.json.JSONObject.quote)
   // so arbitrary Mermaid source text (backticks, quotes, newlines) can never break out of
   // the JS string literal or otherwise inject script.
-  function renderDiagram(source) {
+  function renderDiagram(source, configuration) {
     try {
-      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict' });
+      mermaid.initialize(configuration);
       mermaid.render('thk-diagram', source).then(function (result) {
         document.getElementById('container').innerHTML = result.svg;
         // Two rAFs: one for layout to settle after the innerHTML swap, one more so the

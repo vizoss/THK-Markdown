@@ -8,23 +8,63 @@ import android.graphics.Color
  * call `setMarkdown` again just to pick up a theme change.
  */
 data class THKMDTheme(
+    /** 正文和列表文字颜色，也用于表格正文。 */
     val bodyTextColor: Int,
+    /** 标题与表格表头文字颜色。 */
     val headingTextColor: Int,
+    /** 链接文字颜色。 */
     val linkColor: Int,
+    /** 行内代码、代码块及复制图标颜色。 */
     val codeTextColor: Int,
+    /** 行内代码和代码块背景色。 */
     val codeBackgroundColor: Int,
+    /** 代码和引用背景圆角半径，单位 dp。 */
     val codeBlockCornerRadiusDp: Float,
+    /** 引用竖条及水平分隔线颜色。 */
     val blockQuoteBarColor: Int,
+    /** 引用正文颜色，不覆盖链接和代码颜色。 */
     val blockQuoteTextColor: Int,
+    /** 最外层引用背景色，内层引用共享背景。 */
     val blockQuoteBackgroundColor: Int,
+    /** 表格网格边框颜色。 */
     val tableBorderColor: Int,
+    /** 表格表头背景色。 */
     val tableHeaderBackgroundColor: Int,
+    /** 正文基准字号，单位 sp；标题使用此字号乘以主题比例。 */
     val bodyFontSizeSp: Float,
+    /** 代码字号，单位 sp。 */
     val codeFontSizeSp: Float,
-    // Background painted behind the whole view; transparent by default so a host's
-    // chat-bubble background (e.g. a MaterialCardView) shows through unless overridden.
-    val backgroundColor: Int = Color.TRANSPARENT
+    /** 整个 Markdown 视图背景色；默认透明，透出宿主聊天气泡背景。 */
+    val backgroundColor: Int = Color.TRANSPARENT,
+    /** 图片加载中或失败时的占位背景色（ARGB）。 */
+    val imagePlaceholderColor: Int = 0xFFE5E5EA.toInt(),
+    /** H1 标题相对正文字号的倍率。 */
+    val heading1Scale: Float = 1.6f,
+    /** H2 标题相对正文字号的倍率。 */
+    val heading2Scale: Float = 1.4f,
+    /** H3 标题相对正文字号的倍率。 */
+    val heading3Scale: Float = 1.25f,
+    /** H4 标题相对正文字号的倍率。 */
+    val heading4Scale: Float = 1.15f,
+    /** H5 标题相对正文字号的倍率。 */
+    val heading5Scale: Float = 1.05f,
+    /** H6 标题相对正文字号的倍率。 */
+    val heading6Scale: Float = 1f
 ) {
+    /** Mermaid 复用主题：正文控制字号/文字，代码背景控制节点，表格边框控制连线，
+     * 引用/表头背景控制次级区域。JSON 序列化保证配置安全传入 WebView。 */
+    internal fun mermaidConfiguration(): org.json.JSONObject {
+        fun css(color: Int) = "rgba(${Color.red(color)},${Color.green(color)},${Color.blue(color)},${Color.alpha(color) / 255.0})"
+        val variables = org.json.JSONObject()
+            .put("fontSize", "${bodyFontSizeSp}px").put("textColor", css(bodyTextColor))
+            .put("primaryColor", css(codeBackgroundColor)).put("primaryTextColor", css(bodyTextColor))
+            .put("primaryBorderColor", css(tableBorderColor)).put("lineColor", css(tableBorderColor))
+            .put("secondaryColor", css(blockQuoteBackgroundColor)).put("tertiaryColor", css(tableHeaderBackgroundColor))
+            .put("edgeLabelBackground", css(codeBackgroundColor))
+        return org.json.JSONObject().put("startOnLoad", false).put("securityLevel", "strict")
+            .put("theme", "base").put("themeVariables", variables)
+    }
+
     companion object {
         val Default = THKMDTheme(
             bodyTextColor = 0xFF1C1C1E.toInt(),

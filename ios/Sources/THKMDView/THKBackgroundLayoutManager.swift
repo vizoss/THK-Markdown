@@ -7,12 +7,12 @@ import UIKit
 final class THKBackgroundLayoutManager: NSLayoutManager {
     var leadingQuotePadding: CGFloat = 0
     var trailingQuotePadding: CGFloat = 0
-    var codeBlockBackgroundColor: UIColor = UIColor.secondarySystemBackground
-    var inlineCodeBackgroundColor: UIColor = UIColor.secondarySystemBackground
-    var blockQuoteBarColor: UIColor = UIColor.systemGray3
-    var blockQuoteBackgroundColor: UIColor = UIColor.systemGray6
+    var codeBlockBackgroundColor: UIColor = THKMDTheme.default.codeBackgroundColor
+    var inlineCodeBackgroundColor: UIColor = THKMDTheme.default.codeBackgroundColor
+    var blockQuoteBarColor: UIColor = THKMDTheme.default.blockQuoteBarColor
+    var blockQuoteBackgroundColor: UIColor = THKMDTheme.default.blockQuoteBackgroundColor
     var codeBlockCornerRadius: CGFloat = 6
-    var thematicBreakColor: UIColor = UIColor.systemGray4
+    var thematicBreakColor: UIColor = THKMDTheme.default.blockQuoteBarColor
 
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
