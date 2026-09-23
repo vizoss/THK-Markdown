@@ -132,6 +132,11 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
         findViewById<Button>(R.id.selectFixture).setOnClickListener {
             selectFixtureGroup()
         }
+        findViewById<Button>(R.id.fixturePrevious).setOnClickListener {
+            val previous = previousFixtureIndex() ?: return@setOnClickListener
+            selectedFixture = previous
+            showFixture(full = true)
+        }
         findViewById<Button>(R.id.fixtureNext).setOnClickListener {
             val next = nextFixtureIndex() ?: return@setOnClickListener
             selectedFixture = next
@@ -216,6 +221,12 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
         updateFixtureStatus(if (chunkIndex == fixture.chunks.size) "已完成" else "逐步渲染")
     }
 
+    private fun previousFixtureIndex(): Int? {
+        val current = fixtures.getOrNull(selectedFixture) ?: return null
+        val group = current.id.substringBefore('-')
+        return fixtures.indices.lastOrNull { it < selectedFixture && fixtures[it].id.startsWith("$group-") }
+    }
+
     private fun nextFixtureIndex(): Int? {
         val current = fixtures.getOrNull(selectedFixture) ?: return null
         val group = current.id.substringBefore('-')
@@ -223,6 +234,11 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
     }
 
     private fun updateFixtureStatus(state: String) {
+        findViewById<Button>(R.id.fixturePrevious).apply {
+            isEnabled = previousFixtureIndex() != null
+            setTextColor(androidx.core.content.ContextCompat.getColor(this@MainActivity,
+                if (isEnabled) R.color.demo_ink else R.color.demo_muted))
+        }
         findViewById<Button>(R.id.fixtureNext).apply {
             isEnabled = nextFixtureIndex() != null
             setTextColor(androidx.core.content.ContextCompat.getColor(this@MainActivity,

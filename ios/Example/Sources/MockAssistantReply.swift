@@ -30,6 +30,7 @@ enum DemoUI {
 final class FixtureControls: UIStackView {
     var onSelect: (() -> Void)?
     var onNext: (() -> Void)?
+    var onPrevious: (() -> Void)?
     var onFull: (() -> Void)?
     var onPlay: (() -> Void)?
     var onPause: (() -> Void)?
@@ -37,6 +38,7 @@ final class FixtureControls: UIStackView {
     var onDetails: (() -> Void)?
     private let select = UIButton(type: .system)
     private let nextButton = UIButton(type: .system)
+    private let previousButton = UIButton(type: .system)
     private let status = UIButton(type: .system)
 
     override init(frame: CGRect) { super.init(frame: frame); setUp() }
@@ -50,7 +52,7 @@ final class FixtureControls: UIStackView {
         select.heightAnchor.constraint(equalToConstant: DemoUI.control).isActive = true
         select.setTitle("选择 Markdown 用例", for: .normal)
         select.addTarget(self, action: #selector(selectTapped), for: .touchUpInside)
-        let selection = UIStackView(arrangedSubviews: [select, nextButton])
+        let selection = UIStackView(arrangedSubviews: [select, previousButton, nextButton])
         selection.spacing = 8
         select.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         DemoUI.style(nextButton)
@@ -58,6 +60,11 @@ final class FixtureControls: UIStackView {
         nextButton.isEnabled = false
         nextButton.widthAnchor.constraint(equalToConstant: 76).isActive = true
         nextButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
+        DemoUI.style(previousButton)
+        previousButton.setTitle("上一条", for: .normal)
+        previousButton.isEnabled = false
+        previousButton.widthAnchor.constraint(equalToConstant: 76).isActive = true
+        previousButton.addTarget(self, action: #selector(previousTapped), for: .touchUpInside)
         addArrangedSubview(selection)
         let actions = UIStackView()
         actions.distribution = .fillEqually
@@ -81,13 +88,15 @@ final class FixtureControls: UIStackView {
         status.addTarget(self, action: #selector(detailsTapped), for: .touchUpInside)
         addArrangedSubview(status)
     }
-    func update(title: String, state: String, canGoNext: Bool = false) {
+    func update(title: String, state: String, canGoNext: Bool = false, canGoPrevious: Bool = false) {
         nextButton.isEnabled = canGoNext
+        previousButton.isEnabled = canGoPrevious
         select.setTitle(title + " ▾", for: .normal)
         status.setTitle(state + " · 点击查看原文与验收要求", for: .normal)
     }
     @objc private func selectTapped() { onSelect?() }
     @objc private func nextTapped() { onNext?() }
+    @objc private func previousTapped() { onPrevious?() }
     @objc private func fullTapped() { onFull?() }
     @objc private func playTapped() { onPlay?() }
     @objc private func pauseTapped() { onPause?() }

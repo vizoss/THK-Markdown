@@ -297,6 +297,11 @@ fixtures = try MarkdownFixture.loadAll()
             fixtureControls.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -DemoUI.gutter)
         ])
         fixtureControls.onSelect = { [weak self] in self?.selectFixture() }
+        fixtureControls.onPrevious = { [weak self] in
+            guard let self, let previous = self.previousFixtureIndex() else { return }
+            self.selectedFixture = previous
+            self.showFixture(full: true)
+        }
         fixtureControls.onNext = { [weak self] in
             guard let self, let next = self.nextFixtureIndex() else { return }
             self.selectedFixture = next
@@ -409,6 +414,12 @@ fixtures = try MarkdownFixture.loadAll()
         !fixtures.isEmpty && chunkIndex < fixtures[selectedFixture].chunks.count
     }
 
+    private func previousFixtureIndex() -> Int? {
+        guard fixtures.indices.contains(selectedFixture),
+              let group = fixtures[selectedFixture].id.split(separator: "-").first else { return nil }
+        return fixtures.indices.last { $0 < selectedFixture && fixtures[$0].id.hasPrefix(String(group) + "-") }
+    }
+
     private func nextFixtureIndex() -> Int? {
         guard fixtures.indices.contains(selectedFixture),
               let group = fixtures[selectedFixture].id.split(separator: "-").first else { return nil }
@@ -420,7 +431,8 @@ fixtures = try MarkdownFixture.loadAll()
         let fixture = fixtures[selectedFixture]
         fixtureControls.update(title: fixture.id + " · " + fixture.title,
                                state: "\(state) · \(chunkIndex)/\(fixture.chunks.count) 分片",
-                               canGoNext: nextFixtureIndex() != nil)
+                               canGoNext: nextFixtureIndex() != nil,
+                               canGoPrevious: previousFixtureIndex() != nil)
     }
 
     private func requestHeightRefresh() {
