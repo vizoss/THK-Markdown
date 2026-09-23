@@ -8,7 +8,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "# 一级标题\n## 二级标题\n### 三级标题\n#### 四级标题\n##### 五级标题\n###### 六级标题",
       "chunks": [
@@ -46,7 +46,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "一级标题\n========\n\n二级标题\n--------",
       "chunks": [
@@ -80,7 +80,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "### 标题内容 ###\n\n正文",
       "chunks": [
@@ -112,7 +112,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "#不是标题\n\n####### 七个井号不是标题",
       "chunks": [
@@ -144,7 +144,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "## 标题含 **粗体**、*斜体* 与 `code`",
       "chunks": [
@@ -178,7 +178,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "前面的段落\n## 新标题\n后面的段落",
       "chunks": [
@@ -210,7 +210,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "第一行文字\n第二行文字",
       "chunks": [
@@ -240,7 +240,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "第一行文字  \n第二行文字",
       "chunks": [
@@ -269,7 +269,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "第一行文字\\\n第二行文字",
       "chunks": [
@@ -298,7 +298,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "段落甲\n\n段落乙\n\n\n段落丙",
       "chunks": [
@@ -333,7 +333,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "段落甲\r\n\r\n段落乙",
       "chunks": [
@@ -364,7 +364,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "\n\n正文内容\n\n",
       "chunks": [
@@ -395,7 +395,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "*星号斜体* _下划线斜体_ **星号粗体** __下划线粗体__",
       "chunks": [
@@ -430,7 +430,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "***粗斜体*** 和 ___另一种粗斜体___",
       "chunks": [
@@ -461,7 +461,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "**粗体中的 *斜体* 内容**",
       "chunks": [
@@ -492,7 +492,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "foo_bar_baz 与 foo__bar__baz",
       "chunks": [
@@ -524,7 +524,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "未闭合的 **粗体 和 *斜体",
       "chunks": [
@@ -554,7 +554,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "原价 ~~删除内容~~ 新价",
       "chunks": [
@@ -585,7 +585,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "\\*不是斜体\\* \\#不是标题 \\[不是链接\\]",
       "chunks": [
@@ -617,7 +617,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "&amp; &lt; &#65; &#x42;",
       "chunks": [
@@ -650,7 +650,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "代码 `**literal**` 与普通文字",
       "chunks": [
@@ -681,7 +681,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "包含 ``a ` b`` 的代码",
       "chunks": [
@@ -710,7 +710,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "` a  b ` 与 `   `",
       "chunks": [
@@ -739,7 +739,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "`first\nsecond`",
       "chunks": [
@@ -768,7 +768,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "```swift\nlet answer = 42\n```",
       "chunks": [
@@ -802,7 +802,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "~~~text\nalpha\nbeta\n~~~",
       "chunks": [
@@ -836,7 +836,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "````text\n```\ninside\n```\n````",
       "chunks": [
@@ -871,7 +871,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "```text\nstill code\nlast line",
       "chunks": [
@@ -906,7 +906,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "    first line\n    second line\n\n正文",
       "chunks": [
@@ -941,7 +941,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "```text\n```\n\n尾部正文",
       "chunks": [
@@ -972,7 +972,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 引用开始\n继续引用\n\n引用之外",
       "chunks": [
@@ -1005,7 +1005,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 引用甲\n>\n> 引用乙",
       "chunks": [
@@ -1036,7 +1036,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 第一块\n\n普通段落\n\n> 第二块",
       "chunks": [
@@ -1070,7 +1070,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> ## 引用标题\n>\n> 正文含 **粗体**",
       "chunks": [
@@ -1104,7 +1104,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> - 引用列表甲\n> - 引用列表乙",
       "chunks": [
@@ -1136,7 +1136,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 引用第一行  \n> 引用第二行",
       "chunks": [
@@ -1166,7 +1166,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 减号列表\n\n* 星号列表\n\n+ 加号列表",
       "chunks": [
@@ -1200,7 +1200,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 紧凑甲\n- 紧凑乙\n\n分隔段落\n\n- 松散甲\n\n- 松散乙",
       "chunks": [
@@ -1238,7 +1238,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "1. 第一项\n8. 第二项\n3. 第三项",
       "chunks": [
@@ -1270,7 +1270,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "7. 第七项\n8. 第八项",
       "chunks": [
@@ -1286,7 +1286,7 @@
         "tableCount": 0,
         "diagramCount": 0,
         "notes": [
-          "目标编号为 7、8；CocoaPods 当前存在从 1 开始的已知差异，需重点复验并后续修复。",
+          "保留源起始编号，目标为 7、8；iOS 源码与二进制共用 swift-markdown。",
           "验收状态：待双端实际验证；分片完成态应与全文一致。"
         ]
       },
@@ -1300,7 +1300,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "1) 项目甲\n2) 项目乙",
       "chunks": [
@@ -1330,7 +1330,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "1. 外层甲\n   - 内层乙\n   - 内层丙\n2. 外层丁",
       "chunks": [
@@ -1366,7 +1366,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 第一段\n\n  第二段仍在同一项\n- 下一项",
       "chunks": [
@@ -1400,7 +1400,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- [ ] 待完成\n- [x] 小写完成\n- [X] 大写完成",
       "chunks": [
@@ -1435,7 +1435,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "[打开示例](https://example.com/p1 \"提示标题\")",
       "chunks": [
@@ -1467,7 +1467,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "[引用链接][ref]\n\n[ref]: https://example.com/reference",
       "chunks": [
@@ -1502,7 +1502,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "[短引用][] 与 [另一引用]\n\n[短引用]: https://example.com/a\n[另一引用]: https://example.com/b",
       "chunks": [
@@ -1542,7 +1542,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "[未定义][missing]",
       "chunks": [
@@ -1571,7 +1571,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "<https://example.com/path> 与 <hello@example.com>",
       "chunks": [
@@ -1605,7 +1605,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "[**粗体链接**与*斜体*](https://example.com/style)",
       "chunks": [
@@ -1639,7 +1639,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "图片之前 ![蓝色示例](https://fixtures.thk.invalid/ok.png) 图片之后",
       "chunks": [
@@ -1674,7 +1674,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "![引用图片][img]\n\n[img]: https://fixtures.thk.invalid/ok.png",
       "chunks": [
@@ -1708,7 +1708,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 左对齐 | 居中 | 右对齐 |\n| :--- | :---: | ---: |\n| alpha | beta | gamma |",
       "chunks": [
@@ -1747,7 +1747,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "名称 | 数值\n--- | ---\napple | 12",
       "chunks": [
@@ -1781,7 +1781,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 内容 | 值 |\n| --- | --- |\n| a\\|b | 1 |",
       "chunks": [
@@ -1815,7 +1815,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 甲 | 乙 |\n| --- | --- |\n| 缺一格 |\n| 一 | 二 | 多余 |",
       "chunks": [
@@ -1851,7 +1851,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 名称 | 值 |\n| --- | --- |",
       "chunks": [
@@ -1883,7 +1883,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "名称 | 值\nalpha | 1",
       "chunks": [
@@ -1914,7 +1914,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "上方\n\n---\n\n中间\n\n***\n\n下方\n\n___\n\n结束",
       "chunks": [
@@ -1957,7 +1957,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "<div>原始 HTML 块</div>\n\n正文含 <b>标签</b>",
       "chunks": [

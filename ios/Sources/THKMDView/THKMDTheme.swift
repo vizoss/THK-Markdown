@@ -1,6 +1,6 @@
 import UIKit
 
-/// Colors and text sizes used across both `MarkdownRendering` backends and `THKTableView`.
+/// Colors and text sizes used across the shared `MarkdownRendering` implementation and `THKTableView`.
 /// Settable on `THKMDView.theme`; changing it re-renders the current content in place.
 public struct THKMDTheme {
     /// 图片加载中或失败时的占位背景色。
@@ -58,7 +58,7 @@ public struct THKMDTheme {
     /// Fill behind a block quote, painted as one continuous rounded shape (reuses
     /// `codeBlockCornerRadius` rather than adding a second radius knob). Only the outermost
     /// level of a nested `> > quote` gets this fill — see `blockQuoteDepth` in
-    /// SwiftMarkdownRenderer.swift/MaakuMarkdownRenderer.swift.
+    /// SwiftMarkdownRenderer.swift.
     /// 最外层引用背景色，内层引用共享背景。
     public var blockQuoteBackgroundColor: UIColor
     /// 表格网格边框颜色。

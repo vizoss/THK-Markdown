@@ -15,13 +15,11 @@ full design rationale):
 | Platform | Path                | Language | Distribution         |
 |----------|---------------------|----------|-----------------------|
 | Android  | [`android/`](android/README.md) | Kotlin   | Gradle module (AAR)  |
-| iOS      | [`ios/`](ios/README.md)         | Swift    | Swift Package (SPM) or CocoaPods (see [`THKMDView.podspec`](THKMDView.podspec)) |
+| iOS      | [`ios/`](ios/README.md)         | Swift    | Swift Package (source) or CocoaPods (XCFramework) |
 
-The iOS package ships two ways from the same source tree: SPM (parsed with
-swift-markdown) and CocoaPods (parsed with Maaku, since swift-markdown has no CocoaPods
-trunk release). Both share the same public API, streaming/rendering architecture, and are
-meant to produce equivalent visual output — see [`ios/README.md`](ios/README.md#cocoapods)
-for install instructions and details.
+Both iOS distributions use swift-markdown and the same renderer. CocoaPods ships a
+precompiled XCFramework; Maaku is retired. Binary assets must be built and published
+before remote pod installation. See [binary distribution](ios/Binary/README.md).
 
 ## Core capabilities (both platforms)
 
@@ -37,7 +35,7 @@ for install instructions and details.
 
 All SDK-owned Markdown colors and font sizes are configured through `THKMDTheme`.
 Assigning `markdownView.theme` re-renders existing content; no new `setMarkdown` call is needed.
-The iOS SPM and CocoaPods renderers share these settings.
+The iOS source and binary distributions share the same renderer and settings.
 
 | Property (same name on both platforms unless noted) | Purpose |
 | --- | --- |

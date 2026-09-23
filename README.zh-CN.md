@@ -14,12 +14,11 @@ SSE 逐步返回的回复实时渲染出来，标题、强调、链接、列表�
 | 平台     | 路径                              | 语言   | 分发方式                          |
 |----------|-----------------------------------|--------|-----------------------------------|
 | Android  | [`android/`](android/README.md)   | Kotlin | Gradle module（AAR），已接入 GitHub Packages 远端依赖 |
-| iOS      | [`ios/`](ios/README.md)           | Swift  | Swift Package（SPM）或 CocoaPods（见 [`THKMDView.podspec`](THKMDView.podspec)） |
+| iOS      | [`ios/`](ios/README.md)           | Swift  | Swift Package（源码）或 CocoaPods（XCFramework 二进制） |
 
-iOS 这一份包从同一份源码同时提供两种分发方式：SPM（用 swift-markdown 解析）和
-CocoaPods（用 Maaku 解析，因为 swift-markdown 没有发布 CocoaPods trunk 版本）。两者
-共享同一套公开 API 和流式渲染架构，渲染效果预期一致——具体安装方式和细节见
-[`ios/README.md`](ios/README.md#cocoapods)。
+iOS 两种接入方式统一使用 `swift-markdown` 和同一套渲染代码，不再使用 Maaku。
+SPM 提供源码，CocoaPods 提供预编译 XCFramework；远端 pod 安装需先构建并发布二进制资产。
+详见 [二进制打包与发布](ios/Binary/README.md)。
 
 ## 核心能力（两个平台一致）
 

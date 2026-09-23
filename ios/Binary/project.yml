@@ -1,0 +1,35 @@
+name: THKMDViewBinary
+options:
+  deploymentTarget:
+    iOS: '13.0'
+packages:
+  swift-markdown:
+    url: https://github.com/swiftlang/swift-markdown.git
+    # Must match ios/Package.resolved; checked by the packaging script.
+    revision: 75e3df1d7b664ef3c96595de36c243b98599b3bc
+targets:
+  THKMDView:
+    type: framework
+    platform: iOS
+    sources:
+      - path: ../Sources/THKMDView
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.thk.mdview
+        SWIFT_VERSION: '5.0'
+        BUILD_LIBRARY_FOR_DISTRIBUTION: YES
+        SKIP_INSTALL: NO
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGNING_ALLOWED: NO
+        ONLY_ACTIVE_ARCH: NO
+    dependencies:
+      - package: swift-markdown
+        product: Markdown
+        embed: false
+schemes:
+  THKMDView:
+    build:
+      targets:
+        THKMDView: all
+    archive:
+      config: Release

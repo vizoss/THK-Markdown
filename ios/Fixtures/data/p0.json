@@ -8,7 +8,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 第一行引用，这段文字用于窄屏换行。\n> 第二行引用。",
       "chunks": [
@@ -40,7 +40,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 外层引用。\n> > 内层第一段。\n> >\n> > 内层第二段。\n>\n> 外层结尾。",
       "chunks": [
@@ -74,7 +74,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> > 只有第二级内容，没有前导外层段落。\n> > > 第三级内容。",
       "chunks": [
@@ -104,7 +104,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "前文。\n\n```kotlin\nval first = 1\n\nval second = 2\n```\n\n后文。",
       "chunks": [
@@ -139,7 +139,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 引用说明。\n>\n> ```swift\n> let value = 42\n> ```\n> 引用结束。",
       "chunks": [
@@ -175,7 +175,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 步骤一\n\n  ```kotlin\n  val answer = 42\n  ```\n\n- 步骤二",
       "chunks": [
@@ -210,7 +210,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 一级\n  - 二级\n    - 三级内容，需要保持自己的缩进。\n- 返回一级",
       "chunks": [
@@ -243,7 +243,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "1. 开始\n   - [x] 已完成\n   - [ ] 待完成\n2. 结束",
       "chunks": [
@@ -276,7 +276,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 外层列表\n\n  > 引用第一段。\n  > > 内层引用。\n\n- 列表结尾",
       "chunks": [
@@ -309,7 +309,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 内容 | 操作 |\n| :--- | ---: |\n| **加粗**与`代码` | [打开链接](https://example.com/p0) |\n",
       "chunks": [
@@ -340,7 +340,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 图片 | 说明 |\n| --- | --- |\n| ![成功图片](https://fixtures.thk.invalid/ok.png) | 本地模拟成功 |\n| ![失败图片](https://fixtures.thk.invalid/fail.png) | 本地模拟失败 |\n",
       "chunks": [
@@ -371,7 +371,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 表格之前。\n>\n> | 名称 | 值 |\n> | --- | --- |\n> | alpha | 1 |\n>\n> 表格之后。",
       "chunks": [
@@ -407,7 +407,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "- 表格之前\n\n  | 名称 | 值 |\n  | --- | --- |\n  | beta | 2 |\n\n- 表格之后",
       "chunks": [
@@ -441,7 +441,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "```mermaid\nflowchart LR\n  A[开始] --> B[完成]\n```",
       "chunks": [
@@ -470,7 +470,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "> 图示说明。\n>\n> ```mermaid\n> flowchart LR\n>   A --> B\n> ```\n> 图示结束。",
       "chunks": [
@@ -508,7 +508,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "中文 **加粗** 和 [链接](https://example.com/p0)，以及 `代码`。",
       "chunks": [
@@ -546,7 +546,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "| 项目 | 值 |\n| --- | --- |\n| alpha | 1 |\n\n表格后文。",
       "chunks": [
@@ -613,7 +613,7 @@
       "platforms": [
         "android",
         "ios-spm",
-        "ios-cocoapods"
+        "ios-binary"
       ],
       "markdown": "# 滚动与复用\n\n第 1 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 2 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 3 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 4 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 5 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 6 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 7 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 8 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 9 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 10 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 11 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 12 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 13 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 14 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 15 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 16 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 17 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 18 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 19 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 20 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 21 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 22 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 23 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n第 24 段：向上滑动查看历史消息，流式输出继续时不应被拉回底部。中文与 emoji：👩🏽‍💻。\n\n结束。",
       "chunks": [

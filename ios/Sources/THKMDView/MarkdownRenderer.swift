@@ -285,9 +285,5 @@ enum THKCodeBlockMetrics {
     static let copyButtonGutter: CGFloat = THKCopyButtonMetrics.margin + THKCopyButtonMetrics.size + THKCopyButtonMetrics.margin
 }
 
-// `DefaultMarkdownRenderer` is intentionally NOT defined here: the SPM distribution's
-// swift-markdown-backed implementation lives in SPM/SwiftMarkdownRenderer.swift, and the
-// CocoaPods distribution's Maaku-backed implementation lives in
-// CocoaPods/MaakuMarkdownRenderer.swift. Package.swift excludes CocoaPods/ and the
-// podspec excludes SPM/, so exactly one of the two ever compiles into a given build —
-// both are free to reuse the type name `DefaultMarkdownRenderer`.
+// DefaultMarkdownRenderer lives in SPM/SwiftMarkdownRenderer.swift.
+// Both source and binary distributions compile this same swift-markdown adapter.

@@ -1,5 +1,6 @@
 import UIKit
-import Markdown
+// Keep parser types out of the binary framework's public Swift interface.
+@_implementationOnly import Markdown
 
 public final class DefaultMarkdownRenderer: MarkdownRendering {
     public var baseFont: UIFont

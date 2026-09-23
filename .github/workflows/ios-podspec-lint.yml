@@ -1,26 +1,33 @@
-name: iOS – lint CocoaPods podspec
-
+name: iOS – binary CocoaPods package
 on:
   push:
     branches: [main]
     paths:
-      - "ios/**"
-      - "THKMDView.podspec"
-      - ".github/workflows/ios-podspec-lint.yml"
+      - 'ios/**'
+      - 'THKMDView.podspec'
+      - '.github/workflows/ios-podspec-lint.yml'
   workflow_dispatch: {}
-
+permissions:
+  contents: read
 jobs:
-  lint:
-    runs-on: macos-14
+  binary:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install CocoaPods
-        run: gem install cocoapods --no-document
-
-      # This only validates the podspec (compiles it and runs the Maaku-backed test spec
-      # against a simulator) — it does NOT publish anything. There is no registered
-      # CocoaPods trunk account for this project, so `pod trunk push` is intentionally
-      # never run here; cutting a real release tag is a manual maintainer step.
-      - name: pod lib lint
-        run: pod lib lint THKMDView.podspec --test-specs=Tests --allow-warnings
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          brew install xcodegen
+          gem install cocoapods --no-document
+      - name: Build and lint binary pod (no simulator launch)
+        run: bash ios/scripts/build-xcframework.sh
+      - name: Keep candidate artifacts (no release publication)
+        uses: actions/upload-artifact@v4
+        with:
+          name: THKMDView-binary-candidate
+          path: |
+            ios/Binary/build-*/THKMDView-*.zip
+            ios/Binary/build-*/SHA256SUMS
+            ios/Binary/build-*/release/THKMDView.podspec
+          if-no-files-found: error

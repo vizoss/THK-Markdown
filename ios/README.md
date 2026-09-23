@@ -12,20 +12,15 @@ Markdown parser itself — see "Two distributions, one parser swapped" below.
 
 The example now uses the shared 18-case P0 catalog through the `MarkdownFixtures` product, with case selection, full text, play, pause and single-step controls. See [P0 acceptance guide](../docs/P0.zh-CN.md) for the current workflow; this replaces the previous rotating mock replies.
 
-- Xcode 15+ (built and tested with Xcode 26.6 / Swift 6.3)
+- Xcode 26+ / Swift 6.2+ for source builds (required by the pinned parser manifest).
 - iOS 13+
-- SPM distribution: [swift-markdown](https://github.com/swiftlang/swift-markdown)
-  (Apple's CommonMark+GFM parser, used by DocC) — resolved automatically via SPM. It has
-  no tagged semver releases, so `Package.swift` depends on its `main` branch;
-  `Package.resolved` pins the exact commit this package was built and tested against.
-- CocoaPods distribution: [Maaku](https://github.com/KristopherGBaker/Maaku) (a Swift
-  wrapper around cmark-gfm), resolved automatically via CocoaPods. See "CocoaPods" below.
+- [swift-markdown](https://github.com/swiftlang/swift-markdown), pinned to the same revision for source and binary builds. The current pin requires Swift 6.2+ (Xcode 26+).
+- CocoaPods distributes a precompiled XCFramework using this same parser; see [binary packaging](Binary/README.md).
 
 ## Architecture in one paragraph
 
 `THKMDView` is a `UIView` owning a vertical `UIStackView` of **segments** (see
-`docs/RESEARCH.md` §9). Markdown text is parsed (by `swift-markdown` on SPM, by Maaku on
-CocoaPods) into an AST, then walked to produce an ordered `[THKRenderSegment]`: as many
+`docs/RESEARCH.md` §9). Markdown text is parsed by `swift-markdown` into an AST, then walked to produce an ordered `[THKRenderSegment]`: as many
 consecutive non-table top-level blocks as possible (paragraphs, headings, lists, block
 quotes, code blocks, thematic breaks) merge into one `.text` segment — a single
 non-scrolling, non-editable `UITextView` with one `NSAttributedString` — the same "one
@@ -45,35 +40,12 @@ sizes for all of this come from a `THKMDTheme` value threaded into the renderer 
 the common (no-table) case: one text view, one attributed string, custom spans/drawing for
 block constructs — with a composite-view escape hatch for tables and images, per §9.
 
-## Two distributions, one parser swapped
+## Two distributions, one parser
 
-`THKMDView` ships two ways from this same repo:
-
-- **Swift Package Manager** (`ios/Package.swift`) — parses with
-  [swift-markdown](https://github.com/swiftlang/swift-markdown). This is the primary,
-  most-tested distribution.
-- **CocoaPods** (`THKMDView.podspec` at the repo root) — parses with
-  [Maaku](https://github.com/KristopherGBaker/Maaku) instead, because swift-markdown has
-  no CocoaPods trunk release and CocoaPods cannot resolve an SPM-only dependency for a
-  pod's own compile step. Maaku wraps cmark-gfm with native GFM support (tables,
-  strikethrough, task lists, autolinks), matching swift-markdown's coverage closely
-  enough to keep both renderers behaviorally equivalent. Maaku is archived/unmaintained
-  upstream but still installs and functions correctly (verified below); this is an
-  accepted tradeoff for CocoaPods support, not an oversight.
-
-Everything else — the public `THKMDView` API, the `MarkdownRendering` protocol, the
-streaming buffer, the custom layout manager, and the rendered visual output — is shared
-and meant to behave identically regardless of which distribution you use. The only
-parser-specific code lives in two mutually-exclusive files that both define a type named
-`DefaultMarkdownRenderer`:
-
-- `Sources/THKMDView/SPM/SwiftMarkdownRenderer.swift` (`import Markdown`) — compiled only
-  by SPM; `Package.swift`'s target excludes `CocoaPods/`.
-- `Sources/THKMDView/CocoaPods/MaakuMarkdownRenderer.swift` (`import Maaku`) — compiled
-  only by CocoaPods; `THKMDView.podspec`'s `exclude_files` excludes `SPM/`.
-
-Only one of the two is ever compiled into a given build, so the duplicate type name never
-collides.
+SPM compiles source; CocoaPods downloads a precompiled XCFramework. Both use
+`Sources/THKMDView/SPM/SwiftMarkdownRenderer.swift`. Maaku and its adapter are removed.
+The binary framework statically links parser dependencies and does not expose their
+modules to consuming applications. See [packaging and migration](Binary/README.md).
 
 ### Nested block quotes, task-list checkboxes, and quote spacing
 
@@ -166,45 +138,10 @@ The original test groups include:
 
 ## CocoaPods
 
-`THKMDView` is also consumable via CocoaPods, using the podspec at the repo root
-(`../THKMDView.podspec`). There is no registered CocoaPods trunk account for this project,
-so install by pinning a git tag rather than `pod 'THKMDView'` from the public trunk:
-
-```ruby
-pod 'THKMDView', :git => 'https://github.com/vizoss/THK-Markdown.git', :tag => 'v0.1.0'
-```
-
-Publishing a git tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) is a manual step
-the maintainer does when cutting a release — it is not done as part of any automated
-process in this repo.
-
-CocoaPods consumers get the **Maaku-backed** renderer
-(`Sources/THKMDView/CocoaPods/MaakuMarkdownRenderer.swift`); SPM consumers get the
-**swift-markdown-backed** one. Both implement the same `MarkdownRendering` protocol,
-expose the same `THKMDView` public API, and are meant to produce equivalent visual output
-for the same node-type coverage (see "Known gaps" below) — a `pod lib lint` run for real
-exercises this via `THKMDView.podspec`'s `test_spec`, which points at
-`Tests/THKMDViewCocoaPodsTests/MaakuRenderTests.swift`, a test suite that mirrors
-`Tests/THKMDViewTests/RenderTests.swift` category-for-category against the Maaku
-renderer (with one intentional divergence — see "Known gaps").
-
-Verification commands actually run against this package (both passed):
-
-```sh
-# SPM regression check — confirms the SPM/ CocoaPods/ file split didn't break anything
-cd ios
-xcodebuild build -scheme THKMDView -destination 'generic/platform=iOS Simulator'
-xcodebuild test -project Example/Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,id=<UDID>'
-
-# CocoaPods validation — compiles the pod against Maaku and runs the Maaku test spec
-cd ..
-pod lib lint THKMDView.podspec --test-specs=Tests --allow-warnings
-```
-
-`.github/workflows/ios-podspec-lint.yml` runs the `pod lib lint` command above in CI on
-every push to `main` that touches `ios/**` or `THKMDView.podspec`. It is lint-only —
-it does **not** run `pod trunk push` or publish anything, since there's no trunk account
-for this project.
+CocoaPods now consumes the precompiled XCFramework. The old source-pod/Maaku route
+is retired. See [binary packaging, local integration and release steps](Binary/README.md).
+No binary asset has been published by this migration; remote installation requires
+publishing the matching versioned ZIP first.
 
 ## Running the Example app
 
@@ -438,15 +375,9 @@ rather than a blank/broken WebView. `THKMDView.reset()`/segment teardown calls
 `THKMermaidView.stop()`, which stops any in-flight load and removes the script message
 handler — the same reuse-safety guarantee image loads and streaming text already get.
 
-Both distributions ship the same two resource files
-(`Sources/THKMDView/mermaid_template.html`, `Sources/THKMDView/mermaid.min.js`), but load
-them differently: SPM declares them as `.copy` resources in `Package.swift` and
-`THKMermaidView` reads them via `Bundle.module`; CocoaPods has no `Bundle.module`
-equivalent, so `THKMDView.podspec` declares them as an `s.resource_bundles` entry (producing
-a dedicated `THKMDView.bundle` regardless of static-library-vs-dynamic-framework
-integration) and `THKMermaidView` looks it up via `Bundle(for: THKMermaidView.self)`. A
-`pod lib lint` run exercises the CocoaPods resource path for real, since it actually
-compiles the pod and runs its test spec against Maaku.
+Both distributions ship `mermaid_template.html` and `mermaid.min.js`: SPM loads
+`Bundle.module`, while the XCFramework loads its own framework bundle. The packaging
+script verifies both files are embedded in each slice.
 
 ### Known gaps
 
@@ -457,8 +388,3 @@ compiles the pod and runs its test spec against Maaku.
   rendered — only top-level tables become table segments; this is a rare construct in
   LLM output. A ` ```mermaid ` fence nested the same way has the identical gap — it renders
   as a normal (non-diagram) code block instead.
-- **Maaku (CocoaPods) does not preserve a GFM ordered list's non-1 start index** — its
-  `OrderedList` type (upstream, `Sources/Maaku/Core/OrderedList.swift`) receives the
-  starting number during parsing but never stores it, so every ordered list renders
-  renumbered from 1 regardless of source Markdown. The SPM/swift-markdown backend does
-  not have this limitation. See `MaakuRenderTests.testOrderedListStartIndexIsNotPreservedByMaaku`.

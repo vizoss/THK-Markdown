@@ -193,27 +193,13 @@ public final class THKMermaidView: UIView {
 
     private static let messageHandlerName = "thkMermaid"
 
-    // SPM ships `mermaid_template.html`/`mermaid.min.js` via `Bundle.module` (declared as
-    // `.copy` resources in Package.swift); CocoaPods has no `Bundle.module` equivalent, so the
-    // podspec declares the same two files as an `s.resource_bundles` entry named "THKMDView",
-    // which CocoaPods packages as a `THKMDView.bundle` alongside (static lib) or inside
-    // (dynamic framework) whatever bundle `Bundle(for: THKMermaidView.self)` resolves to
-    // either way — hence the fallback lookup below instead of assuming one location.
-    // `internal` (not `private`) so the SPM/CocoaPods test targets — `@testable import
-    // THKMDView` — can assert the bundled resources are actually found at runtime on both
-    // distributions, not just that THKMermaidView compiles. A missing/misconfigured resource
-    // bundle (the CocoaPods path especially — see the podspec's `s.resource_bundles` comment)
-    // otherwise fails silently at runtime instead of at build time.
+    // SPM resources live in Bundle.module; the binary framework embeds the same
+    // files directly. Internal so packaging tests can verify both resources.
     static func resourceURL(name: String, ext: String) -> URL? {
         #if SWIFT_PACKAGE
         return Bundle.module.url(forResource: name, withExtension: ext)
         #else
-        let classBundle = Bundle(for: THKMermaidView.self)
-        if let bundleURL = classBundle.url(forResource: "THKMDView", withExtension: "bundle"),
-           let resourceBundle = Bundle(url: bundleURL) {
-            return resourceBundle.url(forResource: name, withExtension: ext)
-        }
-        return classBundle.url(forResource: name, withExtension: ext)
+        return Bundle(for: THKMermaidView.self).url(forResource: name, withExtension: ext)
         #endif
     }
 }

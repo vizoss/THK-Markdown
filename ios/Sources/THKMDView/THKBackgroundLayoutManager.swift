@@ -75,7 +75,7 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
     // rounded rect per line fragment (which produced a stack of independently-pill-shaped
     // lines instead of a single continuous block). `lineFragmentRect` already includes any
     // paragraphSpacingBefore/paragraphSpacing reserved on the first/last line (see
-    // codeBlockParagraphStyle in SwiftMarkdownRenderer.swift/MaakuMarkdownRenderer.swift),
+    // codeBlockParagraphStyle in SwiftMarkdownRenderer.swift),
     // so unioning the line rects picks up that vertical padding automatically.
     // Shared by drawFullWidthBackground/drawBlockQuoteBar: one rect spanning every line of the
     // range, in this glyph range's own coordinate space (origin already applied), rather than

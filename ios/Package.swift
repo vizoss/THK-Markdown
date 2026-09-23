@@ -14,7 +14,7 @@ let package = Package(
         .library(name: "MarkdownFixtures", targets: ["MarkdownFixtures"])
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-markdown.git", branch: "main")
+        .package(url: "https://github.com/swiftlang/swift-markdown.git", revision: "75e3df1d7b664ef3c96595de36c243b98599b3bc")
     ],
     targets: [
         .target(name: "MarkdownFixtures", path: "Fixtures", resources: [.copy("data")]),
@@ -23,15 +23,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Markdown", package: "swift-markdown")
             ],
-            // The CocoaPods distribution (see ../THKMDView.podspec) uses a different
-            // Markdown parser (Maaku) that has no SPM-resolvable trunk release, so its
-            // renderer lives in a sibling file under CocoaPods/ that SPM must never
-            // compile. The podspec's own `exclude_files` mirrors this in the other
-            // direction, excluding SPM/.
-            exclude: ["CocoaPods"],
-            // THKMermaidView.swift loads these via `Bundle.module`. The podspec declares the
-            // same two files separately (as `s.resource_bundles`) since CocoaPods has no
-            // `Bundle.module` equivalent — see THKMermaidView.swift's `resourceURL(name:ext:)`.
+            // CocoaPods distributes an XCFramework built from these same sources.
             resources: [
                 .copy("mermaid_template.html"),
                 .copy("mermaid.min.js")
@@ -41,7 +33,6 @@ let package = Package(
             name: "THKMDViewTests",
             dependencies: ["THKMDView", "MarkdownFixtures"],
             path: "Tests",
-            exclude: ["THKMDViewCocoaPodsTests"],
             sources: ["THKMDViewTests", "Shared"]
         )
     ]
