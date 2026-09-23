@@ -1,3 +1,11 @@
 <resources>
-    <style name="Theme.THKMDViewSample" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+    <style name="Theme.THKMDViewSample" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/demo_accent</item>
+        <item name="colorSecondary">@color/demo_accent</item>
+        <item name="android:windowBackground">@color/demo_surface</item>
+        <item name="android:statusBarColor">@color/demo_surface</item>
+        <item name="android:navigationBarColor">@color/demo_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
 </resources>

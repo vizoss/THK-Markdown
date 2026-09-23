@@ -100,6 +100,18 @@ and [iOS](ios/Sources/THKMDView/THKMDTheme.swift) definitions, and the
 
 ## Status
 
+### Example UI
+
+The Android/iOS demo chrome uses a shared flat visual specification, independent of
+the Markdown theme. Edit Android `sample/src/main/res/values/demo_ui.xml` and iOS
+`DemoUI` in `Example/Sources/MockAssistantReply.swift` together: white surface,
+dark text, blue accent, 14sp/pt controls, 12sp/pt captions, 18sp/pt titles,
+16dp/pt horizontal gutters, 56dp/pt header, 44dp/pt controls and 68dp/pt input bar.
+Fixture selection and requirements use scrollable, shadow-free custom dialogs
+(screen width minus 32, maximum 560; 70% available height). Demo chrome stays light;
+Markdown colors remain controlled by `THKMDTheme`. OS status bars, keyboards and
+native font rasterization remain platform-specific.
+
 Initial scaffold: project structure, build tooling, the core rendering pipeline, unit
 tests, and an example app per platform. See each platform's README for how to build,
 test, and run the example.

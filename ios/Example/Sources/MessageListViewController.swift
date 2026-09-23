@@ -58,6 +58,7 @@ final class MessageListViewController: UIViewController {
     private var finalHeightRefreshes = 0
     private let tableView = UITableView(frame: .zero, style: .plain)
     private let inputBar = MessageInputBar()
+    private let demoHeader = UIView()
     private var inputBarBottomConstraint: NSLayoutConstraint!
 
     private var messages: [Message] = []
@@ -67,11 +68,10 @@ final class MessageListViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "THKMDView Demo"
-        view.backgroundColor = .systemBackground
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            title: "Theme", style: .plain, target: self, action: #selector(openThemeSettings)
-        )
+        overrideUserInterfaceStyle = .light
+        view.backgroundColor = DemoUI.surface
+        navigationController?.setNavigationBarHidden(true, animated: false)
+        setUpHeader()
 
         setUpTableView()
         setUpFixtureControls()
@@ -84,6 +84,40 @@ final class MessageListViewController: UIViewController {
         } catch {
             fixtureControls.update(title: "用例加载失败", state: error.localizedDescription)
         }
+    }
+
+    private func setUpHeader() {
+        demoHeader.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(demoHeader)
+        let title = UILabel()
+        title.text = "THKMDView Demo"
+        title.font = .systemFont(ofSize: DemoUI.title, weight: .bold)
+        title.textColor = DemoUI.ink
+        title.textAlignment = .center
+        title.translatesAutoresizingMaskIntoConstraints = false
+        demoHeader.addSubview(title)
+        let theme = UIButton(type: .system)
+        DemoUI.style(theme)
+        theme.backgroundColor = .clear
+        theme.setTitleColor(DemoUI.accent, for: .normal)
+        theme.setTitle("主题", for: .normal)
+        theme.addTarget(self, action: #selector(openThemeSettings), for: .touchUpInside)
+        theme.translatesAutoresizingMaskIntoConstraints = false
+        demoHeader.addSubview(theme)
+        NSLayoutConstraint.activate([
+            demoHeader.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            demoHeader.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            demoHeader.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
+            demoHeader.heightAnchor.constraint(equalToConstant: 56),
+            title.centerXAnchor.constraint(equalTo: demoHeader.centerXAnchor),
+            title.centerYAnchor.constraint(equalTo: demoHeader.centerYAnchor),
+            title.leadingAnchor.constraint(greaterThanOrEqualTo: demoHeader.leadingAnchor, constant: 80),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: demoHeader.trailingAnchor, constant: -80),
+            theme.trailingAnchor.constraint(equalTo: demoHeader.trailingAnchor, constant: -DemoUI.gutter),
+            theme.centerYAnchor.constraint(equalTo: demoHeader.centerYAnchor),
+            theme.widthAnchor.constraint(equalToConstant: 60),
+            theme.heightAnchor.constraint(equalToConstant: DemoUI.control)
+        ])
     }
 
     // Tapping the message list (not the whole screen - see below) dismisses the keyboard,
@@ -152,6 +186,7 @@ final class MessageListViewController: UIViewController {
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 120
         tableView.separatorStyle = .none
+        tableView.backgroundColor = DemoUI.surface
         tableView.keyboardDismissMode = .interactive
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
@@ -167,7 +202,7 @@ final class MessageListViewController: UIViewController {
         inputBarBottomConstraint = inputBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: fixtureControls.bottomAnchor, constant: 4),
+            tableView.topAnchor.constraint(equalTo: fixtureControls.bottomAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: inputBar.topAnchor),
@@ -257,9 +292,9 @@ final class MessageListViewController: UIViewController {
         fixtureControls.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(fixtureControls)
         NSLayoutConstraint.activate([
-            fixtureControls.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            fixtureControls.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
-            fixtureControls.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12)
+            fixtureControls.topAnchor.constraint(equalTo: demoHeader.bottomAnchor, constant: 8),
+            fixtureControls.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: DemoUI.gutter),
+            fixtureControls.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -DemoUI.gutter)
         ])
         fixtureControls.onSelect = { [weak self] in self?.selectFixture() }
         fixtureControls.onFull = { [weak self] in self?.showFixture(full: true) }
@@ -277,23 +312,18 @@ final class MessageListViewController: UIViewController {
         fixtureControls.onDetails = { [weak self] in
             guard let self, !self.fixtures.isEmpty else { return }
             let fixture = self.fixtures[self.selectedFixture]
-            let alert = UIAlertController(title: fixture.id, message: fixture.summary + "\n\nMarkdown 原文：\n" + fixture.markdown, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "关闭", style: .cancel))
+            let alert = DemoDialogController(title: fixture.id + " · " + fixture.title,
+                body: "验收要求\n" + fixture.summary + "\n\nMarkdown 原文\n" + fixture.markdown)
             self.present(alert, animated: true)
         }
     }
 
     private func selectFixture() {
-        let sheet = UIAlertController(title: "P0 用例", message: nil, preferredStyle: .actionSheet)
-        for (index, fixture) in fixtures.enumerated() {
-            sheet.addAction(UIAlertAction(title: fixture.id + " · " + fixture.title, style: .default) { [weak self] _ in
-                self?.selectedFixture = index
-                self?.showFixture(full: true)
-            })
+        let sheet = DemoDialogController(title: "P0 用例",
+            choices: fixtures.map { $0.id + " · " + $0.title }, selected: selectedFixture) { [weak self] index in
+            self?.selectedFixture = index
+            self?.showFixture(full: true)
         }
-        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
-        sheet.popoverPresentationController?.sourceView = fixtureControls
-        sheet.popoverPresentationController?.sourceRect = fixtureControls.bounds
         present(sheet, animated: true)
     }
 

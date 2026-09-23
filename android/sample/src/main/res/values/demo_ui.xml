@@ -1,0 +1,28 @@
+<resources>
+    <!-- Example-only palette, mirrored by iOS DemoUI. Does not change SDK themes. -->
+    <color name="demo_surface">#FFFFFF</color>
+    <color name="demo_ink">#202735</color>
+    <color name="demo_muted">#697386</color>
+    <color name="demo_accent">#2563EB</color>
+    <color name="demo_soft">#F1F5F9</color>
+    <color name="demo_border">#E2E8F0</color>
+    <!-- Shared logical sizes: screen gutter 16, controls 44, header 56. -->
+    <dimen name="demo_gutter">16dp</dimen>
+    <dimen name="demo_control">44dp</dimen>
+    <dimen name="demo_font">14sp</dimen>
+    <dimen name="demo_caption">12sp</dimen>
+    <dimen name="demo_title">18sp</dimen>
+    <style name="DemoButton" parent="Widget.AppCompat.Button">
+        <item name="android:background">@drawable/demo_control</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/demo_ink</item>
+        <item name="android:textSize">@dimen/demo_font</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:padding">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+</resources>
