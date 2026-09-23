@@ -251,8 +251,7 @@ internal class MarkdownSpanVisitor(
         val taskMarker = listItem.firstChild as? TaskListItemMarker
         val indentPx = (ctx.level * INDENT_DP * densityPx).toInt()
         val gapPx = (BULLET_GAP_DP * densityPx).toInt()
-        val marginSpans = mutableListOf<Any>(LeadingMarginSpan.Standard(indentPx))
-        marginSpans += when {
+        val markerSpan: LeadingMarginSpan = when {
             taskMarker != null -> {
                 val glyph = if (taskMarker.isChecked) "☑" else "☐"
                 TaskListItemSpan(taskMarker.isChecked, measuredMarkerWidthPx(glyph), gapPx)
@@ -262,8 +261,16 @@ internal class MarkdownSpanVisitor(
         }
 
         var child: Node? = if (taskMarker != null) listItem.firstChild.next else listItem.firstChild
+        val ownRanges = mutableListOf<IntRange>()
         while (child != null) {
+            val childStart = builder.length
             child.accept(this)
+            // Descendant lists already own their absolute depth and marker margin.
+            // Never apply ancestor margins over them a second time.
+            if (child !is BulletList && child !is OrderedList && builder.length > childStart) {
+                val contentStart = if (builder[childStart] == '\n') childStart + 1 else childStart
+                if (contentStart < builder.length) ownRanges += contentStart until builder.length
+            }
             child = child.next
         }
 
@@ -271,9 +278,12 @@ internal class MarkdownSpanVisitor(
         if (end == start) {
             builder.append(' ')
             end = builder.length
+            ownRanges += start until end
         }
-        for (span in marginSpans) {
-            builder.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        for ((index, range) in ownRanges.withIndex()) {
+            builder.setSpan(LeadingMarginSpan.Standard(indentPx), range.first, range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            val span = if (index == 0) markerSpan else LeadingMarginSpan.Standard(markerSpan.getLeadingMargin(true))
+            builder.setSpan(span, range.first, range.last + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 
@@ -375,7 +385,7 @@ internal class MarkdownSpanVisitor(
     }
 
     companion object {
-        private const val INDENT_DP = 22f
+        private const val INDENT_DP = 20f
         private const val BULLET_GAP_DP = 8f
         // Shared with code blocks so both "padded block" types feel consistent, and kept
         // numerically identical to iOS's equivalent constants (see THKMDTheme.swift /

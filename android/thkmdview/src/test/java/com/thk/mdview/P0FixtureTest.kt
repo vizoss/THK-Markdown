@@ -13,6 +13,19 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun nestedListMarginsDoNotAccumulateAncestorMarkers() {
+        val text = (render("- 一级\n  - 二级\n    - 三级\n- 返回一级").first() as RenderedSegment.TextSegment).spanned as Spanned
+        val density = ApplicationProvider.getApplicationContext<android.content.Context>().resources.displayMetrics.density
+        val margins = listOf("一级", "二级", "三级", "返回一级").map { label ->
+            val start = text.toString().indexOf(label)
+            val spans = text.getSpans(start, start + 1, android.text.style.LeadingMarginSpan::class.java)
+            assertEquals(1, spans.count { it is android.text.style.BulletSpan })
+            spans.sumOf { it.getLeadingMargin(true) }
+        }
+        assertEquals((20 * density).toInt(), margins[1] - margins[0])
+        assertEquals((20 * density).toInt(), margins[2] - margins[1])
+        assertEquals(margins[0], margins[3])
+    }
     @Test fun nestedCopyButtonsUseParentFirstOrderWithoutChangingPayloads() {
         val frame = TextSegmentFrame(ApplicationProvider.getApplicationContext())
         val copied = mutableListOf<String>()
