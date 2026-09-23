@@ -61,11 +61,11 @@ The iOS source and binary distributions share the same renderer and settings.
 | `codeFontSizeSp` / `codeFontSize` | Code size, Android sp / iOS pt; default 13 |
 | `heading1Scale` through `heading6Scale` | Body-size multipliers; defaults 1.6, 1.4, 1.25, 1.15, 1.05, 1.0 |
 | `imagePlaceholderColor` | Loading/failed image placeholder fill |
-| `copyFeedbackTextColor` (iOS only) | Custom copy confirmation text |
-| `copyFeedbackBackgroundColor` (iOS only) | Copy confirmation background, including alpha |
-| `copyFeedbackFontSize` (iOS only) | Copy confirmation size in pt; default 12; label dimensions adapt |
+| `copyFeedbackTextColor` | Copy confirmation text color |
+| `copyFeedbackBackgroundColor` | Copy confirmation background, including alpha |
+| `copyFeedbackFontSizeSp` / `copyFeedbackFontSize` | Copy confirmation size, Android sp / iOS pt; default 12; label dimensions adapt |
 
-Android uses a system-styled Toast for copy confirmation.
+Both platforms show a brief “Copied” label below the pressed copy button. Android no longer emits an app Toast; the OS may independently show its clipboard UI. Android feedback theme settings are editable and persisted in the demo.
 
 ### Examples
 

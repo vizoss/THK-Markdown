@@ -15,7 +15,6 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
@@ -271,7 +270,6 @@ class THKMDView @JvmOverloads constructor(
     private fun copyToClipboard(text: String) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         clipboard?.setPrimaryClip(ClipData.newPlainText("code", text))
-        Toast.makeText(context, R.string.thkmdview_copied, Toast.LENGTH_SHORT).show()
     }
 
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()
@@ -300,6 +298,7 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
     }
     private val copyButtons = mutableListOf<ImageButton>()
+    private val copyFeedback = CopyFeedback()
     private var copyBlocks: List<CopyableBlock> = emptyList()
 
     init {
@@ -308,6 +307,7 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
     }
 
     fun updateCopyButtons(blocks: List<CopyableBlock>, theme: THKMDTheme, onCopy: (String) -> Unit) {
+        copyFeedback.dismiss()
         copyButtons.forEach { removeView(it) }
         copyButtons.clear()
         // Place the enclosing/earlier block first, matching iOS. Otherwise a
@@ -315,11 +315,20 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
         copyBlocks = blocks.sortedWith(compareBy<CopyableBlock> { it.range.first }.thenByDescending { it.range.last })
         val sizePx = (COPY_BUTTON_SIZE_DP * resources.displayMetrics.density).toInt()
         for (block in copyBlocks) {
-            val button = createCopyButton(context, theme) { onCopy(block.text) }
+            val button = createCopyButton(context, theme) {}
+            button.setOnClickListener {
+                onCopy(block.text)
+                copyFeedback.show(button, theme)
+            }
             addView(button, LayoutParams(sizePx, sizePx))
             copyButtons += button
         }
         requestLayout()
+    }
+
+    override fun onDetachedFromWindow() {
+        copyFeedback.dismiss()
+        super.onDetachedFromWindow()
     }
 
     override fun dispatchDraw(canvas: android.graphics.Canvas) {

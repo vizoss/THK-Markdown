@@ -13,6 +13,36 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun copyFeedbackIsAnchoredThemedAndReplacesPreviousPopup() {
+        val controller = org.robolectric.Robolectric.buildActivity(android.app.Activity::class.java).setup()
+        try {
+            val activity = controller.get()
+            val host = android.widget.FrameLayout(activity)
+            val anchor = android.view.View(activity)
+            host.addView(anchor, android.widget.FrameLayout.LayoutParams(32, 32))
+            activity.setContentView(host)
+            host.layout(0, 0, 340, 500)
+            anchor.layout(280, 100, 312, 132)
+            val feedback = CopyFeedback()
+            val theme = THKMDTheme.Default.copy(copyFeedbackFontSizeSp = 18f, copyFeedbackTextColor = android.graphics.Color.YELLOW)
+            feedback.show(anchor, theme)
+            val first = requireNotNull(feedback.popup)
+            assertTrue(first.isShowing)
+            assertFalse(first.isFocusable)
+            assertFalse(first.isTouchable)
+            val label = first.contentView as android.widget.TextView
+            assertEquals(activity.getString(R.string.thkmdview_copied), label.text.toString())
+            assertEquals(theme.copyFeedbackTextColor, label.currentTextColor)
+            assertEquals(android.util.TypedValue.applyDimension(android.util.TypedValue.COMPLEX_UNIT_SP, 18f, activity.resources.displayMetrics), label.textSize, 0.001f)
+            feedback.show(anchor, theme)
+            assertFalse(first.isShowing)
+            assertTrue(requireNotNull(feedback.popup).isShowing)
+            feedback.dismiss()
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(2))
+            assertNull(feedback.popup)
+        } finally { controller.pause().stop().destroy() }
+    }
+
     @Test fun listBulletDiameterFollowsThemeAndFontScaleInEveryContainer() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val parser = org.commonmark.parser.Parser.builder().build()

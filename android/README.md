@@ -221,7 +221,8 @@ reasoning that gave tables their own `THKTableView` — each text segment's `Tex
 now wrapped in an internal `FrameLayout` (`TextSegmentFrame`), and copy buttons are real
 `ImageButton` overlay children positioned (after layout, via `Layout.getLineTop`) at each
 copyable block's top-right corner. Tapping one copies that block's plain text via
-`ClipboardManager` and shows a "Copied" `Toast`. The icon is Lucide's "copy" icon
+`ClipboardManager` and shows a short, themed "Copied" label beneath that button,
+matching iOS (no app Toast). The icon is Lucide's "copy" icon
 (ISC license) as a `VectorDrawable` (`res/drawable/ic_copy.xml`), tinted at runtime from
 `theme.codeTextColor` so it follows the active `THKMDTheme`.
 

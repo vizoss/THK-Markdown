@@ -1,4 +1,7 @@
 <resources>
+    <string name="theme_copy_feedback_text">Copy Feedback Text</string>
+    <string name="theme_copy_feedback_background">Copy Feedback Background</string>
+    <string name="theme_copy_feedback_font">Copy Feedback Font</string>
     <string name="theme_list_bullet_scale">List Bullet Scale</string>
     <string name="theme_footnote_scale">Footnote Scale</string>
     <string name="theme_math_scale">Math Scale</string>

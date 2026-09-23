@@ -21,6 +21,8 @@ import com.thk.mdview.THKMDTheme
 import kotlin.math.roundToInt
 
 private enum class ColorProperty(val labelResId: Int) {
+    COPY_FEEDBACK_TEXT(R.string.theme_copy_feedback_text),
+    COPY_FEEDBACK_BACKGROUND(R.string.theme_copy_feedback_background),
     ALERT_NOTE(R.string.theme_alert_note),
     ALERT_TIP(R.string.theme_alert_tip),
     ALERT_IMPORTANT(R.string.theme_alert_important),
@@ -40,6 +42,7 @@ private enum class ColorProperty(val labelResId: Int) {
 }
 
 private enum class SizeProperty(val labelResId: Int, val valueFrom: Float, val valueTo: Float, val unit: String) {
+    COPY_FEEDBACK_FONT(R.string.theme_copy_feedback_font, 10f, 24f, "sp"),
     LIST_BULLET_SCALE(R.string.theme_list_bullet_scale, 0.1f, 0.4f, "×"),
     FOOTNOTE_SCALE(R.string.theme_footnote_scale, 0.5f, 1f, "×"),
     MATH_SCALE(R.string.theme_math_scale, 0.5f, 2f, "×"),
@@ -123,6 +126,9 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun loadValues(theme: THKMDTheme) {
+        colorValues[ColorProperty.COPY_FEEDBACK_TEXT] = theme.copyFeedbackTextColor
+        colorValues[ColorProperty.COPY_FEEDBACK_BACKGROUND] = theme.copyFeedbackBackgroundColor
+        sizeValues[SizeProperty.COPY_FEEDBACK_FONT] = theme.copyFeedbackFontSizeSp
         sizeValues[SizeProperty.LIST_BULLET_SCALE] = theme.listBulletScale
         sizeValues[SizeProperty.FOOTNOTE_SCALE] = theme.footnoteScale
         sizeValues[SizeProperty.MATH_SCALE] = theme.mathScale
@@ -239,6 +245,9 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun buildTheme(): THKMDTheme = initialTheme.copy(
+        copyFeedbackTextColor = colorValues.getValue(ColorProperty.COPY_FEEDBACK_TEXT),
+        copyFeedbackBackgroundColor = colorValues.getValue(ColorProperty.COPY_FEEDBACK_BACKGROUND),
+        copyFeedbackFontSizeSp = sizeValues.getValue(SizeProperty.COPY_FEEDBACK_FONT),
         listBulletScale = sizeValues.getValue(SizeProperty.LIST_BULLET_SCALE),
         footnoteScale = sizeValues.getValue(SizeProperty.FOOTNOTE_SCALE),
         mathScale = sizeValues.getValue(SizeProperty.MATH_SCALE),

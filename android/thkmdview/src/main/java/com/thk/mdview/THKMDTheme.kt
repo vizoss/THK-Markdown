@@ -66,7 +66,13 @@ data class THKMDTheme(
     val mathScale: Float = 1f,
     /** 无序列表圆点直径相对正文字号的倍率，默认 0.20；跟随 sp/系统字体缩放。
      * 仅 Android：iOS 使用正文字体的原生 • 字形。普通列表、引用和提示块共用。 */
-    val listBulletScale: Float = 0.20f
+    val listBulletScale: Float = 0.20f,
+    /** 复制按钮下方成功提示的文字颜色，与 iOS 同名配置一致。 */
+    val copyFeedbackTextColor: Int = Color.WHITE,
+    /** 复制成功提示背景色，含透明度；默认黑色 75% 不透明度。 */
+    val copyFeedbackBackgroundColor: Int = 0xBF000000.toInt(),
+    /** 复制成功提示字号，单位 sp；提示尺寸随字号变化，默认 12。 */
+    val copyFeedbackFontSizeSp: Float = 12f
 ) {
     internal fun alertColor(kind: String): Int? = when (kind) {
         "NOTE" -> alertNoteColor
