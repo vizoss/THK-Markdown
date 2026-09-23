@@ -178,6 +178,34 @@ final class P0FixtureTests: XCTestCase {
         XCTAssertEqual(style.paragraphSpacingBefore, THKBlockQuoteMetrics.secondLevelTopSpacing)
         XCTAssertGreaterThanOrEqual(style.paragraphSpacing, THKBlockQuoteMetrics.secondLevelBottomSpacing)
     }
+    func testStandaloneCodeCopyButtonCentersOnFirstTextRow() throws {
+        func descendants(_ parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants($0) }
+        }
+        for code in ["let answer = 42", "let answer = 42\nprint(answer)"] {
+            for width: CGFloat in [180, 340] {
+                for fontSize: CGFloat in [13, 24] {
+                    let view = THKMDView(frame: CGRect(x: 0, y: 0, width: width, height: 240))
+                    var theme = THKMDTheme.default
+                    theme.codeFontSize = fontSize
+                    view.theme = theme
+                    view.setMarkdown("```swift\n" + code + "\n```")
+                    view.layoutIfNeeded()
+                    let textView = try XCTUnwrap(descendants(view).compactMap { $0 as? UITextView }.first)
+                    let button = try XCTUnwrap(descendants(view).compactMap { $0 as? UIButton }.first)
+                    let manager = textView.layoutManager
+                    let glyph = manager.glyphIndexForCharacter(at: 0)
+                    let line = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+                    let font = try XCTUnwrap(textView.textStorage.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)
+                    let baseline = textView.textContainerInset.top + line.minY + manager.location(forGlyphAt: glyph).y
+                    XCTAssertEqual(button.frame.midY, baseline - (font.ascender + font.descender) / 2, accuracy: 0.5)
+                    XCTAssertGreaterThanOrEqual(button.frame.minY, 0)
+                    XCTAssertLessThanOrEqual(button.frame.maxY, textView.bounds.height + 0.5)
+                }
+            }
+        }
+    }
+
     func testQuotedCodeCopyButtonsShareTrailingColumn() throws {
         let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 360, height: 240))
         view.setMarkdown("> 引用说明。\n>\n> ```swift\n> let value = 42\n> ```\n> 引用结束。")

@@ -365,9 +365,12 @@ public final class THKMDView: UIView {
             let leadingQuote = block.range.location == 0 && textView.textStorage.attribute(.thkCopyableBlockQuote, at: 0, effectiveRange: nil) != nil
             var y = (leadingQuote ? 0 : textView.textContainerInset.top) + firstLineRect.minY + margin
             var height = size
-            if compact, let font = textView.textStorage.attribute(.font, at: block.range.location, effectiveRange: nil) as? UIFont {
+            let isCode = textView.textStorage.attribute(.thkCodeBlockBackground, at: block.range.location, effectiveRange: nil) != nil
+            if compact || isCode, let font = textView.textStorage.attribute(.font, at: block.range.location, effectiveRange: nil) as? UIFont {
                 // Fit the hit target to the text row, never enlarge text to fit a button.
                 // The 16pt icon stays unchanged and is centered on the font's baseline box.
+                // Standalone code also needs this: a fixed top margin + 28pt target
+                // can push the icon below a short, single-line code background.
                 height = min(size, max(16, font.lineHeight))
                 let baseline = textView.textContainerInset.top + firstLineRect.minY + layoutManager.location(forGlyphAt: glyphRange.location).y
                 y = baseline - (font.ascender + font.descender) / 2 - height / 2
