@@ -37,6 +37,15 @@ public final class THKMDView: UIView {
     private let buffer = StreamingMarkdownBuffer()
     private var segmentViews: [SegmentView] = []
 
+    private final class SegmentTextView: UITextView {
+        var onLayout: (() -> Void)?
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            onLayout?()
+        }
+    }
+
     private final class TextSegmentView {
         let textView: UITextView
         let layoutManager: THKBackgroundLayoutManager
@@ -235,7 +244,12 @@ public final class THKMDView: UIView {
         let (textView, layoutManager) = Self.makeTextView()
         textView.delegate = self
         textView.translatesAutoresizingMaskIntoConstraints = false
-        return TextSegmentView(textView: textView, layoutManager: layoutManager)
+        let segment = TextSegmentView(textView: textView, layoutManager: layoutManager)
+        (textView as? SegmentTextView)?.onLayout = { [weak self, weak segment] in
+            guard let segment else { return }
+            self?.positionCopyButtons(for: segment)
+        }
+        return segment
     }
 
     private static func makeTextView() -> (UITextView, THKBackgroundLayoutManager) {
@@ -246,7 +260,7 @@ public final class THKMDView: UIView {
         textContainer.widthTracksTextView = true
         textContainer.lineFragmentPadding = 0
         layoutManager.addTextContainer(textContainer)
-        let textView = UITextView(frame: .zero, textContainer: textContainer)
+        let textView = SegmentTextView(frame: .zero, textContainer: textContainer)
         textView.isScrollEnabled = false
         textView.isEditable = false
         textView.isSelectable = true
@@ -284,6 +298,11 @@ public final class THKMDView: UIView {
         let textView = segmentView.textView
         let layoutManager = textView.layoutManager
         let storageLength = textView.textStorage.length
+        guard textView.bounds.width > 0, textView.textContainer.size.width > 0 else {
+            segmentView.copyButtons.forEach { $0.button.isHidden = true }
+            return
+        }
+        layoutManager.ensureLayout(for: textView.textContainer)
         var occupied: [CGRect] = []
         for (button, block) in segmentView.copyButtons {
             guard block.range.location != NSNotFound, NSMaxRange(block.range) <= storageLength, block.range.length > 0 else {
@@ -295,8 +314,10 @@ public final class THKMDView: UIView {
             let firstLineRect = layoutManager.lineFragmentRect(forGlyphAt: glyphRange.location, effectiveRange: nil)
             let size = THKCopyButtonMetrics.size
             let margin = THKCopyButtonMetrics.margin
-            var x = min(firstLineRect.maxX, textView.bounds.width) - size - margin
-            let y = firstLineRect.minY + margin
+            // The line fragment excludes the paragraph's reserved trailing gutter.
+            // Anchor to the view's right edge, not the text's right edge.
+            var x = textView.bounds.width - textView.textContainerInset.right - size - margin
+            let y = textView.textContainerInset.top + firstLineRect.minY + margin
             while x > 0 && occupied.contains(where: { $0.intersects(CGRect(x: x, y: y, width: size, height: size)) }) {
                 x = max(0, x - size - margin)
             }

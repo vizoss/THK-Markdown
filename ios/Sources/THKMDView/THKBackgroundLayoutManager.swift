@@ -138,9 +138,9 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         rect.size.width = THKBlockQuoteMetrics.barWidth
         rect.origin.y += verticalInset
         rect.size.height -= verticalInset * 2
-        if depth > 1, let storage = textStorage {
+        if let storage = textStorage {
             // Line fragments include paragraph padding and the extra line spacing.
-            // Align nested bars to the text baselines instead, excluding both the
+            // Align all bars to the text baselines instead, excluding both the
             // outer quote's bottom padding and the second-level quote's top gap.
             var textTop = CGFloat.greatestFiniteMagnitude
             var textBottom = -CGFloat.greatestFiniteMagnitude

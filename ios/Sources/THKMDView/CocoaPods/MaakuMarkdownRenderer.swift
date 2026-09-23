@@ -337,7 +337,7 @@ struct MaakuAttributedStringVisitor {
         case let inlineHtml as InlineHtml:
             return NSAttributedString(string: inlineHtml.html, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         case is SoftBreak:
-            return NSAttributedString(string: "\n", attributes: [.font: baseFont])
+            return NSAttributedString(string: " ", attributes: [.font: baseFont])
         case is LineBreak:
             return NSAttributedString(string: "\n", attributes: [.font: baseFont])
         default:

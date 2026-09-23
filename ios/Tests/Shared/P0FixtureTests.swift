@@ -6,6 +6,41 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testQuoteSoftBreakAndExplicitHardBreak() throws {
+        let renderer = DefaultMarkdownRenderer()
+        func quoteText(_ source: String) throws -> String {
+            let segments = renderer.render(source)
+            guard case .text(_, let copies)? = segments.first else {
+                XCTFail("Expected a quote text segment")
+                return ""
+            }
+            return try XCTUnwrap(copies.first).text
+        }
+        XCTAssertEqual(try quoteText("> 第一行\n> 第二行"), "第一行 第二行")
+        XCTAssertEqual(try quoteText("> 第一行  \n> 第二行"), "第一行\n第二行")
+    }
+
+    func testQuoteCopyButtonFollowsTextViewWidthAfterInitialLayoutAndResize() throws {
+        let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-01" })
+        let view = THKMDView(frame: .zero)
+        view.setMarkdown(fixture.markdown)
+        func descendants(of parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants(of: $0) }
+        }
+        for width in [CGFloat(340), CGFloat(260)] {
+            view.frame = CGRect(x: 0, y: 0, width: width, height: 150)
+            view.setNeedsLayout()
+            view.layoutIfNeeded()
+            let textView = try XCTUnwrap(descendants(of: view).compactMap { $0 as? UITextView }.first)
+            textView.setNeedsLayout()
+            textView.layoutIfNeeded()
+            let button = try XCTUnwrap(textView.subviews.compactMap { $0 as? UIButton }.first)
+            XCTAssertFalse(button.isHidden)
+            XCTAssertEqual(button.frame.maxX, textView.bounds.width - 4, accuracy: 0.5)
+            XCTAssertEqual(button.frame.width, 32)
+        }
+    }
+
     private func fingerprint(_ segments: [THKRenderSegment]) -> [String] {
         segments.map { segment in
             switch segment {

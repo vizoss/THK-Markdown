@@ -181,7 +181,7 @@ struct AttributedStringVisitor: MarkupVisitor {
     }
 
     mutating func visitSoftBreak(_ softBreak: SoftBreak) -> NSAttributedString {
-        NSAttributedString(string: "\n", attributes: [.font: baseFont])
+        NSAttributedString(string: " ", attributes: [.font: baseFont])
     }
 
     mutating func visitLineBreak(_ lineBreak: LineBreak) -> NSAttributedString {
