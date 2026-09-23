@@ -181,6 +181,7 @@ enum THKBlockQuoteMetrics {
     static let barLeftInset: CGFloat = 8
     static let barToTextGap: CGFloat = 8
     static let secondLevelTopSpacing: CGFloat = 10
+    static let secondLevelBottomSpacing: CGFloat = 10
     static let indentPerLevel: CGFloat = barLeftInset + barWidth + barToTextGap
     /// Extra breathing room between wrapped/multi-paragraph lines *inside* a quote, on top of
     /// (not instead of) the block-level top/bottom padding below.
@@ -194,7 +195,7 @@ enum THKBlockQuoteMetrics {
     static let copyButtonGutter: CGFloat = 40
 }
 
-/// Apply spacing only to the first paragraph of a second-level quote.
+/// Add space around the whole second-level quote, not between its paragraphs.
 func thkAddSecondLevelQuoteSpacing(to text: NSMutableAttributedString) {
     guard text.length > 0 else { return }
     let range = (text.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
@@ -202,6 +203,12 @@ func thkAddSecondLevelQuoteSpacing(to text: NSMutableAttributedString) {
     let style = existing?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
     style.paragraphSpacingBefore += THKBlockQuoteMetrics.secondLevelTopSpacing
     text.addAttribute(.paragraphStyle, value: style, range: range)
+    let lastRange = (text.string as NSString).paragraphRange(for: NSRange(location: text.length - 1, length: 0))
+    let lastStyle = text.attribute(.paragraphStyle, at: lastRange.location, effectiveRange: nil) as? NSParagraphStyle
+    let bottomStyle = lastStyle?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+    bottomStyle.paragraphSpacing = max(bottomStyle.paragraphSpacing, THKBlockQuoteMetrics.interiorLineSpacing)
+        + THKBlockQuoteMetrics.secondLevelBottomSpacing
+    text.addAttribute(.paragraphStyle, value: bottomStyle, range: lastRange)
 }
 
 /// Copy-button size and margin. Block text reserves a right-hand gutter.

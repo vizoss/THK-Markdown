@@ -21,7 +21,7 @@ final class P0FixtureTests: XCTestCase {
         for word in ["外层引用", "内层第一段", "内层第二段"] {
             let paragraph = try style(at: word)
             XCTAssertEqual(paragraph.lineSpacing, 2)
-            XCTAssertEqual(paragraph.paragraphSpacing, 2)
+            XCTAssertEqual(paragraph.paragraphSpacing, word == "内层第二段" ? 12 : 2)
         }
         XCTAssertEqual(try style(at: "内层第一段").paragraphSpacingBefore, 10)
         XCTAssertEqual(try style(at: "内层第二段").paragraphSpacingBefore, 0)

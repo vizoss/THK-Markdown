@@ -141,11 +141,14 @@ internal class ThemedQuoteSpan(
     private val barVerticalInsetPx: Int = 0,
     val copyButtonGutterPx: Int = 0,
     val containerBackground: Boolean = false,
-    private val nestedTopPaddingPx: Int = 0
+    private val nestedTopPaddingPx: Int = 0,
+    private val nestedBottomPaddingPx: Int = 0
 ) : LeadingMarginSpan, LineBackgroundSpan, LineHeightSpan {
 
     private var expandedAscent: Int? = null
     private var expandedTop: Int? = null
+    private var expandedDescent: Int? = null
+    private var expandedBottom: Int? = null
 
     // Standalone quotes reserve padding on their TextView; embedded quotes retain
     // per-block padding here. Nested spans never add another layer of line padding.
@@ -162,6 +165,18 @@ internal class ThemedQuoteSpan(
                 fm.top -= nestedTopPaddingPx
                 expandedAscent = fm.ascent
                 expandedTop = fm.top
+            }
+        }
+        if (nestedBottomPaddingPx > 0) {
+            if (fm.descent == expandedDescent) fm.descent -= nestedBottomPaddingPx
+            if (fm.bottom == expandedBottom) fm.bottom -= nestedBottomPaddingPx
+            expandedDescent = null
+            expandedBottom = null
+            if (end >= spanEnd) {
+                fm.descent += nestedBottomPaddingPx
+                fm.bottom += nestedBottomPaddingPx
+                expandedDescent = fm.descent
+                expandedBottom = fm.bottom
             }
         }
         if (backgroundColor == null) return
@@ -222,7 +237,7 @@ internal class ThemedQuoteSpan(
         var barTop = top
         var barBottom = bottom
         if (isFirstLine) barTop += barVerticalInsetPx + nestedTopPaddingPx
-        if (isLastLine) barBottom -= barVerticalInsetPx
+        if (isLastLine) barBottom -= barVerticalInsetPx + nestedBottomPaddingPx
         drawRoundedLineBackground(
             canvas, paint,
             left = minOf(barLeft, barRight).toInt(), right = maxOf(barLeft, barRight).toInt(),

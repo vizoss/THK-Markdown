@@ -184,7 +184,8 @@ internal class MarkdownSpanVisitor(
                     barVerticalInsetPx = (QUOTE_BAR_VERTICAL_INSET_DP * densityPx).toInt(),
                     copyButtonGutterPx = if (isOutermost) (40 * densityPx).toInt() else 0,
                     containerBackground = standalone,
-                    nestedTopPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0
+                    nestedTopPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0,
+                    nestedBottomPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0
                 ),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or
                     ((255 - blockQuoteDepth).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)

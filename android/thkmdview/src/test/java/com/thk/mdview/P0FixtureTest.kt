@@ -13,6 +13,27 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun secondLevelBottomPaddingOnlyAppliesToLastLine() {
+        val span = ThemedQuoteSpan(
+            barColor = 0, spanStart = 0, spanEnd = 5,
+            nestedTopPaddingPx = 10, nestedBottomPaddingPx = 10
+        )
+        fun metrics() = android.graphics.Paint.FontMetricsInt().apply {
+            top = -18; ascent = -16; descent = 4; bottom = 6
+        }
+        val first = metrics()
+        span.chooseHeight("ab\ncd", 0, 3, 0, 0, first)
+        assertEquals(-26, first.ascent)
+        assertEquals(4, first.descent)
+        val last = metrics()
+        span.chooseHeight("ab\ncd", 3, 5, 0, 20, last)
+        assertEquals(-16, last.ascent)
+        assertEquals(14, last.descent)
+        // A repeated layout pass must not keep adding the bottom gap.
+        span.chooseHeight("ab\ncd", 3, 5, 0, 20, last)
+        assertEquals(14, last.descent)
+    }
+
     private val renderer = DefaultMarkdownRenderer(ApplicationProvider.getApplicationContext())
     private fun render(markdown: String) = renderer.render(markdown, THKMDTheme.Default, ImageBounds(240, 320))
     private fun cases(): List<JSONObject> {
