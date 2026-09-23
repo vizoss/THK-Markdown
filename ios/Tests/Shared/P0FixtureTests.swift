@@ -6,6 +6,39 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testNestedQuoteLargeFontLineMetricsAndSpacing() throws {
+        let fixture = try XCTUnwrap(MarkdownFixture.load().first { $0.id == "P0-02" })
+        for size in [CGFloat(15), 24] {
+            var theme = THKMDTheme.default
+            theme.bodyFontSize = size
+            let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 600))
+            view.theme = theme
+            view.setMarkdown(fixture.markdown)
+            view.layoutIfNeeded()
+            let stack = try XCTUnwrap(view.subviews.first as? UIStackView)
+            let textView = try XCTUnwrap(stack.arrangedSubviews.first as? UITextView)
+            let text = textView.textStorage
+            let manager = textView.layoutManager
+            manager.ensureLayout(for: textView.textContainer)
+            var previousBottom: CGFloat = 0
+            for label in ["外层引用。", "内层第一段。", "内层第二段。", "外层结尾。"] {
+                let range = (text.string as NSString).range(of: label)
+                XCTAssertNotEqual(range.location, NSNotFound)
+                let glyph = manager.glyphIndexForCharacter(at: range.location)
+                let line = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+                let font = try XCTUnwrap(text.attribute(.font, at: range.location, effectiveRange: nil) as? UIFont)
+                let baseline = line.minY + manager.location(forGlyphAt: glyph).y
+                XCTAssertGreaterThanOrEqual(baseline - font.ascender, previousBottom - 1, label)
+                previousBottom = baseline - font.descender
+                let style = try XCTUnwrap(text.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle)
+                if label == "内层第一段。" {
+                    XCTAssertEqual(style.paragraphSpacingBefore, THKBlockQuoteMetrics.secondLevelTopSpacing)
+                } else if label == "内层第二段。" {
+                    XCTAssertEqual(style.paragraphSpacing, THKBlockQuoteMetrics.secondLevelBottomSpacing + THKBlockQuoteMetrics.interiorLineSpacing)
+                }
+            }
+        }
+    }
     func testLargeHeadingBeforeBodyHasUnclippedBaseline() throws {
         let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 600))
         var theme = THKMDTheme.default
