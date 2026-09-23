@@ -8,22 +8,28 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import kotlin.math.roundToInt
 
 @RunWith(AndroidJUnit4::class)
 class THKTableViewTest {
     @Test
     @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
-    fun outerBordersOccupyOneCompletePixelWithoutClipping() {
+    @org.robolectric.annotation.Config(qualifiers = "xxhdpi")
+    fun outerBordersOccupyOneDpWithoutClipping() {
         val table = measuredTable(THKTableData(listOf(THKTableAlignment.START), listOf("H"), listOf(listOf("body"))))
         val grid = table.getChildAt(0)
         val bitmap = android.graphics.Bitmap.createBitmap(grid.width, grid.height, android.graphics.Bitmap.Config.ARGB_8888)
         grid.draw(android.graphics.Canvas(bitmap))
         val body = table.cellViewAt(1, 0)!!
         val y = body.top + body.height / 2
-        assertThat(bitmap.getPixel(0, y)).isEqualTo(theme.tableBorderColor)
-        assertThat(bitmap.getPixel(grid.width - 1, y)).isEqualTo(theme.tableBorderColor)
-        assertThat(bitmap.getPixel(1, y)).isNotEqualTo(theme.tableBorderColor)
-        assertThat(bitmap.getPixel(grid.width - 2, y)).isNotEqualTo(theme.tableBorderColor)
+        val border = context.resources.displayMetrics.density.roundToInt().coerceAtLeast(1)
+        assertThat(border).isGreaterThan(1)
+        for (offset in 0 until border) {
+            assertThat(bitmap.getPixel(offset, y)).isEqualTo(theme.tableBorderColor)
+            assertThat(bitmap.getPixel(grid.width - 1 - offset, y)).isEqualTo(theme.tableBorderColor)
+        }
+        assertThat(bitmap.getPixel(border, y)).isNotEqualTo(theme.tableBorderColor)
+        assertThat(bitmap.getPixel(grid.width - 1 - border, y)).isNotEqualTo(theme.tableBorderColor)
     }
 
     private val context: Context = ApplicationProvider.getApplicationContext()

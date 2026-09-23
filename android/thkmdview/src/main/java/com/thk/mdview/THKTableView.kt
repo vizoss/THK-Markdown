@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.HorizontalScrollView
 import android.widget.TextView
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 /**
  * Real GFM table rendering: a per-column-width grid that scrolls horizontally
@@ -47,8 +48,8 @@ class THKTableView @JvmOverloads constructor(
     private class TableGrid(context: Context) : ViewGroup(context) {
 
         private val density = context.resources.displayMetrics.density
-        // One physical pixel, matching the iOS grid (not one density-scaled dp).
-        private val borderPx = 1
+        // Keep Android borders visible at high density: 1dp, snapped to whole pixels.
+        private val borderPx = density.roundToInt().coerceAtLeast(1)
         private val minColumnWidthPx = (48 * density).toInt()
         private val maxColumnWidthPx = (260 * density).toInt()
         private val minRowHeightPx = (36 * density).toInt()
