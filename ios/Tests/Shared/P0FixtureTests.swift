@@ -6,6 +6,66 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testLargeFontSeparatorsAndNestedQuoteSpacing() throws {
+        var theme = THKMDTheme.default
+        theme.bodyFontSize = 24
+        let renderer = DefaultMarkdownRenderer(theme: theme)
+        let cases = try MarkdownFixture.loadAll().filter { ["P0-12", "P0-13", "P1-43"].contains($0.id) }
+        for fixture in cases {
+            for segment in renderer.render(fixture.markdown) {
+                guard case .text(let text, _) = segment else { continue }
+                for offset in 0..<text.length {
+                    let character = (text.string as NSString).substring(with: NSRange(location: offset, length: 1))
+                    if character == "\n" || character == "|" {
+                        let font = try XCTUnwrap(text.attribute(.font, at: offset, effectiveRange: nil) as? UIFont)
+                        XCTAssertEqual(font.pointSize, 24, fixture.id)
+                    }
+                }
+            }
+        }
+        let source = "- 外层\n\n  > 第一段\n  >\n  >> 内层\n\n- 结束"
+        guard case .text(let text, _) = renderer.render(source).first else { return XCTFail("text") }
+        let index = (text.string as NSString).range(of: "内层").location
+        let style = try XCTUnwrap(text.attribute(.paragraphStyle, at: index, effectiveRange: nil) as? NSParagraphStyle)
+        XCTAssertGreaterThanOrEqual(style.paragraphSpacingBefore, 10)
+        XCTAssertGreaterThanOrEqual(style.paragraphSpacing, 10)
+    }
+
+    func testHeadingCodeUsesCodeSizeTimesHeadingScale() throws {
+        var theme = THKMDTheme.default
+        theme.bodyFontSize = 24
+        theme.codeFontSize = 13
+        let renderer = DefaultMarkdownRenderer(theme: theme)
+        guard case .text(let text, _) = renderer.render("## 标题 `code`").first else { return XCTFail("text") }
+        let index = (text.string as NSString).range(of: "code").location
+        let font = try XCTUnwrap(text.attribute(.font, at: index, effectiveRange: nil) as? UIFont)
+        XCTAssertEqual(font.pointSize, theme.codeFontSize * theme.heading2Scale, accuracy: 0.01)
+        XCTAssertTrue(font.fontDescriptor.symbolicTraits.contains(.traitMonoSpace))
+    }
+
+    func testHeaderThemePreservesLinkAndCodeColors() throws {
+        var theme = THKMDTheme.default
+        theme.headingTextColor = .orange
+        theme.bodyTextColor = .black
+        theme.linkColor = .blue
+        theme.codeTextColor = .purple
+        let renderer = DefaultMarkdownRenderer(theme: theme)
+        guard case .table(let table) = renderer.render("| 标题 [链接](https://example.com) `code` |\n| --- |\n| 正文 |").first else { return XCTFail("table") }
+        let header = try XCTUnwrap(table.headerCells.first)
+        for (word, color) in [("标题", theme.headingTextColor), ("链接", theme.linkColor), ("code", theme.codeTextColor)] {
+            let index = (header.string as NSString).range(of: word).location
+            XCTAssertEqual(header.attribute(.foregroundColor, at: index, effectiveRange: nil) as? UIColor, color)
+        }
+    }
+
+    func testHTMLFallbackDoesNotDuplicateBlockLineEndings() {
+        let renderer = DefaultMarkdownRenderer()
+        let source = "<div>原始 HTML 块</div>\n\n正文含 <b>标签</b>"
+        guard case .text(let text, _) = renderer.render(source).first else { return XCTFail("text") }
+        XCTAssertEqual(text.string, source)
+        XCTAssertEqual(thkTrimBlockLineEndings("  <div>\r\n内容\r\n</div>\r\n"), "  <div>\r\n内容\r\n</div>")
+    }
+
     func testCodeAtContainerEdgesReservesPaddingAndClearsOnReuse() throws {
         let fixtures = try MarkdownFixture.load(suite: "p1")
             .filter { ["P1-25", "P1-26", "P1-27", "P1-28"].contains($0.id) }

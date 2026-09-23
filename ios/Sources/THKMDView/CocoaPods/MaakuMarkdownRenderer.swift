@@ -125,9 +125,9 @@ struct MaakuAttributedStringVisitor {
         case let listItem as ListItem:
             return renderListItem(items: listItem.items, prefix: NSAttributedString(string: "\u{2022} ", attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor]))
         case let htmlBlock as HtmlBlock:
-            return NSAttributedString(string: htmlBlock.html, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
+            return NSAttributedString(string: thkTrimBlockLineEndings(htmlBlock.html), attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
         case let table as Table:
-            return thkNestedTableText(buildTableModel(table))
+            return thkNestedTableText(buildTableModel(table), font: baseFont)
         default:
             // Unsupported block types (footnotes, plugins) are not part of the node-type
             // coverage on either distribution; render nothing rather than guessing.
@@ -144,7 +144,7 @@ struct MaakuAttributedStringVisitor {
                 var traits = font.fontDescriptor.symbolicTraits
                 traits.insert(.traitBold)
                 let descriptor = font.fontDescriptor.withSymbolicTraits(traits) ?? font.fontDescriptor
-                result.addAttribute(.font, value: UIFont(descriptor: descriptor, size: size), range: range)
+                result.addAttribute(.font, value: UIFont(descriptor: descriptor, size: font.pointSize * size / baseFont.pointSize), range: range)
             }
         }
         addForegroundColorIfMissing(theme.headingTextColor, to: result)
@@ -276,7 +276,7 @@ struct MaakuAttributedStringVisitor {
         if isHeader, result.length > 0 {
             applyTrait(.traitBold, to: result)
         }
-        addForegroundColorIfMissing(theme.bodyTextColor, to: result)
+        addForegroundColorIfMissing(isHeader ? theme.headingTextColor : theme.bodyTextColor, to: result)
         return result
     }
 
@@ -383,7 +383,11 @@ struct MaakuAttributedStringVisitor {
                 let font = result.length > 0
                     ? (result.attribute(.font, at: result.length - 1, effectiveRange: nil) as? UIFont ?? baseFont)
                     : baseFont
-                result.append(NSAttributedString(string: "\n", attributes: [.font: font]))
+                var attributes: [NSAttributedString.Key: Any] = [.font: font]
+                if let style = result.attribute(.paragraphStyle, at: result.length - 1, effectiveRange: nil) {
+                    attributes[.paragraphStyle] = style
+                }
+                result.append(NSAttributedString(string: "\n", attributes: attributes))
             }
             result.append(rendered)
         }
@@ -394,7 +398,12 @@ struct MaakuAttributedStringVisitor {
         let result = NSMutableAttributedString()
         for (index, item) in items.enumerated() {
             if index > 0 {
-                result.append(NSAttributedString(string: "\n"))
+                var attributes: [NSAttributedString.Key: Any] = [.font: baseFont]
+                if result.length > 0 {
+                    attributes[.font] = result.attribute(.font, at: result.length - 1, effectiveRange: nil) ?? baseFont
+                    attributes[.paragraphStyle] = result.attribute(.paragraphStyle, at: result.length - 1, effectiveRange: nil)
+                }
+                result.append(NSAttributedString(string: "\n", attributes: attributes))
             }
             result.append(item)
         }

@@ -136,7 +136,7 @@ struct AttributedStringVisitor: MarkupVisitor {
                 var traits = font.fontDescriptor.symbolicTraits
                 traits.insert(.traitBold)
                 let descriptor = font.fontDescriptor.withSymbolicTraits(traits) ?? font.fontDescriptor
-                result.addAttribute(.font, value: UIFont(descriptor: descriptor, size: size), range: range)
+                result.addAttribute(.font, value: UIFont(descriptor: descriptor, size: font.pointSize * size / baseFont.pointSize), range: range)
             }
         }
         addForegroundColorIfMissing(theme.headingTextColor, to: result)
@@ -289,7 +289,7 @@ struct AttributedStringVisitor: MarkupVisitor {
     }
 
     mutating func visitHTMLBlock(_ html: HTMLBlock) -> NSAttributedString {
-        NSAttributedString(string: html.rawHTML, attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
+        NSAttributedString(string: thkTrimBlockLineEndings(html.rawHTML), attributes: [.font: baseFont, .foregroundColor: theme.bodyTextColor])
     }
 
     mutating func visitInlineHTML(_ inlineHTML: InlineHTML) -> NSAttributedString {
@@ -356,7 +356,7 @@ struct AttributedStringVisitor: MarkupVisitor {
         if isHeader, result.length > 0 {
             applyTrait(.traitBold, to: result)
         }
-        addForegroundColorIfMissing(theme.bodyTextColor, to: result)
+        addForegroundColorIfMissing(isHeader ? theme.headingTextColor : theme.bodyTextColor, to: result)
         return result
     }
 
@@ -367,7 +367,7 @@ struct AttributedStringVisitor: MarkupVisitor {
         for child in children {
             let rendered: NSAttributedString
             if let table = child as? Table {
-                rendered = thkNestedTableText(buildTableModel(table))
+                rendered = thkNestedTableText(buildTableModel(table), font: baseFont)
             } else {
                 rendered = visit(child)
             }
@@ -396,7 +396,7 @@ struct AttributedStringVisitor: MarkupVisitor {
         for child in children {
             let rendered: NSAttributedString
             if let table = child as? Table {
-                rendered = thkNestedTableText(buildTableModel(table))
+                rendered = thkNestedTableText(buildTableModel(table), font: baseFont)
             } else {
                 rendered = visit(child)
             }
@@ -407,7 +407,11 @@ struct AttributedStringVisitor: MarkupVisitor {
                 let font = result.length > 0
                     ? (result.attribute(.font, at: result.length - 1, effectiveRange: nil) as? UIFont ?? baseFont)
                     : baseFont
-                result.append(NSAttributedString(string: "\n", attributes: [.font: font]))
+                var attributes: [NSAttributedString.Key: Any] = [.font: font]
+                if let style = result.attribute(.paragraphStyle, at: result.length - 1, effectiveRange: nil) {
+                    attributes[.paragraphStyle] = style
+                }
+                result.append(NSAttributedString(string: "\n", attributes: attributes))
             }
             result.append(rendered)
         }
@@ -418,7 +422,12 @@ struct AttributedStringVisitor: MarkupVisitor {
         let result = NSMutableAttributedString()
         for (index, item) in items.enumerated() {
             if index > 0 {
-                result.append(NSAttributedString(string: "\n"))
+                var attributes: [NSAttributedString.Key: Any] = [.font: baseFont]
+                if result.length > 0 {
+                    attributes[.font] = result.attribute(.font, at: result.length - 1, effectiveRange: nil) ?? baseFont
+                    attributes[.paragraphStyle] = result.attribute(.paragraphStyle, at: result.length - 1, effectiveRange: nil)
+                }
+                result.append(NSAttributedString(string: "\n", attributes: attributes))
             }
             result.append(item)
         }

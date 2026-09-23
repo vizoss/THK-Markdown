@@ -95,6 +95,11 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
         let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
         guard var rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
+        if includesQuotePadding {
+            let indent = textStorage?.attribute(thkQuoteContainerIndentKey, at: charRange.location, effectiveRange: nil) as? CGFloat ?? 0
+            rect.origin.x += indent
+            rect.size.width = max(0, rect.width - indent)
+        }
         if !includesQuotePadding,
            let style = textStorage?.attribute(.paragraphStyle, at: charRange.location, effectiveRange: nil) as? NSParagraphStyle {
             // The background starts at the containing quote/list content edge;

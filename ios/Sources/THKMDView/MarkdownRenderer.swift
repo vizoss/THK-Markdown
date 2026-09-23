@@ -1,6 +1,13 @@
 import UIKit
 
 private let thkListDepthKey = NSAttributedString.Key("THKListDepth")
+
+/// Block separators belong to the joining layer; retain interior HTML whitespace.
+func thkTrimBlockLineEndings(_ source: String) -> String {
+    var result = source
+    while result.last == "\n" || result.last == "\r" || result.last == "\r\n" { result.removeLast() }
+    return result
+}
 let thkQuoteContainerIndentKey = NSAttributedString.Key("THKQuoteContainerIndent")
 
 /// Keep child list styles intact; add the current list offset to other block styles.
@@ -61,12 +68,12 @@ func thkApplyQuoteLayout(to text: NSMutableAttributedString, style: NSParagraphS
     }
 }
 
-func thkNestedTableText(_ table: THKTableModel) -> NSAttributedString {
+func thkNestedTableText(_ table: THKTableModel, font: UIFont) -> NSAttributedString {
     let result = NSMutableAttributedString()
     for (rowIndex, row) in ([table.headerCells] + table.rows).enumerated() {
-        if rowIndex > 0 { result.append(NSAttributedString(string: "\n")) }
+        if rowIndex > 0 { result.append(NSAttributedString(string: "\n", attributes: [.font: font])) }
         for (index, cell) in row.enumerated() {
-            if index > 0 { result.append(NSAttributedString(string: " | ")) }
+            if index > 0 { result.append(NSAttributedString(string: " | ", attributes: [.font: font])) }
             result.append(cell)
         }
     }
