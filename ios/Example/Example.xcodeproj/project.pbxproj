@@ -7,29 +7,54 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-        A00000000000000000000001 /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000002; };
+		0B29D4136AFF7D255E704889 /* P0FixtureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD18BE18642E78E97BBF4DD8 /* P0FixtureTests.swift */; };
 		1F4AA81CC977D114BAF277F2 /* MessageListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */; };
+		2519B1E5516C803B977121F2 /* StreamingMarkdownBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A8623DC4606D71FE5537C5A /* StreamingMarkdownBufferTests.swift */; };
 		27FFE3D6D99BC2E9866F058F /* AssistantMessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */; };
+		3F059800A87F9A704F73BCC1 /* THKMDViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44864A2CBE85AC2C6A279827 /* THKMDViewTests.swift */; };
 		47E9CB519197E9F06299A86F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6804762C250FC21B501077B1 /* AppDelegate.swift */; };
 		48962FF91C2C5D3579493554 /* ThemeSettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BC6B0A9CF4AB894DFEC46D /* ThemeSettingsViewController.swift */; };
 		5265A2A260105BF427B734B4 /* MockAssistantReply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E958AFC4DF22DECDCF05141 /* MockAssistantReply.swift */; };
 		57474C9194B9ECB1D78896D1 /* UserMessageCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 241F189D9AF67907740253A6 /* UserMessageCell.swift */; };
+		6036A9B819A458921DAC1954 /* FakeScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = E403B8A612C9DBCB83A59B5B /* FakeScheduler.swift */; };
 		85832E9EB068A8B91FE8D8CF /* THKMDView in Frameworks */ = {isa = PBXBuildFile; productRef = 347D72E8CAB8BDA81A7758DA /* THKMDView */; };
 		858D834F24660EF64C253DEB /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325777869B578BB9E0D675CF /* Message.swift */; };
+		963BDD8862F41EEB934C2C3A /* THKMDView in Frameworks */ = {isa = PBXBuildFile; productRef = D78747CE6A1365742CA74446 /* THKMDView */; };
+		C095645CDBDE8E7A5D352998 /* THKAsyncImageTextAttachmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561C65AB640858184D891DD1 /* THKAsyncImageTextAttachmentTests.swift */; };
 		C742EFCC8F808F794B838D5C /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98090EE07C844B24C7270C35 /* MessageInputBar.swift */; };
+		F36DEB6478A19B59F423D3D5 /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = 791E7F0648C9EBFCF97333FB /* MarkdownFixtures */; };
+		F8E77E67516E943D67D87576 /* RenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C50B007B4FCEDA023A28866 /* RenderTests.swift */; };
+		FAC8CAFF19DB843840F75BAC /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = ACCB23C3E222698B35DEB43B /* MarkdownFixtures */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		478DBEC861158272104C6EBE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CA8E1E974698BC95958F017F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9878B5EABC7D83477291BAFC;
+			remoteInfo = Example;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		0E958AFC4DF22DECDCF05141 /* MockAssistantReply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAssistantReply.swift; sourceTree = "<group>"; };
 		241F189D9AF67907740253A6 /* UserMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMessageCell.swift; sourceTree = "<group>"; };
 		2E3F8A25A25B8FC35209ADF6 /* ios */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ios; path = ..; sourceTree = SOURCE_ROOT; };
 		325777869B578BB9E0D675CF /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		3A8623DC4606D71FE5537C5A /* StreamingMarkdownBufferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingMarkdownBufferTests.swift; sourceTree = "<group>"; };
+		3C50B007B4FCEDA023A28866 /* RenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderTests.swift; sourceTree = "<group>"; };
+		44864A2CBE85AC2C6A279827 /* THKMDViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = THKMDViewTests.swift; sourceTree = "<group>"; };
+		53A393DFE605F571BDA4F9FC /* THKMDViewTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = THKMDViewTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		561C65AB640858184D891DD1 /* THKAsyncImageTextAttachmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = THKAsyncImageTextAttachmentTests.swift; sourceTree = "<group>"; };
 		6804762C250FC21B501077B1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		98090EE07C844B24C7270C35 /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
 		BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMessageCell.swift; sourceTree = "<group>"; };
 		C3BC6B0A9CF4AB894DFEC46D /* ThemeSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeSettingsViewController.swift; sourceTree = "<group>"; };
+		DD18BE18642E78E97BBF4DD8 /* P0FixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P0FixtureTests.swift; sourceTree = "<group>"; };
+		E403B8A612C9DBCB83A59B5B /* FakeScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeScheduler.swift; sourceTree = "<group>"; };
 		F194AFC8167FC9977D7737A0 /* MessageListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageListViewController.swift; sourceTree = "<group>"; };
-		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,7 +63,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				85832E9EB068A8B91FE8D8CF /* THKMDView in Frameworks */,
-                A00000000000000000000001 /* MarkdownFixtures in Frameworks */,
+				F36DEB6478A19B59F423D3D5 /* MarkdownFixtures in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7285458ADA9197C1204F7F92 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				963BDD8862F41EEB934C2C3A /* THKMDView in Frameworks */,
+				FAC8CAFF19DB843840F75BAC /* MarkdownFixtures in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,10 +87,23 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		2E2FCDAB7F82C6FE29C62CA2 /* THKMDViewTests */ = {
+			isa = PBXGroup;
+			children = (
+				E403B8A612C9DBCB83A59B5B /* FakeScheduler.swift */,
+				3C50B007B4FCEDA023A28866 /* RenderTests.swift */,
+				3A8623DC4606D71FE5537C5A /* StreamingMarkdownBufferTests.swift */,
+				561C65AB640858184D891DD1 /* THKAsyncImageTextAttachmentTests.swift */,
+				44864A2CBE85AC2C6A279827 /* THKMDViewTests.swift */,
+			);
+			path = THKMDViewTests;
+			sourceTree = "<group>";
+		};
 		3031F8ABC084F8D43CC56342 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				F6FE7BF0248FC2FF22A10D63 /* Example.app */,
+				53A393DFE605F571BDA4F9FC /* THKMDViewTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -64,10 +111,29 @@
 		54E0667A38E60354DB90F776 = {
 			isa = PBXGroup;
 			children = (
+				C2438B55FDD14493DAF40050 /* ios */,
 				12B9A666C278AB8CB5B6FA33 /* Packages */,
 				E12E4C3B1048ABC79E056AAB /* Sources */,
 				3031F8ABC084F8D43CC56342 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		86414E9BB05B3752FCD521C1 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				E3E8A63A7D6CB271CEC177D6 /* Shared */,
+				2E2FCDAB7F82C6FE29C62CA2 /* THKMDViewTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		C2438B55FDD14493DAF40050 /* ios */ = {
+			isa = PBXGroup;
+			children = (
+				86414E9BB05B3752FCD521C1 /* Tests */,
+			);
+			name = ios;
+			path = ..;
 			sourceTree = "<group>";
 		};
 		E12E4C3B1048ABC79E056AAB /* Sources */ = {
@@ -85,9 +151,38 @@
 			path = Sources;
 			sourceTree = "<group>";
 		};
+		E3E8A63A7D6CB271CEC177D6 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				DD18BE18642E78E97BBF4DD8 /* P0FixtureTests.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		5B2333818AB9A28A0C531572 /* THKMDViewTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E95CED6582D3872AED4C2C76 /* Build configuration list for PBXNativeTarget "THKMDViewTests" */;
+			buildPhases = (
+				1E95BA67550F6385089D2008 /* Sources */,
+				7285458ADA9197C1204F7F92 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				557FFC975A06DC19EB37E3AA /* PBXTargetDependency */,
+			);
+			name = THKMDViewTests;
+			packageProductDependencies = (
+				D78747CE6A1365742CA74446 /* THKMDView */,
+				ACCB23C3E222698B35DEB43B /* MarkdownFixtures */,
+			);
+			productName = THKMDViewTests;
+			productReference = 53A393DFE605F571BDA4F9FC /* THKMDViewTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		9878B5EABC7D83477291BAFC /* Example */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2557384DB91FFBC8B78A3DC4 /* Build configuration list for PBXNativeTarget "Example" */;
@@ -102,7 +197,7 @@
 			name = Example;
 			packageProductDependencies = (
 				347D72E8CAB8BDA81A7758DA /* THKMDView */,
-                A00000000000000000000002 /* MarkdownFixtures */,
+				791E7F0648C9EBFCF97333FB /* MarkdownFixtures */,
 			);
 			productName = Example;
 			productReference = F6FE7BF0248FC2FF22A10D63 /* Example.app */;
@@ -116,6 +211,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 36FC72E69D906F48675C62BF /* Build configuration list for PBXProject "Example" */;
 			developmentRegion = en;
@@ -135,6 +232,7 @@
 			projectRoot = "";
 			targets = (
 				9878B5EABC7D83477291BAFC /* Example */,
+				5B2333818AB9A28A0C531572 /* THKMDViewTests */,
 			);
 		};
 /* End PBXProject section */
@@ -155,9 +253,48 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1E95BA67550F6385089D2008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6036A9B819A458921DAC1954 /* FakeScheduler.swift in Sources */,
+				0B29D4136AFF7D255E704889 /* P0FixtureTests.swift in Sources */,
+				F8E77E67516E943D67D87576 /* RenderTests.swift in Sources */,
+				2519B1E5516C803B977121F2 /* StreamingMarkdownBufferTests.swift in Sources */,
+				C095645CDBDE8E7A5D352998 /* THKAsyncImageTextAttachmentTests.swift in Sources */,
+				3F059800A87F9A704F73BCC1 /* THKMDViewTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		557FFC975A06DC19EB37E3AA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9878B5EABC7D83477291BAFC /* Example */;
+			targetProxy = 478DBEC861158272104C6EBE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		154D1CFD08BEE88A402355DE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thk.mdview.example.THKMDViewTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example.app/Example";
+			};
+			name = Release;
+		};
 		398A5AFCD69E760DF19875AD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -219,7 +356,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = FRBL9GK76M;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Generated/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -239,7 +375,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				DEVELOPMENT_TEAM = FRBL9GK76M;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Generated/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -251,6 +386,24 @@
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D849C8B9C0B1D1E0E7D1C81C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.thk.mdview.example.THKMDViewTests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example.app/Example";
 			};
 			name = Debug;
 		};
@@ -338,6 +491,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
+		E95CED6582D3872AED4C2C76 /* Build configuration list for PBXNativeTarget "THKMDViewTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D849C8B9C0B1D1E0E7D1C81C /* Debug */,
+				154D1CFD08BEE88A402355DE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -348,8 +510,19 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-        A00000000000000000000002 /* MarkdownFixtures */ = {isa = XCSwiftPackageProductDependency; productName = MarkdownFixtures; };
 		347D72E8CAB8BDA81A7758DA /* THKMDView */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = THKMDView;
+		};
+		791E7F0648C9EBFCF97333FB /* MarkdownFixtures */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MarkdownFixtures;
+		};
+		ACCB23C3E222698B35DEB43B /* MarkdownFixtures */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MarkdownFixtures;
+		};
+		D78747CE6A1365742CA74446 /* THKMDView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = THKMDView;
 		};

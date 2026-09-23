@@ -30,6 +30,30 @@ targets:
         product: THKMDView
       - package: THKMDView
         product: MarkdownFixtures
+  THKMDViewTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../Tests/THKMDViewTests
+      - path: ../Tests/Shared
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.0"
+    dependencies:
+      - target: Example
+      - package: THKMDView
+        product: THKMDView
+      - package: THKMDView
+        product: MarkdownFixtures
+schemes:
+  Example:
+    build:
+      targets:
+        Example: all
+        THKMDViewTests: [test]
+    test:
+      targets: [THKMDViewTests]
 packages:
   THKMDView:
     path: ../
