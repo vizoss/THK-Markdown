@@ -219,29 +219,39 @@ enum THKCopyButtonMetrics {
     static let topPaddingReserve: CGFloat = margin + size + margin
 }
 
-/// A task-list checkbox prefix as an `NSTextAttachment`-wrapped SF Symbol image, instead of a
-/// literal `\u{2611}`/`\u{2610}` (BALLOT BOX WITH CHECK / BALLOT BOX) character pair. Those two
-/// glyphs are not designed to match each other's visual weight/size in most fonts — the checked
-/// box commonly renders visibly larger/bolder than the empty outline. Both `checkmark.square.fill`
-/// and `square` come from the same SF Symbol family, so they share an identical bounding box;
-/// only the fill state differs. Shared by both renderer backends so the glyph choice can't drift
-/// between them.
+/// Shared outlined checkbox geometry, matching Android rather than platform glyphs.
+/// Size follows the body font; strokes use the configured text color.
 func thkCheckboxPrefixAttributedString(checked: Bool, font: UIFont, color: UIColor) -> NSAttributedString {
-    let symbolName = checked ? "checkmark.square.fill" : "square"
-    let configuration = UIImage.SymbolConfiguration(font: font)
-    let image = (UIImage(systemName: symbolName, withConfiguration: configuration) ?? UIImage())
-        .withTintColor(color, renderingMode: .alwaysOriginal)
+    let side = font.pointSize * 0.85
+    let image = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
+        color.setStroke()
+        let lineWidth = side / 10
+        let box = UIBezierPath(roundedRect: CGRect(x: lineWidth / 2, y: lineWidth / 2, width: side - lineWidth, height: side - lineWidth), cornerRadius: side / 8)
+        box.lineWidth = lineWidth
+        box.stroke()
+        if checked {
+            let check = UIBezierPath()
+            check.move(to: CGPoint(x: side * 0.22, y: side * 0.51))
+            check.addLine(to: CGPoint(x: side * 0.43, y: side * 0.72))
+            check.addLine(to: CGPoint(x: side * 0.79, y: side * 0.28))
+            check.lineWidth = lineWidth
+            check.lineCapStyle = .round
+            check.lineJoinStyle = .round
+            check.stroke()
+        }
+    }
 
     let attachment = NSTextAttachment()
     attachment.image = image
     // Centers the glyph on the text's cap-height rather than its baseline, matching how the
     // bullet/number markers it replaces sit relative to the following text.
-    let yOffset = (font.capHeight - image.size.height).rounded() / 2
+    let yOffset = (font.ascender + font.descender - image.size.height) / 2
     attachment.bounds = CGRect(x: 0, y: yOffset, width: image.size.width, height: image.size.height)
 
     let result = NSMutableAttributedString(attachment: attachment)
     result.addAttribute(.font, value: font, range: NSRange(location: 0, length: result.length))
-    result.append(NSAttributedString(string: " ", attributes: [.font: font]))
+    let spaceWidth = (" " as NSString).size(withAttributes: [.font: font]).width
+    result.append(NSAttributedString(string: " ", attributes: [.font: font, .kern: 4 - spaceWidth]))
     return result
 }
 

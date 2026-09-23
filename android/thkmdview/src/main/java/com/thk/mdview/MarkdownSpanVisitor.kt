@@ -253,8 +253,7 @@ internal class MarkdownSpanVisitor(
         val gapPx = (BULLET_GAP_DP * densityPx).toInt()
         val markerSpan: LeadingMarginSpan = when {
             taskMarker != null -> {
-                val glyph = if (taskMarker.isChecked) "☑" else "☐"
-                TaskListItemSpan(taskMarker.isChecked, measuredMarkerWidthPx(glyph), gapPx)
+                TaskListItemSpan(taskMarker.isChecked, (markerPaint.textSize * 0.85f).toInt(), (4 * densityPx).toInt())
             }
             ctx.ordered -> OrderedListItemSpan(ctx.index, measuredMarkerWidthPx("${ctx.index}."), gapPx)
             else -> BulletSpan(gapPx)

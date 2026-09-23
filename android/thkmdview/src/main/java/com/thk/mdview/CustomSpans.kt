@@ -315,8 +315,26 @@ internal class TaskListItemSpan(
         layout: Layout?
     ) {
         if (!first || (text as? android.text.Spanned)?.getSpanStart(this) != start) return
-        val glyph = if (checked) "☑" else "☐"
-        canvas.drawText(glyph, x.toFloat(), baseline.toFloat(), paint)
+        // Shared outline/check geometry with iOS; no platform-font checkbox glyphs.
+        val iconPaint = Paint(paint).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = markerWidthPx / 10f
+            strokeCap = Paint.Cap.ROUND
+            strokeJoin = Paint.Join.ROUND
+        }
+        val side = markerWidthPx.toFloat()
+        val left = if (dir > 0) x.toFloat() else x - side
+        val topEdge = baseline + (paint.fontMetrics.ascent + paint.fontMetrics.descent - side) / 2
+        val inset = iconPaint.strokeWidth / 2
+        canvas.drawRoundRect(RectF(left + inset, topEdge + inset, left + side - inset, topEdge + side - inset), side / 8, side / 8, iconPaint)
+        if (checked) {
+            val path = android.graphics.Path().apply {
+                moveTo(left + side * 0.22f, topEdge + side * 0.51f)
+                lineTo(left + side * 0.43f, topEdge + side * 0.72f)
+                lineTo(left + side * 0.79f, topEdge + side * 0.28f)
+            }
+            canvas.drawPath(path, iconPaint)
+        }
     }
 }
 
