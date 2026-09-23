@@ -6,6 +6,28 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testNestedQuoteParagraphSpacingDoesNotAccumulate() throws {
+        let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-02" })
+        let text = NSMutableAttributedString()
+        for segment in DefaultMarkdownRenderer().render(fixture.markdown) {
+            if case .text(let value, _) = segment { text.append(value) }
+        }
+        func style(at word: String) throws -> NSParagraphStyle {
+            let range = (text.string as NSString).range(of: word)
+            XCTAssertNotEqual(range.location, NSNotFound)
+            guard range.location != NSNotFound else { return NSParagraphStyle.default }
+            return try XCTUnwrap(text.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle)
+        }
+        for word in ["外层引用", "内层第一段", "内层第二段"] {
+            let paragraph = try style(at: word)
+            XCTAssertEqual(paragraph.lineSpacing, 2)
+            XCTAssertEqual(paragraph.paragraphSpacing, 2)
+        }
+        XCTAssertEqual(try style(at: "内层第一段").paragraphSpacingBefore, 10)
+        XCTAssertEqual(try style(at: "内层第二段").paragraphSpacingBefore, 0)
+        XCTAssertEqual(try style(at: "外层结尾").paragraphSpacing, THKBlockQuoteMetrics.verticalPaddingBottom)
+    }
+
     func testQuoteSoftBreakAndExplicitHardBreak() throws {
         let renderer = DefaultMarkdownRenderer()
         func quoteText(_ source: String) throws -> String {

@@ -46,6 +46,19 @@ func thkApplyQuoteLayout(to text: NSMutableAttributedString, style: NSParagraphS
         combined.lineSpacing = max(combined.lineSpacing, style.lineSpacing)
         text.addAttribute(.paragraphStyle, value: combined, range: range)
     }
+    // TextKit's lineSpacing does not separate distinct paragraphs. Give each
+    // interior paragraph the same breathing room as a wrapped line. Use max,
+    // not +=, because the outer quote visits nested paragraphs again.
+    var paragraphs: [NSRange] = []
+    (text.string as NSString).enumerateSubstrings(in: full, options: .byParagraphs) { _, _, range, _ in
+        paragraphs.append(range)
+    }
+    for range in paragraphs.dropLast() {
+        let existing = text.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle
+        let paragraph = existing?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
+        paragraph.paragraphSpacing = max(paragraph.paragraphSpacing, style.lineSpacing)
+        text.addAttribute(.paragraphStyle, value: paragraph, range: range)
+    }
 }
 
 func thkNestedTableText(_ table: THKTableModel) -> NSAttributedString {
