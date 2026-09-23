@@ -187,6 +187,8 @@ final class ThemeSettingsViewController: UIViewController {
     }
 
     private func addColorRows() {
+        addColorRow(title: "Copy Feedback Text", get: { $0.copyFeedbackTextColor }, set: { $0.copyFeedbackTextColor = $1 })
+        addColorRow(title: "Copy Feedback Background", get: { $0.copyFeedbackBackgroundColor }, set: { $0.copyFeedbackBackgroundColor = $1 })
         addColorRow(title: "Alert Note", get: { $0.alertNoteColor }, set: { $0.alertNoteColor = $1 })
         addColorRow(title: "Alert Tip", get: { $0.alertTipColor }, set: { $0.alertTipColor = $1 })
         addColorRow(title: "Alert Important", get: { $0.alertImportantColor }, set: { $0.alertImportantColor = $1 })
@@ -206,6 +208,8 @@ final class ThemeSettingsViewController: UIViewController {
     }
 
     private func addSizeRows() {
+        addSliderRow(title: "Copy Feedback Font", min: 10, max: 24,
+                     get: { Float($0.copyFeedbackFontSize) }, set: { $0.copyFeedbackFontSize = CGFloat($1) })
         addSliderRow(title: "Footnote Scale", min: 0.5, max: 1, get: { Float($0.footnoteScale) }, set: { $0.footnoteScale = CGFloat($1) })
         addSliderRow(title: "Math Scale", min: 0.5, max: 2, get: { Float($0.mathScale) }, set: { $0.mathScale = CGFloat($1) })
         addSliderRow(

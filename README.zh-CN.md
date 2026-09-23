@@ -62,7 +62,7 @@ SPM 提供源码，CocoaPods 提供预编译 XCFramework；远端 pod 安装需�
 | `copyFeedbackBackgroundColor` | 复制成功提示背景色，包含透明度 |
 | `copyFeedbackFontSizeSp` / `copyFeedbackFontSize` | 复制成功提示字号，Android 为 sp、iOS 为 pt，默认 12；提示尺寸随字号自适应 |
 
-双端复制成功后在对应按钮下方显示短暂的 `Copied` 提示，Android 不再发送应用 Toast。Android 提示的颜色和字号可在示例主题面板配置并本地保存；连续点击会替换旧提示，消息重绑或移出窗口时清理。操作系统自身的剪贴板提示不受此配置控制。
+双端复制成功后在对应按钮下方显示短暂的 `Copied` 提示，Android 不再发送应用 Toast。Android/iOS 示例主题面板均可调整提示背景色、文字颜色和字号（10–24），并本地保存。Android 连续点击会替换旧提示，消息重绑或移出窗口时清理。操作系统自身的剪贴板提示不受此配置控制。
 
 ### 使用示例
 

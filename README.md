@@ -65,7 +65,7 @@ The iOS source and binary distributions share the same renderer and settings.
 | `copyFeedbackBackgroundColor` | Copy confirmation background, including alpha |
 | `copyFeedbackFontSizeSp` / `copyFeedbackFontSize` | Copy confirmation size, Android sp / iOS pt; default 12; label dimensions adapt |
 
-Both platforms show a brief “Copied” label below the pressed copy button. Android no longer emits an app Toast; the OS may independently show its clipboard UI. Android feedback theme settings are editable and persisted in the demo.
+Both platforms show a brief “Copied” label below the pressed copy button. Android no longer emits an app Toast; the OS may independently show its clipboard UI. Both demos expose and persist feedback background/text colors and font size (10–24).
 
 ### Examples
 
