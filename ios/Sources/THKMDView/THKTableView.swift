@@ -10,6 +10,8 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
     private let gridLayer = CAShapeLayer()
     private let cellPadding = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
     private let maxColumnWidth: CGFloat = 240
+    /// Match Android: total cell width including 10pt padding on each side.
+    private let minColumnWidth: CGFloat = 48
     private var renderedHeight: CGFloat = 0
     private var rows: [[UITextView]] = []
     private var cells: [[UIView]] = []
@@ -103,7 +105,7 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
             let scale = (maxColumnWidth - horizontalPadding) / attachment.bounds.width
             attachment.bounds.size = CGSize(width: attachment.bounds.width * scale, height: attachment.bounds.height * scale)
         }
-        var widths = [CGFloat](repeating: horizontalPadding + 1, count: first.count)
+        var widths = [CGFloat](repeating: minColumnWidth, count: first.count)
         for row in rows {
             for (column, text) in row.enumerated() {
                 // UITextView.sizeThatFits returns the proposed width, not natural

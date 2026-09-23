@@ -51,7 +51,7 @@ class THKTableView @JvmOverloads constructor(
         // Keep Android borders visible at high density: 1dp, snapped to whole pixels.
         private val borderPx = density.roundToInt().coerceAtLeast(1)
         private val minColumnWidthPx = (48 * density).toInt()
-        private val maxColumnWidthPx = (260 * density).toInt()
+        private val maxColumnWidthPx = (240 * density).toInt()
         private val minRowHeightPx = (36 * density).toInt()
         private val cellPaddingHPx = (10 * density).toInt()
         private val cellPaddingVPx = (8 * density).toInt()
@@ -162,17 +162,18 @@ class THKTableView @JvmOverloads constructor(
             xBoundaries = boundariesOf(widths)
             yBoundaries = boundariesOf(heights)
 
-            val totalWidth = widths.sum() + borderPx * (columnCount + 1)
-            val totalHeight = heights.sum() + borderPx * (rowCount + 1)
+            // Match iOS: borders occupy the inside of the grid, not extra columns.
+            val totalWidth = widths.sum()
+            val totalHeight = heights.sum()
             setMeasuredDimension(totalWidth, totalHeight)
         }
 
         private fun boundariesOf(sizes: IntArray): IntArray {
             val boundaries = IntArray(sizes.size + 1)
-            var pos = borderPx
+            var pos = 0
             boundaries[0] = pos
             for (i in sizes.indices) {
-                pos += sizes[i] + borderPx
+                pos += sizes[i]
                 boundaries[i + 1] = pos
             }
             return boundaries
@@ -191,16 +192,18 @@ class THKTableView @JvmOverloads constructor(
             }
         }
 
-        override fun onDraw(canvas: Canvas) {
-            super.onDraw(canvas)
+        override fun dispatchDraw(canvas: Canvas) {
+            super.dispatchDraw(canvas)
             if (columnCount == 0 || rowCount == 0) return
             val totalWidth = xBoundaries.last().toFloat()
             val totalHeight = yBoundaries.last().toFloat()
             for (y in yBoundaries) {
-                canvas.drawRect(0f, (y - borderPx).toFloat(), totalWidth, y.toFloat(), borderPaint)
+                val top = min(y, (totalHeight.toInt() - borderPx).coerceAtLeast(0)).toFloat()
+                canvas.drawRect(0f, top, totalWidth, top + borderPx, borderPaint)
             }
             for (x in xBoundaries) {
-                canvas.drawRect((x - borderPx).toFloat(), 0f, x.toFloat(), totalHeight, borderPaint)
+                val left = min(x, (totalWidth.toInt() - borderPx).coerceAtLeast(0)).toFloat()
+                canvas.drawRect(left, 0f, left + borderPx, totalHeight, borderPaint)
             }
         }
     }

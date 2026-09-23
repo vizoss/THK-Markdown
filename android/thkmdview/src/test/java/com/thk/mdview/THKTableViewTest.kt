@@ -47,6 +47,20 @@ class THKTableViewTest {
     }
 
     @Test
+    fun columnLimitsAndBordersUseSharedLogicalWidths() {
+        val table = measuredTable(THKTableData(listOf(THKTableAlignment.START, THKTableAlignment.START),
+            listOf("", ""), listOf(listOf("", "x".repeat(200)))))
+        val density = context.resources.displayMetrics.density
+        val first = table.cellViewAt(0, 0)!!
+        val second = table.cellViewAt(0, 1)!!
+        assertThat(first.width).isEqualTo((48 * density).toInt())
+        assertThat(second.width).isEqualTo((240 * density).toInt())
+        assertThat(first.left).isEqualTo(0)
+        assertThat(second.left).isEqualTo(first.right)
+        assertThat(table.getChildAt(0).width).isEqualTo(first.width + second.width)
+    }
+
+    @Test
     fun columnAlignment_mapsToTextViewGravityPerColumn() {
         val data = THKTableData(
             columnAlignments = listOf(THKTableAlignment.START, THKTableAlignment.CENTER, THKTableAlignment.END),

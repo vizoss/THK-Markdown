@@ -6,6 +6,17 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testShortTableColumnsHaveSharedMinimumWidth() throws {
+        let renderer = DefaultMarkdownRenderer()
+        let model = try XCTUnwrap(renderer.render("| 甲 | 乙 |\n| --- | --- |\n| 一 | 二 |").compactMap {
+            if case .table(let model) = $0 { return model }; return nil
+        }.first)
+        let table = THKTableView()
+        table.configure(model: model, theme: .default)
+        XCTAssertEqual(table.contentSize.width, 96, accuracy: 0.5,
+                       "Two 48pt columns, with no additional width for borders")
+    }
+
     func testHostLinkInterceptionMatchesBodyAndEmbeddedTable() throws {
         let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 240))
         view.setMarkdown("| 链接 |\n| --- |\n| [示例](https://example.com) |")
