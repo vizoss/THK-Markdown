@@ -6,6 +6,15 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testMermaidTemplateDoesNotCloseScriptInsideAComment() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let template = try String(contentsOf: root.appendingPathComponent("Sources/THKMDView/mermaid_template.html"), encoding: .utf8)
+        // One external script and one inline script: HTML parses closing tags even
+        // inside JavaScript comments, so any third occurrence terminates the code.
+        XCTAssertEqual(template.lowercased().components(separatedBy: "</script>").count - 1, 2)
+    }
+
     func testLeadingNestedQuoteUsesContainerPaddingAndClearsItOnReuse() throws {
         let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-03" })
         let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 200))

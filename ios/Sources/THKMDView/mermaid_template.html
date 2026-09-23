@@ -27,8 +27,8 @@
   // THKMDView bridges out via window.webkit.messageHandlers.thkMermaid (see
   // THKMermaidView.swift's WKScriptMessageHandler proxy). The Mermaid source itself is
   // injected as a base64-encoded JSON string literal (THK_MERMAID_SOURCE_B64) rather than
-  // interpolated as raw text, so arbitrary chat content (quotes, backslashes, `</script>`-
-  // looking substrings) can never break out of this script block.
+  // interpolated as raw text, so arbitrary chat content (quotes, backslashes, or HTML
+  // script-closing tags) can never break out of this script block.
   function thkPostToNative(payload) {
     if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.thkMermaid) {
       window.webkit.messageHandlers.thkMermaid.postMessage(payload);

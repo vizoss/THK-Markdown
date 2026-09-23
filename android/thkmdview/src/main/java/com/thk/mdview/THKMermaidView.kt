@@ -65,14 +65,15 @@ class THKMermaidView @JvmOverloads constructor(
 
     /** Renders (or re-renders, if [source] changed) the given Mermaid diagram source. */
     fun render(source: String, theme: THKMDTheme) {
-        fallbackText.visibility = View.GONE
-        webView.visibility = View.VISIBLE
         fallbackText.setTextColor(theme.codeTextColor)
         fallbackText.setBackgroundColor(theme.codeBackgroundColor)
         fallbackText.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.codeFontSizeSp)
-        webView.layoutParams = webView.layoutParams.apply { height = dp(DEFAULT_HEIGHT_DP) }
-
+        // A closing fence can rebind identical source after the SVG has reported its
+        // height. Keep that measured height (and any error fallback) on a no-op bind.
         if (currentSource == source && pageLoaded) return
+        fallbackText.visibility = View.GONE
+        webView.visibility = View.VISIBLE
+        webView.layoutParams = webView.layoutParams.apply { height = dp(DEFAULT_HEIGHT_DP) }
         currentSource = source
         if (pageLoaded) {
             evaluateRender(source)
