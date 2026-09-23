@@ -57,8 +57,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        fixtures = try { MarkdownFixture.load(this) } catch (error: Exception) {
-            AlertDialog.Builder(this).setTitle("P0 用例加载失败").setMessage(error.toString()).setPositiveButton("关闭", null).show()
+fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
+            AlertDialog.Builder(this).setTitle("用例加载失败").setMessage(error.toString()).setPositiveButton("关闭", null).show()
             return
         }
         installFixtureControls()
@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun installFixtureControls() {
         findViewById<Button>(R.id.selectFixture).setOnClickListener {
-            DemoDialog.show(this, "P0 用例", choices = fixtures.map { "${it.id} · ${it.title}" }, selected = selectedFixture) { index ->
+            DemoDialog.show(this, "Markdown 用例", choices = fixtures.map { "${it.id} · ${it.title}" }, selected = selectedFixture) { index ->
                 selectedFixture = index
                 showFixture(full = true)
             }

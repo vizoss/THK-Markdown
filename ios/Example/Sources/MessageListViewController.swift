@@ -79,7 +79,7 @@ final class MessageListViewController: UIViewController {
         setUpKeyboardObservers()
         setUpDismissKeyboardOnTap()
         do {
-            fixtures = try MarkdownFixture.load()
+fixtures = try MarkdownFixture.loadAll()
             showFixture(full: true)
         } catch {
             fixtureControls.update(title: "用例加载失败", state: error.localizedDescription)
@@ -319,7 +319,7 @@ final class MessageListViewController: UIViewController {
     }
 
     private func selectFixture() {
-        let sheet = DemoDialogController(title: "P0 用例",
+let sheet = DemoDialogController(title: "Markdown 用例",
             choices: fixtures.map { $0.id + " · " + $0.title }, selected: selectedFixture) { [weak self] index in
             self?.selectedFixture = index
             self?.showFixture(full: true)

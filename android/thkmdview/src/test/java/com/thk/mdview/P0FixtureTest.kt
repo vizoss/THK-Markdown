@@ -117,8 +117,8 @@ class P0FixtureTest {
 
     private val renderer = DefaultMarkdownRenderer(ApplicationProvider.getApplicationContext())
     private fun render(markdown: String) = renderer.render(markdown, THKMDTheme.Default, ImageBounds(240, 320))
-    private fun cases(): List<JSONObject> {
-        val stream = requireNotNull(javaClass.classLoader!!.getResourceAsStream("p0.json"))
+    private fun cases(suite: String = "p0"): List<JSONObject> {
+        val stream = requireNotNull(javaClass.classLoader!!.getResourceAsStream("$suite.json"))
         val catalog = JSONObject(stream.bufferedReader().use { it.readText() })
         assertEquals(1, catalog.getInt("schemaVersion"))
         val values = catalog.getJSONArray("cases")
@@ -135,8 +135,16 @@ class P0FixtureTest {
     }
 
     @Test fun allSharedCasesRenderEveryPrefixAndMatchTheirContracts() {
-        val fixtures = cases()
-        assertEquals(18, fixtures.size)
+        assertCatalog("p0", 18)
+    }
+
+    @Test fun p1SharedCasesRenderEveryPrefixAndMatchTheirContracts() {
+        assertCatalog("p1", 60)
+    }
+
+    private fun assertCatalog(suite: String, count: Int) {
+        val fixtures = cases(suite)
+        assertEquals(count, fixtures.size)
         assertEquals(fixtures.size, fixtures.map { it.getString("id") }.distinct().size)
         for (fixture in fixtures) {
             val id = fixture.getString("id")

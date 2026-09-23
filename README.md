@@ -100,6 +100,12 @@ and [iOS](ios/Sources/THKMDView/THKMDTheme.swift) definitions, and the
 
 ## Status
 
+The demos share 18 P0 regression fixtures and 60 P1 CommonMark/GFM fixtures,
+with full-text and deterministic streaming playback. Both platforms load the same
+JSON sources. See the [P1 coverage and acceptance guide](docs/P1.zh-CN.md) (Chinese).
+P1 is wired into the regression test entry points but has not yet been built,
+tested or visually accepted; fixture coverage is not a conformance claim.
+
 ### Example UI
 
 The Android/iOS demo chrome uses a shared flat visual specification, independent of

@@ -46,7 +46,7 @@ final class FixtureControls: UIStackView {
         DemoUI.style(select)
         select.titleLabel?.lineBreakMode = .byTruncatingTail
         select.heightAnchor.constraint(equalToConstant: DemoUI.control).isActive = true
-        select.setTitle("选择 P0 用例", for: .normal)
+select.setTitle("选择 Markdown 用例", for: .normal)
         select.addTarget(self, action: #selector(selectTapped), for: .touchUpInside)
         addArrangedSubview(select)
         let actions = UIStackView()

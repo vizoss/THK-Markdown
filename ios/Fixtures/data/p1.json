@@ -1,0 +1,1988 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "P1-01",
+      "title": "ATX 六级标题",
+      "category": "heading",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "# 一级标题\n## 二级标题\n### 三级标题\n#### 四级标题\n##### 五级标题\n###### 六级标题",
+      "chunks": [
+        "# 一级标题\n",
+        "## 二级标题\n",
+        "### 三级标题",
+        "\n",
+        "#### 四级标",
+        "题\n",
+        "##### 五级",
+        "标题\n",
+        "###### 六",
+        "级标题"
+      ],
+      "expected": {
+        "textContains": [
+          "一级标题",
+          "六级标题"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "六级标题均加粗；字号逐级递减，标题上下不能裁切。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-02",
+      "title": "Setext 两级标题",
+      "category": "heading",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "一级标题\n========\n\n二级标题\n--------",
+      "chunks": [
+        "一级标题\n",
+        "========",
+        "\n",
+        "\n",
+        "二级标题\n",
+        "--------"
+      ],
+      "expected": {
+        "textContains": [
+          "一级标题",
+          "二级标题"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "等号下划线为一级标题，连字符下划线为二级标题，不画分割线。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-03",
+      "title": "标题结束标记",
+      "category": "heading",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "### 标题内容 ###\n\n正文",
+      "chunks": [
+        "### 标题内容",
+        " ###\n",
+        "\n",
+        "正文"
+      ],
+      "expected": {
+        "textContains": [
+          "标题内容",
+          "正文"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "末尾合法的空格加井号不显示；正文不继承标题字号。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-04",
+      "title": "缺少空格的伪标题",
+      "category": "heading",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "#不是标题\n\n####### 七个井号不是标题",
+      "chunks": [
+        "#不是标题\n",
+        "\n",
+        "####### ",
+        "七个井号不是标题"
+      ],
+      "expected": {
+        "textContains": [
+          "#不是标题",
+          "#######"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "两段都是普通文本，不误识别为标题。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-05",
+      "title": "标题里的行内格式",
+      "category": "heading",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "## 标题含 **粗体**、*斜体* 与 `code`",
+      "chunks": [
+        "## 标题含 *",
+        "*粗体**、*斜",
+        "体* 与 `co",
+        "de`"
+      ],
+      "expected": {
+        "textContains": [
+          "标题含",
+          "粗体",
+          "斜体",
+          "code"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "标题字号保持；斜体和等宽代码不丢失。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-06",
+      "title": "标题中断段落",
+      "category": "heading",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "前面的段落\n## 新标题\n后面的段落",
+      "chunks": [
+        "前面的段落\n",
+        "## 新标题\n",
+        "后面的段落"
+      ],
+      "expected": {
+        "textContains": [
+          "前面的段落",
+          "新标题",
+          "后面的段落"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "标题独立成块；前后正文恢复正文字号。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-07",
+      "title": "普通软换行",
+      "category": "paragraph",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "第一行文字\n第二行文字",
+      "chunks": [
+        "第一行文字\n",
+        "第二行文字"
+      ],
+      "expected": {
+        "textContains": [
+          "第一行文字",
+          "第二行文字"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "单个源换行作为软换行，按本项目统一规则呈现为空格，不强制折行。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-08",
+      "title": "双空格硬换行",
+      "category": "paragraph",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "第一行文字  \n第二行文字",
+      "chunks": [
+        "第一行文字  \n",
+        "第二行文字"
+      ],
+      "expected": {
+        "textContains": [
+          "第一行文字\n第二行文字"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "行尾两个空格形成硬换行；不出现可见空格或多余空白行。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-09",
+      "title": "反斜杠硬换行",
+      "category": "paragraph",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "第一行文字\\\n第二行文字",
+      "chunks": [
+        "第一行文字\\\n",
+        "第二行文字"
+      ],
+      "expected": {
+        "textContains": [
+          "第一行文字\n第二行文字"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "反斜杠被消费，第二行必须另起一行。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-10",
+      "title": "空行分段",
+      "category": "paragraph",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "段落甲\n\n段落乙\n\n\n段落丙",
+      "chunks": [
+        "段落甲\n",
+        "\n",
+        "段落乙\n",
+        "\n",
+        "\n",
+        "段落丙"
+      ],
+      "expected": {
+        "textContains": [
+          "段落甲",
+          "段落乙",
+          "段落丙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "空行划分三个段落，多余空行不产生空消息块。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-11",
+      "title": "CRLF 行尾",
+      "category": "paragraph",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "段落甲\r\n\r\n段落乙",
+      "chunks": [
+        "段落甲\r\n",
+        "\r\n",
+        "段落乙"
+      ],
+      "expected": {
+        "textContains": [
+          "段落甲",
+          "段落乙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "Windows 行尾正常分段，不显示回车控制字符。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-12",
+      "title": "首尾空白行",
+      "category": "paragraph",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "\n\n正文内容\n\n",
+      "chunks": [
+        "\n",
+        "\n",
+        "正文内容\n",
+        "\n"
+      ],
+      "expected": {
+        "textContains": [
+          "正文内容"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "首尾空行不生成额外可复制空块。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-13",
+      "title": "星号与下划线强调",
+      "category": "emphasis",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "*星号斜体* _下划线斜体_ **星号粗体** __下划线粗体__",
+      "chunks": [
+        "*星号斜体* _",
+        "下划线斜体_ *",
+        "*星号粗体** ",
+        "__下划线粗体_",
+        "_"
+      ],
+      "expected": {
+        "textContains": [
+          "星号斜体",
+          "下划线斜体",
+          "星号粗体",
+          "下划线粗体"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "两种定界符的斜体和粗体效果一致，标记不显示。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-14",
+      "title": "粗斜体组合",
+      "category": "emphasis",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "***粗斜体*** 和 ___另一种粗斜体___",
+      "chunks": [
+        "***粗斜体**",
+        "* 和 ___另",
+        "一种粗斜体___"
+      ],
+      "expected": {
+        "textContains": [
+          "粗斜体",
+          "另一种粗斜体"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "两段同时具有粗体与斜体，而非只保留一种。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-15",
+      "title": "强调嵌套",
+      "category": "emphasis",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "**粗体中的 *斜体* 内容**",
+      "chunks": [
+        "**粗体中的 *",
+        "斜体* 内容**"
+      ],
+      "expected": {
+        "textContains": [
+          "粗体中的",
+          "斜体",
+          "内容"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "内层同时粗斜体；后续内容恢复仅粗体。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-16",
+      "title": "词内下划线",
+      "category": "emphasis",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "foo_bar_baz 与 foo__bar__baz",
+      "chunks": [
+        "foo_bar_",
+        "baz 与 fo",
+        "o__bar__",
+        "baz"
+      ],
+      "expected": {
+        "textContains": [
+          "foo_bar_baz",
+          "foo__bar__baz"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "词内下划线保留，不误变为斜体或粗体。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-17",
+      "title": "未闭合强调",
+      "category": "emphasis",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "未闭合的 **粗体 和 *斜体",
+      "chunks": [
+        "未闭合的 **粗",
+        "体 和 *斜体"
+      ],
+      "expected": {
+        "textContains": [
+          "**粗体",
+          "*斜体"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "未闭合标记按字面保留，不能吞掉尾部内容。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-18",
+      "title": "GFM 删除线",
+      "category": "emphasis",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "原价 ~~删除内容~~ 新价",
+      "chunks": [
+        "原价 ~~删除内",
+        "容~~ 新价"
+      ],
+      "expected": {
+        "textContains": [
+          "原价",
+          "删除内容",
+          "新价"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "只有中间文字有删除线；外部文字不受影响。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-19",
+      "title": "反斜杠转义",
+      "category": "escape",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "\\*不是斜体\\* \\#不是标题 \\[不是链接\\]",
+      "chunks": [
+        "\\*不是斜体\\*",
+        " \\#不是标题 ",
+        "\\[不是链接\\]"
+      ],
+      "expected": {
+        "textContains": [
+          "*不是斜体*",
+          "#不是标题",
+          "[不是链接]"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "标点显示原形，反斜杠不显示且不触发相应语法。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-20",
+      "title": "实体与数字实体",
+      "category": "escape",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "&amp; &lt; &#65; &#x42;",
+      "chunks": [
+        "&amp; &l",
+        "t; &#65;",
+        " &#x42;"
+      ],
+      "expected": {
+        "textContains": [
+          "&",
+          "<",
+          "A",
+          "B"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "命名实体、十进制与十六进制实体解码，非 HTML 执行。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-21",
+      "title": "行内代码隔离标记",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "代码 `**literal**` 与普通文字",
+      "chunks": [
+        "代码 `**li",
+        "teral**`",
+        " 与普通文字"
+      ],
+      "expected": {
+        "textContains": [
+          "**literal**",
+          "普通文字"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "代码内星号保留且不加粗，等宽字与背景仅包围代码。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-22",
+      "title": "双反引号包裹反引号",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "包含 ``a ` b`` 的代码",
+      "chunks": [
+        "包含 ``a `",
+        " b`` 的代码"
+      ],
+      "expected": {
+        "textContains": [
+          "a ` b"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "内层单反引号保留，双反引号边界不显示。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-23",
+      "title": "代码空格归一化",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "` a  b ` 与 `   `",
+      "chunks": [
+        "` a  b `",
+        " 与 `   `"
+      ],
+      "expected": {
+        "textContains": [
+          "a  b"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "首尾各一空格按代码跨度规则裁去；中间双空格保留，全空格代码不被全部删除。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-24",
+      "title": "代码跨度跨行",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "`first\nsecond`",
+      "chunks": [
+        "`first\n",
+        "second`"
+      ],
+      "expected": {
+        "textContains": [
+          "first second"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "代码跨度的换行归一为空格，不产生两个独立代码块。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-25",
+      "title": "反引号围栏与语言",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "```swift\nlet answer = 42\n```",
+      "chunks": [
+        "```swift",
+        "\n",
+        "let answ",
+        "er = 42\n",
+        "```"
+      ],
+      "expected": {
+        "textContains": [
+          "let answer = 42"
+        ],
+        "copyTexts": [
+          "let answer = 42"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "完整代码块等宽，语言标记不显示，复制不含围栏。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-26",
+      "title": "波浪号围栏",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "~~~text\nalpha\nbeta\n~~~",
+      "chunks": [
+        "~~~text\n",
+        "alpha\n",
+        "beta\n",
+        "~~~"
+      ],
+      "expected": {
+        "textContains": [
+          "alpha",
+          "beta"
+        ],
+        "copyTexts": [
+          "alpha\nbeta"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "波浪号围栏与反引号围栏的布局和复制行为一致。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-27",
+      "title": "较长围栏包含短围栏",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "````text\n```\ninside\n```\n````",
+      "chunks": [
+        "````text",
+        "\n",
+        "```\n",
+        "inside\n",
+        "```\n",
+        "````"
+      ],
+      "expected": {
+        "textContains": [
+          "```\ninside\n```"
+        ],
+        "copyTexts": [
+          "```\ninside\n```"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "内部三个反引号作为代码，不提前终止四反引号围栏。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-28",
+      "title": "未闭合代码围栏",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "```text\nstill code\nlast line",
+      "chunks": [
+        "```text\n",
+        "still co",
+        "de\n",
+        "last lin",
+        "e"
+      ],
+      "expected": {
+        "textContains": [
+          "still code",
+          "last line"
+        ],
+        "copyTexts": [
+          "still code\nlast line"
+        ],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "到文档末尾均为代码，可复制内容完整。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-29",
+      "title": "四空格缩进代码",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "    first line\n    second line\n\n正文",
+      "chunks": [
+        "    firs",
+        "t line\n",
+        "    seco",
+        "nd line\n",
+        "\n",
+        "正文"
+      ],
+      "expected": {
+        "textContains": [
+          "first line",
+          "second line",
+          "正文"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "前两行是代码块，正文退出代码样式。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-30",
+      "title": "空代码块",
+      "category": "code",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "```text\n```\n\n尾部正文",
+      "chunks": [
+        "```text\n",
+        "```\n",
+        "\n",
+        "尾部正文"
+      ],
+      "expected": {
+        "textContains": [
+          "尾部正文"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "空围栏不吞掉后续正文，不生成越界复制范围。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-31",
+      "title": "引用软续行",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 引用开始\n继续引用\n\n引用之外",
+      "chunks": [
+        "> 引用开始\n",
+        "继续引用\n",
+        "\n",
+        "引用之外"
+      ],
+      "expected": {
+        "textContains": [
+          "引用开始",
+          "继续引用",
+          "引用之外"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "懒惰续行属于引用；空行后的普通段落退出引用。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-32",
+      "title": "引用内多个段落",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 引用甲\n>\n> 引用乙",
+      "chunks": [
+        "> 引用甲\n",
+        ">\n",
+        "> 引用乙"
+      ],
+      "expected": {
+        "textContains": [
+          "引用甲",
+          "引用乙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "同一外层背景与连续竖条；段落分开，不多加空白行。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-33",
+      "title": "相邻独立引用",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 第一块\n\n普通段落\n\n> 第二块",
+      "chunks": [
+        "> 第一块\n",
+        "\n",
+        "普通段落\n",
+        "\n",
+        "> 第二块"
+      ],
+      "expected": {
+        "textContains": [
+          "第一块",
+          "普通段落",
+          "第二块"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "两块引用分别有背景、竖条和复制入口，中间段落不被染色。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-34",
+      "title": "引用里的标题和强调",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> ## 引用标题\n>\n> 正文含 **粗体**",
+      "chunks": [
+        "> ## 引用标",
+        "题\n",
+        ">\n",
+        "> 正文含 **",
+        "粗体**"
+      ],
+      "expected": {
+        "textContains": [
+          "引用标题",
+          "正文含",
+          "粗体"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "标题完整不裁切，正文缩回原字号，粗体只作用于标记内容。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-35",
+      "title": "引用内列表",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> - 引用列表甲\n> - 引用列表乙",
+      "chunks": [
+        "> - 引用列表",
+        "甲\n",
+        "> - 引用列表",
+        "乙"
+      ],
+      "expected": {
+        "textContains": [
+          "引用列表甲",
+          "引用列表乙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "保留引用容器与列表符号；符号、竖条、文字不重叠。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-36",
+      "title": "引用硬换行",
+      "category": "quote",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "> 引用第一行  \n> 引用第二行",
+      "chunks": [
+        "> 引用第一行 ",
+        " \n",
+        "> 引用第二行"
+      ],
+      "expected": {
+        "textContains": [
+          "引用第一行\n引用第二行"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "硬换行保留，竖条覆盖两行而非只覆盖第一行。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-37",
+      "title": "三种无序列表标记",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 减号列表\n\n* 星号列表\n\n+ 加号列表",
+      "chunks": [
+        "- 减号列表\n",
+        "\n",
+        "* 星号列表\n",
+        "\n",
+        "+ 加号列表"
+      ],
+      "expected": {
+        "textContains": [
+          "减号列表",
+          "星号列表",
+          "加号列表"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "三种标记都渲染为项目符号，不显示原始标记。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-38",
+      "title": "紧凑与松散列表",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 紧凑甲\n- 紧凑乙\n\n分隔段落\n\n- 松散甲\n\n- 松散乙",
+      "chunks": [
+        "- 紧凑甲\n",
+        "- 紧凑乙\n",
+        "\n",
+        "分隔段落\n",
+        "\n",
+        "- 松散甲\n",
+        "\n",
+        "- 松散乙"
+      ],
+      "expected": {
+        "textContains": [
+          "紧凑甲",
+          "紧凑乙",
+          "松散甲",
+          "松散乙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "紧凑项无多余空行；松散项的段落边界可辨。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-39",
+      "title": "有序编号连续性",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "1. 第一项\n8. 第二项\n3. 第三项",
+      "chunks": [
+        "1. 第一项\n",
+        "8. 第二项\n",
+        "3. 第三项"
+      ],
+      "expected": {
+        "textContains": [
+          "第一项",
+          "第二项",
+          "第三项"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "显示连续的 1、2、3，不能按后续源编号显示 8。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-40",
+      "title": "非一开始的有序列表",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "7. 第七项\n8. 第八项",
+      "chunks": [
+        "7. 第七项\n",
+        "8. 第八项"
+      ],
+      "expected": {
+        "textContains": [
+          "第七项",
+          "第八项"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "目标编号为 7、8；CocoaPods 当前存在从 1 开始的已知差异，需重点复验并后续修复。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-41",
+      "title": "右括号有序标记",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "1) 项目甲\n2) 项目乙",
+      "chunks": [
+        "1) 项目甲\n",
+        "2) 项目乙"
+      ],
+      "expected": {
+        "textContains": [
+          "项目甲",
+          "项目乙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "右括号语法被识别为有序列表，按项目统一编号样式呈现。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-42",
+      "title": "有序与无序嵌套",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "1. 外层甲\n   - 内层乙\n   - 内层丙\n2. 外层丁",
+      "chunks": [
+        "1. 外层甲\n",
+        "   - 内层乙",
+        "\n",
+        "   - 内层丙",
+        "\n",
+        "2. 外层丁"
+      ],
+      "expected": {
+        "textContains": [
+          "外层甲",
+          "内层乙",
+          "内层丙",
+          "外层丁"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "子项缩进不累计父级标记，外层结束恢复同列。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-43",
+      "title": "列表项中的多段文字",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- 第一段\n\n  第二段仍在同一项\n- 下一项",
+      "chunks": [
+        "- 第一段\n",
+        "\n",
+        "  第二段仍在同",
+        "一项\n",
+        "- 下一项"
+      ],
+      "expected": {
+        "textContains": [
+          "第一段",
+          "第二段仍在同一项",
+          "下一项"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "第二段不新增项目符号；下一项重新出现符号。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-44",
+      "title": "GFM 任务列表状态",
+      "category": "list",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "- [ ] 待完成\n- [x] 小写完成\n- [X] 大写完成",
+      "chunks": [
+        "- [ ] 待完",
+        "成\n",
+        "- [x] 小写",
+        "完成\n",
+        "- [X] 大写",
+        "完成"
+      ],
+      "expected": {
+        "textContains": [
+          "待完成",
+          "小写完成",
+          "大写完成"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "一个空框、两个勾选框；不重复出现项目符号；当前复选框仅展示。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-45",
+      "title": "行内链接与标题",
+      "category": "link",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "[打开示例](https://example.com/p1 \"提示标题\")",
+      "chunks": [
+        "[打开示例](h",
+        "ttps://e",
+        "xample.c",
+        "om/p1 \"提",
+        "示标题\")"
+      ],
+      "expected": {
+        "textContains": [
+          "打开示例"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "文字蓝色且有下划线；点击反馈 URL，title 不混入正文。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-46",
+      "title": "引用式链接",
+      "category": "link",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "[引用链接][ref]\n\n[ref]: https://example.com/reference",
+      "chunks": [
+        "[引用链接][r",
+        "ef]\n",
+        "\n",
+        "[ref]: h",
+        "ttps://e",
+        "xample.c",
+        "om/refer",
+        "ence"
+      ],
+      "expected": {
+        "textContains": [
+          "引用链接"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "引用定义不显示，标签链接到定义地址。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-47",
+      "title": "折叠与快捷引用",
+      "category": "link",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "[短引用][] 与 [另一引用]\n\n[短引用]: https://example.com/a\n[另一引用]: https://example.com/b",
+      "chunks": [
+        "[短引用][] ",
+        "与 [另一引用]",
+        "\n",
+        "\n",
+        "[短引用]: h",
+        "ttps://e",
+        "xample.c",
+        "om/a\n",
+        "[另一引用]: ",
+        "https://",
+        "example.",
+        "com/b"
+      ],
+      "expected": {
+        "textContains": [
+          "短引用",
+          "另一引用"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "两种引用都可点击，定义段不显示。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-48",
+      "title": "未定义引用",
+      "category": "link",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "[未定义][missing]",
+      "chunks": [
+        "[未定义][mi",
+        "ssing]"
+      ],
+      "expected": {
+        "textContains": [
+          "[未定义][missing]"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "未定义引用完整保留为普通文本，不创建错误链接。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-49",
+      "title": "尖括号自动链接",
+      "category": "link",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "<https://example.com/path> 与 <hello@example.com>",
+      "chunks": [
+        "<https:/",
+        "/example",
+        ".com/pat",
+        "h> 与 <he",
+        "llo@exam",
+        "ple.com>"
+      ],
+      "expected": {
+        "textContains": [
+          "https://example.com/path",
+          "hello@example.com"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "去掉尖括号并可点击；邮箱应反馈 mailto: 地址。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-50",
+      "title": "链接文字含强调",
+      "category": "link",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "[**粗体链接**与*斜体*](https://example.com/style)",
+      "chunks": [
+        "[**粗体链接*",
+        "*与*斜体*](",
+        "https://",
+        "example.",
+        "com/styl",
+        "e)"
+      ],
+      "expected": {
+        "textContains": [
+          "粗体链接",
+          "斜体"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "强调属性与链接色、下划线同时保留，点击范围覆盖整个标签。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-51",
+      "title": "行内图片与替代文字",
+      "category": "image",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "图片之前 ![蓝色示例](https://fixtures.thk.invalid/ok.png) 图片之后",
+      "chunks": [
+        "图片之前 ![蓝",
+        "色示例](htt",
+        "ps://fix",
+        "tures.th",
+        "k.invali",
+        "d/ok.png",
+        ") 图片之后"
+      ],
+      "expected": {
+        "textContains": [
+          "图片之前",
+          "图片之后"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "图片由本地 mock 加载，不访问网络；前后文字不丢失，图片点击反馈正确 URL。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-52",
+      "title": "引用式图片",
+      "category": "image",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "![引用图片][img]\n\n[img]: https://fixtures.thk.invalid/ok.png",
+      "chunks": [
+        "![引用图片][",
+        "img]\n",
+        "\n",
+        "[img]: h",
+        "ttps://f",
+        "ixtures.",
+        "thk.inva",
+        "lid/ok.p",
+        "ng"
+      ],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "引用定义不显示；蓝色本地图片正常出现，替代文字仅在未加载或降级时显示。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-53",
+      "title": "三列对齐",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 左对齐 | 居中 | 右对齐 |\n| :--- | :---: | ---: |\n| alpha | beta | gamma |",
+      "chunks": [
+        "| 左对齐 | ",
+        "居中 | 右对齐",
+        " |\n",
+        "| :--- |",
+        " :---: |",
+        " ---: |\n",
+        "| alpha ",
+        "| beta |",
+        " gamma |"
+      ],
+      "expected": {
+        "textContains": [
+          "左对齐",
+          "alpha",
+          "beta",
+          "gamma"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "三列分别左、中、右对齐；表头加粗，边框完整。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-54",
+      "title": "省略外侧竖线",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "名称 | 数值\n--- | ---\napple | 12",
+      "chunks": [
+        "名称 | 数值\n",
+        "--- | --",
+        "-\n",
+        "apple | ",
+        "12"
+      ],
+      "expected": {
+        "textContains": [
+          "名称",
+          "apple",
+          "12"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "没有首尾竖线仍识别为两列表格。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-55",
+      "title": "单元格转义竖线",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 内容 | 值 |\n| --- | --- |\n| a\\|b | 1 |",
+      "chunks": [
+        "| 内容 | 值",
+        " |\n",
+        "| --- | ",
+        "--- |\n",
+        "| a\\|b |",
+        " 1 |"
+      ],
+      "expected": {
+        "textContains": [
+          "a|b",
+          "1"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "转义竖线保留在同一单元格，不多分出一列。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-56",
+      "title": "缺失和多余单元格",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 甲 | 乙 |\n| --- | --- |\n| 缺一格 |\n| 一 | 二 | 多余 |",
+      "chunks": [
+        "| 甲 | 乙 ",
+        "|\n",
+        "| --- | ",
+        "--- |\n",
+        "| 缺一格 |\n",
+        "| 一 | 二 ",
+        "| 多余 |"
+      ],
+      "expected": {
+        "textContains": [
+          "缺一格",
+          "一",
+          "二"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "缺失格补空，超出表头列数的格不显示，列宽和边框不乱。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-57",
+      "title": "仅表头的表格",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "| 名称 | 值 |\n| --- | --- |",
+      "chunks": [
+        "| 名称 | 值",
+        " |\n",
+        "| --- | ",
+        "--- |"
+      ],
+      "expected": {
+        "textContains": [
+          "名称",
+          "值"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "notes": [
+          "只有表头的表格仍显示，不能凭空增加一行数据。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-58",
+      "title": "无分隔行不成表格",
+      "category": "table",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "名称 | 值\nalpha | 1",
+      "chunks": [
+        "名称 | 值\n",
+        "alpha | ",
+        "1"
+      ],
+      "expected": {
+        "textContains": [
+          "名称 | 值",
+          "alpha | 1"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "没有分隔行，保持普通段落，表格数量为零。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-59",
+      "title": "三种主题分割线",
+      "category": "boundary",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "上方\n\n---\n\n中间\n\n***\n\n下方\n\n___\n\n结束",
+      "chunks": [
+        "上方\n",
+        "\n",
+        "---\n",
+        "\n",
+        "中间\n",
+        "\n",
+        "***\n",
+        "\n",
+        "下方\n",
+        "\n",
+        "___\n",
+        "\n",
+        "结束"
+      ],
+      "expected": {
+        "textContains": [
+          "上方",
+          "中间",
+          "下方",
+          "结束"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "显示三条独立分割线；不误判列表或 Setext 标题。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    },
+    {
+      "id": "P1-60",
+      "title": "原始 HTML 安全降级",
+      "category": "boundary",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-cocoapods"
+      ],
+      "markdown": "<div>原始 HTML 块</div>\n\n正文含 <b>标签</b>",
+      "chunks": [
+        "<div>原始 ",
+        "HTML 块</",
+        "div>\n",
+        "\n",
+        "正文含 <b>标",
+        "签</b>"
+      ],
+      "expected": {
+        "textContains": [
+          "原始 HTML 块",
+          "标签"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "notes": [
+          "本项目不执行或布局 HTML，按文本降级；不宣称提供 HTML 浏览器渲染。",
+          "验收状态：待双端实际验证；分片完成态应与全文一致。"
+        ]
+      },
+      "history": [],
+      "checkpoints": []
+    }
+  ]
+}

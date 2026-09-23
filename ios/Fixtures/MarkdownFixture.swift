@@ -47,17 +47,23 @@ public struct MarkdownFixture: Decodable {
         return catalog.cases
     }
 
-    public static func load() throws -> [MarkdownFixture] {
+    /// Load one suite; keep P0 as the default for existing regression tests.
+    public static func load(suite: String = "p0") throws -> [MarkdownFixture] {
+        guard ["p0", "p1"].contains(suite) else { throw CocoaError(.fileNoSuchFile) }
         #if SWIFT_PACKAGE
         let bundle = Bundle.module
         #else
         let bundle = Bundle(for: FixtureBundleAnchor.self)
         #endif
-        guard let url = bundle.url(forResource: "p0", withExtension: "json", subdirectory: "data")
-                ?? bundle.url(forResource: "p0", withExtension: "json") else {
+        guard let url = bundle.url(forResource: suite, withExtension: "json", subdirectory: "data")
+                ?? bundle.url(forResource: suite, withExtension: "json") else {
             throw CocoaError(.fileNoSuchFile)
         }
         return try load(from: url)
+    }
+
+    public static func loadAll() throws -> [MarkdownFixture] {
+        try ["p0", "p1"].flatMap { try load(suite: $0) }
     }
 }
 

@@ -14,8 +14,11 @@ data class MarkdownFixture(
     val summary get() = "$id · $title\n" + notes.joinToString("\n") +
         "\n预期复制内容：\n" + if (copyTexts.isEmpty()) "按块检查，无固定断言" else copyTexts.joinToString("\n——\n")
     companion object {
-        fun load(context: Context): List<MarkdownFixture> {
-            val catalog = JSONObject(context.assets.open("p0.json").bufferedReader().use { it.readText() })
+        fun loadAll(context: Context): List<MarkdownFixture> = listOf("p0", "p1").flatMap { load(context, it) }
+
+        fun load(context: Context, suite: String = "p0"): List<MarkdownFixture> {
+            require(suite in listOf("p0", "p1"))
+            val catalog = JSONObject(context.assets.open("$suite.json").bufferedReader().use { it.readText() })
             require(catalog.getInt("schemaVersion") == 1)
             val cases = catalog.getJSONArray("cases")
             val result = (0 until cases.length()).map { index ->

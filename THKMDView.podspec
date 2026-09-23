@@ -43,6 +43,6 @@ Pod::Spec.new do |s|
     test_spec.requires_app_host = true
     test_spec.source_files = ['ios/Tests/THKMDViewCocoaPodsTests/**/*.swift',
                               'ios/Tests/Shared/**/*.swift', 'ios/Fixtures/MarkdownFixture.swift']
-    test_spec.resources = 'ios/Fixtures/data/p0.json'
+    test_spec.resources = 'ios/Fixtures/data/*.json'
   end
 end

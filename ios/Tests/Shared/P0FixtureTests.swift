@@ -286,8 +286,16 @@ final class P0FixtureTests: XCTestCase {
     }
 
     func testSharedCatalogRendersEveryPrefixAndFinalContracts() throws {
-        let fixtures = try MarkdownFixture.load()
-        XCTAssertEqual(fixtures.count, 18)
+        try assertCatalog(suite: "p0", count: 18)
+    }
+
+    func testP1CatalogRendersEveryPrefixAndFinalContracts() throws {
+        try assertCatalog(suite: "p1", count: 60)
+    }
+
+    private func assertCatalog(suite: String, count: Int) throws {
+        let fixtures = try MarkdownFixture.load(suite: suite)
+        XCTAssertEqual(fixtures.count, count)
         let renderer = DefaultMarkdownRenderer()
         for fixture in fixtures {
             var prefix = ""
