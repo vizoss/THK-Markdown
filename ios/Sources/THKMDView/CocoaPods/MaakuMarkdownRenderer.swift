@@ -352,7 +352,13 @@ struct MaakuAttributedStringVisitor {
         let result = NSMutableAttributedString()
         for (index, block) in blocks.enumerated() {
             if index > 0 {
-                result.append(NSAttributedString(string: "\n\n"))
+                // TextKit uses the terminating newline's font for line metrics.
+                // An unstyled newline defaults to 12pt and clips a larger heading.
+                let previousFont = result.length > 0
+                    ? (result.attribute(.font, at: result.length - 1, effectiveRange: nil) as? UIFont ?? baseFont)
+                    : baseFont
+                result.append(NSAttributedString(string: "\n", attributes: [.font: previousFont]))
+                result.append(NSAttributedString(string: "\n", attributes: [.font: baseFont]))
             }
             result.append(visit(block: block))
         }

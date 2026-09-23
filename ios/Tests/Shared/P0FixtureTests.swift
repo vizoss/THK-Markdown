@@ -6,6 +6,41 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testLargeHeadingBeforeBodyHasUnclippedBaseline() throws {
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 600))
+        var theme = THKMDTheme.default
+        theme.bodyFontSize = 24
+        view.theme = theme
+        view.setMarkdown(try XCTUnwrap(MarkdownFixture.load().first { $0.id == "P0-18" }).markdown)
+        view.layoutIfNeeded()
+        let stack = try XCTUnwrap(view.subviews.first as? UIStackView)
+        let textView = try XCTUnwrap(stack.arrangedSubviews.first as? UITextView)
+        let manager = textView.layoutManager
+        manager.ensureLayout(for: textView.textContainer)
+        let line = manager.lineFragmentRect(forGlyphAt: 0, effectiveRange: nil)
+        let location = manager.location(forGlyphAt: 0)
+        let font = try XCTUnwrap(textView.attributedText.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)
+        XCTAssertGreaterThanOrEqual(line.minY + location.y - font.ascender, -1, "heading \(line) \(location) \(font.ascender)")
+    }
+    func testCopyButtonsStayVisibleAfterWidthChanges() throws {
+        let fixture = try XCTUnwrap(MarkdownFixture.load().first { $0.id == "P0-05" })
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 600))
+        view.setMarkdown(fixture.markdown)
+        func descendants(_ parent: UIView) -> [UIView] { parent.subviews.flatMap { [$0] + descendants($0) } }
+        for width in [CGFloat(340), 720, 340, 180, 340] {
+            view.frame.size.width = width
+            view.setNeedsLayout()
+            view.layoutIfNeeded()
+            let buttons = descendants(view).compactMap { $0 as? UIButton }
+            XCTAssertEqual(buttons.count, 2)
+            for button in buttons {
+                XCTAssertFalse(button.isHidden)
+                let rect = button.convert(button.bounds, to: view)
+                XCTAssertGreaterThanOrEqual(rect.minX, 0)
+                XCTAssertLessThanOrEqual(rect.maxX, width, "\(rect) at width \(width)")
+            }
+        }
+    }
     func testP0LayoutMatrixAndRebinding() throws {
         let fixtures = try MarkdownFixture.load()
         let view = THKMDView(frame: .zero)

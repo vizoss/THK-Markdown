@@ -366,7 +366,13 @@ struct AttributedStringVisitor: MarkupVisitor {
         let result = NSMutableAttributedString()
         for (index, child) in children.enumerated() {
             if index > 0 {
-                result.append(NSAttributedString(string: "\n\n"))
+                // TextKit uses the terminating newline's font for line metrics.
+                // An unstyled newline defaults to 12pt and clips a larger heading.
+                let previousFont = result.length > 0
+                    ? (result.attribute(.font, at: result.length - 1, effectiveRange: nil) as? UIFont ?? baseFont)
+                    : baseFont
+                result.append(NSAttributedString(string: "\n", attributes: [.font: previousFont]))
+                result.append(NSAttributedString(string: "\n", attributes: [.font: baseFont]))
             }
             if let table = child as? Table {
                 result.append(thkNestedTableText(buildTableModel(table)))
