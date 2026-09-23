@@ -12,7 +12,7 @@
     <string name="theme_alert_caution">Alert Caution</string>
     <string name="app_name">THKMDView Sample</string>
     <!-- In-app toolbar title - kept identical to the iOS Example app's nav bar title
-         (see ios/Example/Sources/MessageListViewController.swift) for consistency. -->
+         (see ios/Example/Sources/DemoMessageListViewController.swift) for consistency. -->
     <string name="app_title">THKMDView Demo</string>
     <string name="message_input_hint">输入消息…</string>
     <string name="send">发送</string>

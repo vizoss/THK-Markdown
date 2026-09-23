@@ -7,14 +7,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.fragment.app.FragmentManager
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.slider.Slider
 import com.thk.mdview.THKMDTheme
@@ -55,7 +50,7 @@ private enum class SizeProperty(val labelResId: Int, val valueFrom: Float, val v
 // than a full HSV/RGB picker widget: there's no built-in Android color picker, and this
 // project deliberately avoids new third-party dependencies (see DefaultTHKImageLoader's
 // hand-rolled caching instead of pulling in Coil) - a tap-to-pick grid is simpler and
-// sufficient for a sample-app settings sheet.
+// sufficient for a sample-app settings page.
 private val COLOR_SWATCH_PRESETS: List<Int> = listOf(
     0xFF1C1C1E.toInt(), 0xFF48484A.toInt(), 0xFFC7C7CC.toInt(), 0xFFFFFFFF.toInt(),
     0xFFFF3B30.toInt(), 0xFFFFD1CC.toInt(),
@@ -75,43 +70,24 @@ private fun swatchDrawable(context: Context, color: Int): GradientDrawable {
     }
 }
 
-/**
- * Live-editable settings sheet for every [THKMDTheme] property. Every control's change
- * listener rebuilds a whole [THKMDTheme] from the current value of *all* controls (not
- * just the one that changed) and hands it to [onThemeChanged] - the caller wires that
- * straight to [ChatAdapter.setTheme], the same mechanism the old toolbar toggle used, so
- * there's exactly one code path that pushes a theme onto bound bubbles.
- */
-class ThemeSettingsSheet : BottomSheetDialogFragment() {
+/** Full-page theme editor. Edits and presets are saved immediately for both demos. */
+class ThemeSettingsActivity : DemoPageActivity() {
 
     private var initialTheme: THKMDTheme = THKMDTheme.Default
-    private var onThemeChanged: (THKMDTheme) -> Unit = {}
+    private val onThemeChanged: (THKMDTheme) -> Unit = { DemoThemeStore.save(this, it) }
 
     private val colorValues = mutableMapOf<ColorProperty, Int>()
     private val sizeValues = mutableMapOf<SizeProperty, Float>()
     private val swatchViews = mutableMapOf<ColorProperty, View>()
     private val sliderViews = mutableMapOf<SizeProperty, Pair<TextView, Slider>>()
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
-        // Opens half-expanded, not full screen, so the chat behind the sheet stays
-        // visible while dragging a slider or picking a color - that live view of the
-        // effect is the whole point of live-apply, not just an instantaneous callback.
-        dialog.setOnShowListener {
-            val sheetView = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
-            if (sheetView != null) {
-                val behavior = BottomSheetBehavior.from(sheetView)
-                behavior.isFitToContents = false
-                behavior.halfExpandedRatio = 0.6f
-                behavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
-            }
-        }
-        return dialog
-    }
-
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        initialTheme = DemoThemeStore.load(this)
         loadValues(initialTheme)
-        val root = inflater.inflate(R.layout.sheet_theme_settings, container, false)
+        val inflater = layoutInflater
+        val root = inflater.inflate(R.layout.theme_settings_content, null, false)
+        setPage("主题设置", root, theme = false)
 
         root.findViewById<View>(R.id.presetDefaultButton).setOnClickListener { applyPreset(THKMDTheme.Default) }
         root.findViewById<View>(R.id.presetVibrantButton).setOnClickListener { applyPreset(ALT_THEME) }
@@ -122,7 +98,6 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
         val sizeContainer = root.findViewById<LinearLayout>(R.id.sizeRowContainer)
         SizeProperty.values().forEach { prop -> sizeContainer.addView(buildSizeRow(inflater, sizeContainer, prop)) }
 
-        return root
     }
 
     private fun loadValues(theme: THKMDTheme) {
@@ -156,7 +131,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     private fun applyPreset(theme: THKMDTheme) {
         initialTheme = theme
         loadValues(theme)
-        colorValues.forEach { (prop, color) -> swatchViews[prop]?.background = swatchDrawable(requireContext(), color) }
+        colorValues.forEach { (prop, color) -> swatchViews[prop]?.background = swatchDrawable(this, color) }
         sizeValues.forEach { (prop, value) ->
             val (label, slider) = sliderViews.getValue(prop)
             slider.value = value.coerceIn(prop.valueFrom, prop.valueTo)
@@ -170,7 +145,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
         val swatch = row.findViewById<View>(R.id.swatchView)
         val label = row.findViewById<TextView>(R.id.labelText)
         label.text = getString(prop.labelResId)
-        swatch.background = swatchDrawable(requireContext(), colorValues.getValue(prop))
+        swatch.background = swatchDrawable(this, colorValues.getValue(prop))
         swatch.contentDescription = getString(prop.labelResId)
         swatch.setOnClickListener { showColorPicker(prop) }
         row.setOnClickListener { showColorPicker(prop) }
@@ -201,7 +176,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
         "${getString(prop.labelResId)}: ${if (prop.unit == "×") String.format(java.util.Locale.ROOT, "%.2f", value) else value.roundToInt().toString()}${prop.unit}"
 
     private fun showColorPicker(prop: ColorProperty) {
-        val context = requireContext()
+        val context = this
         var dialog: Dialog? = null
         val grid = buildColorGrid(context) { color ->
             colorValues[prop] = color
@@ -272,14 +247,4 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
         backgroundColor = colorValues.getValue(ColorProperty.VIEW_BACKGROUND)
     )
 
-    companion object {
-        private const val TAG = "theme_settings"
-
-        fun show(fragmentManager: FragmentManager, currentTheme: THKMDTheme, onThemeChanged: (THKMDTheme) -> Unit) {
-            val sheet = ThemeSettingsSheet()
-            sheet.initialTheme = currentTheme
-            sheet.onThemeChanged = onThemeChanged
-            sheet.show(fragmentManager, TAG)
-        }
-    }
 }

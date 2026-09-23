@@ -115,6 +115,22 @@ tested or visually accepted; fixture coverage is not a conformance claim.
 
 ### Example UI
 
+The launcher has three matching destinations on Android and iOS:
+
+- **ShowCase 格式显示**: `ShowCaseActivity` / `ShowCaseViewController`; fixture selection,
+  cross-suite previous/next, full text, play, pause, step and requirements. No chat input.
+- **SSE Chat**: `SSEChatActivity` / `SSEChatViewController`; input and local simulated
+  replies. Each send selects the next shared fixture and appends one chunk every
+  500 ms. This is not a network SSE endpoint.
+- **主题设置**: `ThemeSettingsActivity` / `ThemeSettingsViewController`; a full-page
+  editor, also accessible from each demo’s header. No longer a bottom sheet.
+
+Back returns to the previous page. Theme edits save immediately and refresh the demo
+on return. Leaving a demo stops playback while keeping its received content while
+the page remains on the navigation stack; ShowCase can resume with Play. Sending a
+new chat message interrupts the previous mock reply without deleting its content.
+Chat history is in-memory, not persisted across page destruction or app restarts.
+
 Demo Markdown theme edits and preset selections are saved locally and restored on
 the next launch (Android SharedPreferences / iOS UserDefaults), including color alpha,
 font sizes, corner radius and heading scales. Select Default to save the default

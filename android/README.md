@@ -12,7 +12,7 @@ only covers building, testing, running, and the public API surface.
 - `thkmdview/` — the library (AAR). All public API lives in `com.thk.mdview`.
 - `sample/` — a runnable example app: a `RecyclerView` of chat bubbles, each one
   streamed in via simulated SSE chunks, with a table+image showcase reply, a Mermaid
-  flowchart reply, and a **Theme** button opening a live-editable theme settings sheet.
+  flowchart reply, and a **Theme** button opening a live-editable theme settings page.
 
 ## Build
 
@@ -75,42 +75,17 @@ The sample now reads the shared `ios/Fixtures/data/p0.json` catalog (18 P0 cases
 ./gradlew :sample:installDebug
 ```
 
-Then launch `com.thk.mdview.sample/.MainActivity` on a device or emulator (or just tap
-the "THKMDView Sample" icon). Sending a message cycles through a pool of mock assistant
-replies — headings/emphasis/quotes, code+task lists, nested/ordered lists, a real
-aligned table plus a cached network image, and a full kitchen-sink reply — each streamed
-in via `appendMarkdownChunk` on random 30–80ms delays so you can watch every construct
-render live. The **Theme** button opens `ThemeSettingsSheet`, a
-`BottomSheetDialogFragment` exposing core `THKMDTheme` properties live — see "Theme
-settings sheet" below.
+Launch `com.thk.mdview.sample/.MainActivity` for **ShowCase 格式显示**, **SSE Chat**,
+and **主题设置**. `ShowCaseActivity` retains fixture playback without a chat input.
+`SSEChatActivity` owns input and local simulated streaming (one shared fixture chunk
+per 500 ms; not a network SSE endpoint).
 
-### Theme settings sheet
+### Theme settings page
 
-`sample/src/main/java/com/thk/mdview/sample/ThemeSettingsSheet.kt` is a
-`BottomSheetDialogFragment` that exposes core `THKMDTheme` properties as a
-live-editable control:
-
-- **Colors** (11 color controls — body/heading/link/code text, code background,
-  block-quote bar/text/background, table border/header background, and the view
-  background) render as a row: a circular swatch preview + label. Tapping a swatch opens
-  a small dialog with a curated ~16-color grid (a few neutrals, plus a light and a
-  saturated variant of six hues) to pick from — there's no built-in Android color-picker
-  widget, and this project deliberately avoids adding a third-party one (the same reason
-  `DefaultTHKImageLoader` is hand-rolled instead of pulling in Coil), so a curated grid
-  stands in for a full HSV/RGB picker.
-- **Sizes** (`codeBlockCornerRadiusDp` 0–20dp, `bodyFontSizeSp`/`codeFontSizeSp` 10–24sp)
-  render as a row: a label showing the current value + a `Slider`.
-
-Two preset chips ("Default" / "Vibrant") sit above the controls and populate every
-control at once from `THKMDTheme.Default`/`ALT_THEME`. Every control's change listener —
-whether a swatch pick, a slider drag, or a preset tap — rebuilds a whole `THKMDTheme`
-from the *current* value of all controls and passes it to `ChatAdapter.setTheme(...)`,
-the same mechanism `MainActivity`'s old toolbar toggle used (`THKMDView.theme = ...`
-alone re-renders already-bound bubbles, no `setMarkdown` call needed), so there's one
-single code path that ever pushes a theme onto the chat. The sheet opens half-expanded
-(`BottomSheetBehavior.STATE_HALF_EXPANDED` at a 0.6 ratio) rather than full screen, so
-the chat stays visible behind it while dragging a slider or picking a color — the point
-of live-apply is seeing the effect immediately, not just an instantaneous callback.
+`ThemeSettingsActivity` is a full-page editor with color controls, size sliders and
+Default/Vibrant presets. Changes save immediately through `DemoThemeStore`; both demos
+reload settings on return and offer a Theme shortcut. Color selection still uses a
+small picker dialog. See the root [example UI guide](../README.md#example-ui).
 
 ## Public API
 
@@ -264,7 +239,7 @@ content is currently displayed with the new colors/sizes — no fresh `setMarkdo
 needed. `THKMDTheme.Default` matches the v0 look.
 
 See the root [theme configuration reference](../README.md#theme-configuration) for
-all properties, units, and examples. The sample sheet does not expose every new field;
+all properties, units, and examples. The sample page does not expose every new field;
 heading scales and image placeholder color can be configured through the API.
 
 ### `reset()` and RecyclerView reuse

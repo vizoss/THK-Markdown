@@ -73,14 +73,10 @@ enum DemoThemeStore {
 }
 
 
-/// A modal settings sheet exposing every `THKMDTheme` property as a live-editable control —
-/// colors via `UIColorWell`, sizes via `UISlider` — mirroring a parallel
-/// `BottomSheetDialogFragment` feature on Android this round. Every control change rebuilds a
-/// full `THKMDTheme` from all current control values and reports it through `onThemeChange`,
-/// which `MessageListViewController` wires to the same "push a new theme onto currently-bound
-/// cells" path the old toggle-theme button used (`THKMDView.theme = ...`, no `setMarkdown`
-/// call needed).
-final class ThemeSettingsViewController: UIViewController {
+/// Full-page theme editor. Changes persist immediately; demos reload on return.
+final class ThemeSettingsViewController: DemoPageViewController {
+    override var pageTitle: String { "主题设置" }
+    override var showsTheme: Bool { false }
     var onThemeChange: ((THKMDTheme) -> Void)?
 
     private var theme: THKMDTheme
@@ -101,14 +97,17 @@ final class ThemeSettingsViewController: UIViewController {
         super.init(nibName: nil, bundle: nil)
     }
 
+    convenience init() {
+        self.init(theme: DemoThemeStore.load(), presets: [("Default", .default), ("Vibrant", DemoMessageListViewController.vibrantTheme)])
+    }
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "Theme Settings"
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = DemoUI.surface
 
         setUpScrollView()
         addPresetRow()
@@ -124,29 +123,30 @@ final class ThemeSettingsViewController: UIViewController {
         NSLayoutConstraint.activate([
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            scrollView.topAnchor.constraint(equalTo: demoHeader.bottomAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
         stack.axis = .vertical
-        stack.spacing = 16
+        stack.spacing = 12
         stack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(stack)
         NSLayoutConstraint.activate([
-            stack.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: 20),
-            stack.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -20),
-            stack.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 20),
-            stack.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -20),
+            stack.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor, constant: DemoUI.gutter),
+            stack.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor, constant: -DemoUI.gutter),
+            stack.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: DemoUI.gutter),
+            stack.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -DemoUI.gutter),
             // Pins the stack's width to the scroll view's frame (not its content), which is
             // what makes a UIScrollView scroll only vertically here.
-            stack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -40)
+            stack.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -2 * DemoUI.gutter)
         ])
     }
 
     private func addSectionLabel(_ text: String) {
         let label = UILabel()
         label.text = text
-        label.font = .preferredFont(forTextStyle: .headline)
+        label.font = .systemFont(ofSize: DemoUI.font, weight: .bold)
+        label.textColor = DemoUI.ink
         stack.addArrangedSubview(label)
     }
 
@@ -158,13 +158,10 @@ final class ThemeSettingsViewController: UIViewController {
         row.spacing = 12
         row.distribution = .fillEqually
         for preset in presets {
-            var configuration = UIButton.Configuration.plain()
-            configuration.title = preset.name
-            configuration.baseBackgroundColor = .secondarySystemBackground
-            configuration.background.backgroundColor = .secondarySystemBackground
-            configuration.background.cornerRadius = 8
-            configuration.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
-            let button = UIButton(configuration: configuration)
+            let button = UIButton(type: .system)
+            DemoUI.style(button)
+            button.setTitle(preset.name, for: .normal)
+            button.heightAnchor.constraint(equalToConstant: DemoUI.control).isActive = true
             button.addAction(UIAction { [weak self] _ in
                 self?.applyPreset(preset.theme)
             }, for: .touchUpInside)
@@ -183,6 +180,7 @@ final class ThemeSettingsViewController: UIViewController {
             row.slider.value = value
             row.valueLabel.text = Self.formatValue(value)
         }
+        DemoThemeStore.save(theme)
         onThemeChange?(theme)
     }
 
@@ -238,6 +236,8 @@ final class ThemeSettingsViewController: UIViewController {
 
         let label = UILabel()
         label.text = title
+        label.font = .systemFont(ofSize: DemoUI.font)
+        label.textColor = DemoUI.ink
         label.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let well = UIColorWell()
@@ -245,8 +245,10 @@ final class ThemeSettingsViewController: UIViewController {
         well.setContentHuggingPriority(.required, for: .horizontal)
         well.addTarget(self, action: #selector(colorWellChanged(_:)), for: .valueChanged)
 
-        row.addArrangedSubview(label)
+        well.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        well.heightAnchor.constraint(equalToConstant: 36).isActive = true
         row.addArrangedSubview(well)
+        row.addArrangedSubview(label)
         stack.addArrangedSubview(row)
 
         colorRows.append((well, get, set))
@@ -268,12 +270,15 @@ final class ThemeSettingsViewController: UIViewController {
 
         let titleLabel = UILabel()
         titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: DemoUI.font)
+        titleLabel.textColor = DemoUI.ink
 
         let initial = get(theme)
         let valueLabel = UILabel()
         valueLabel.text = Self.formatValue(initial)
         valueLabel.textAlignment = .right
-        valueLabel.textColor = .secondaryLabel
+        valueLabel.textColor = DemoUI.muted
+        valueLabel.font = .systemFont(ofSize: DemoUI.font)
 
         header.addArrangedSubview(titleLabel)
         header.addArrangedSubview(valueLabel)
@@ -298,6 +303,7 @@ final class ThemeSettingsViewController: UIViewController {
     @objc private func colorWellChanged(_ sender: UIColorWell) {
         guard let row = colorRows.first(where: { $0.well === sender }) else { return }
         row.set(&theme, sender.selectedColor ?? .clear)
+        DemoThemeStore.save(theme)
         onThemeChange?(theme)
     }
 
@@ -305,6 +311,7 @@ final class ThemeSettingsViewController: UIViewController {
         guard let row = sliderRows.first(where: { $0.slider === sender }) else { return }
         row.valueLabel.text = Self.formatValue(sender.value)
         row.set(&theme, sender.value)
+        DemoThemeStore.save(theme)
         onThemeChange?(theme)
     }
 }

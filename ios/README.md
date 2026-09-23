@@ -147,27 +147,18 @@ publishing the matching versioned ZIP first.
 
 ## Running the Example app
 
-The example is a small UIKit app (`Example/`) — a `UITableViewController` whose cells
-each simulate an SSE stream (random 2–6 character chunks, ~30ms apart, via a `Task`) into
-a `THKMDView`. Sending a message cycles round-robin through a pool of six reply templates
-in `Example/Sources/MockAssistantReply.swift`, each exercising a different construct
-cluster: headings/emphasis/links/quotes, code blocks + task lists, nested/ordered lists,
-a real table (mixed column alignment) + a cached image
-(`https://picsum.photos/seed/thkmdview/480/270`), inert raw HTML, an "everything"
-showcase, and a live-rendered Mermaid flowchart. The nav bar's **Theme** button presents a
-modal settings sheet (`Example/Sources/ThemeSettingsViewController.swift`) with a live
-control for core `THKMDTheme` properties — a `UIColorWell` per color, a `UISlider` per size
-— plus two quick-select preset buttons (`.default` and a custom "Vibrant" theme, matching
-Android's `ALT_THEME` hex-for-hex) that populate every control at once. Every control
-change rebuilds a full `THKMDTheme` from all current control values and pushes it onto
-`THKMDView.theme` on every currently visible bubble, without calling `setMarkdown` again,
-to prove theming re-renders in place. The sheet uses `UISheetPresentationController`
-(`.medium()`/`.large()` detents) and `UIColorWell`, so the Example app's own deployment
-target is iOS 15 — higher than the SDK's own iOS 13 minimum, which is fine since the
-Example app is a demo, not part of the shipped package.
+The UIKit example starts at `MainViewController` with **ShowCase 格式显示**, **SSE Chat**,
+and **主题设置**. `ShowCaseViewController` keeps fixture playback without chat input.
+`SSEChatViewController` owns input and local simulated streaming (one shared fixture
+chunk per 500 ms; not a network SSE endpoint).
+
+`ThemeSettingsViewController` is pushed as a full page with color controls, sliders
+and Default/Vibrant presets. Changes save immediately; both demos reload settings on
+return and offer a Theme shortcut. The example still requires iOS 15 and is not part
+of the SDK binary. See the root [example UI guide](../README.md#example-ui).
 
 See the root [theme configuration reference](../README.md#theme-configuration) for
-all properties, units, and examples. The sample sheet does not expose every new field;
+all properties, units, and examples. The sample page does not expose every new field;
 heading scales, image placeholder color, and copy feedback styling are configurable
 through the API.
 
@@ -225,7 +216,7 @@ and `THKMDViewTests.testReuseSafetyAcrossCellRebind` assert.
 One thing the example app has to do that isn't part of the SDK itself:
 `UITableView.automaticDimension` only re-measures a row's height during its own layout
 passes — it does not observe a child view's `invalidateIntrinsicContentSize()` while a
-cell is on screen. So while a row is actively streaming, `MessageListViewController`
+cell is on screen. So while a row is actively streaming, `DemoMessageListViewController`
 nudges the table with a periodic `tableView.beginUpdates(); tableView.endUpdates()` (see
 `startHeightRefreshTimer()`). If you integrate `THKMDView` into your own streaming list,
 you'll want an equivalent nudge — a batch update on each debounced render, throttled to
