@@ -6,6 +6,28 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testInPlaceFontChangeNotifiesHostAndUpdatesQuoteHeight() throws {
+        let fixture = try XCTUnwrap(MarkdownFixture.load().first { $0.id == "P0-01" })
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 280, height: 300))
+        view.setMarkdown(fixture.markdown)
+        view.layoutIfNeeded()
+        let smallHeight = view.intrinsicContentSize.height
+        var notifications = 0
+        view.onContentSizeChange = { notifications += 1 }
+        var theme = view.theme
+        theme.bodyFontSize = 24
+        view.theme = theme
+        XCTAssertGreaterThan(notifications, 0, "The table host must be asked to remeasure the existing row")
+        view.layoutIfNeeded()
+        XCTAssertGreaterThan(view.intrinsicContentSize.height, smallHeight)
+
+        let fresh = THKMDView(frame: view.frame)
+        fresh.theme = theme
+        fresh.setMarkdown(fixture.markdown)
+        fresh.layoutIfNeeded()
+        XCTAssertEqual(view.intrinsicContentSize.height, fresh.intrinsicContentSize.height, accuracy: 1,
+                       "Changing font in place must match leaving and reopening the fixture")
+    }
     func testNestedQuoteLargeFontLineMetricsAndSpacing() throws {
         let fixture = try XCTUnwrap(MarkdownFixture.load().first { $0.id == "P0-02" })
         for size in [CGFloat(15), 24] {

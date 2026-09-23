@@ -6,7 +6,8 @@ import UIKit
 /// `THKTableView`. Pin/size it like any auto-sizing view (it grows with its content via
 /// `intrinsicContentSize`), and call `reset()` from `prepareForReuse`.
 public final class THKMDView: UIView {
-    /// Async images/diagrams can resize after the final SSE chunk has rendered.
+    /// Content/theme changes and async images/diagrams can change the required height.
+    /// Self-sizing list hosts should schedule a row-height refresh from this callback.
     public var onContentSizeChange: (() -> Void)?
     public var streamingDebounceInterval: TimeInterval {
         get { buffer.debounceInterval }
@@ -136,7 +137,12 @@ public final class THKMDView: UIView {
     private func applyRenderedText(_ markdown: String) {
         let segments = renderer.render(markdown)
         rebuild(with: segments)
+        setNeedsLayout()
         invalidateIntrinsicContentSize()
+        // A self-sizing table cell does not observe this invalidation. Notify its
+        // host for synchronous replacements/theme changes as well as async images;
+        // otherwise a larger font is clipped inside the previous row height.
+        onContentSizeChange?()
     }
 
     private func rerenderCurrentBuffer() {
@@ -199,6 +205,9 @@ public final class THKMDView: UIView {
                 segmentView.layoutManager.leadingQuotePadding = leadingPadding
                 segmentView.layoutManager.trailingQuotePadding = trailingPadding
                 segmentView.textView.attributedText = displayText
+                segmentView.textView.invalidateIntrinsicContentSize()
+                segmentView.textView.setNeedsLayout()
+                segmentView.textView.setNeedsDisplay()
                 segmentView.attachments = startImageLoads(in: attributed, into: segmentView.textView)
                 segmentView.copyableBlocks = copyableBlocks
                 rebuildCopyButtons(for: segmentView)
