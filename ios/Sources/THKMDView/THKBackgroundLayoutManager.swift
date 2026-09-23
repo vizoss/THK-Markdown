@@ -5,6 +5,7 @@ import UIKit
 /// custom attributes (see MarkdownRenderer.swift) and this NSLayoutManager subclass paints
 /// them itself in `drawBackground(forGlyphRange:at:)`, which runs before glyph drawing.
 final class THKBackgroundLayoutManager: NSLayoutManager {
+    var leadingQuotePadding: CGFloat = 0
     var codeBlockBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var inlineCodeBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var blockQuoteBarColor: UIColor = UIColor.systemGray3
@@ -94,7 +95,12 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
     private func drawFullWidthBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat) {
         guard charRange.length > 0, let context = UIGraphicsGetCurrentContext() else { return }
         let glyphRange = self.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
-        guard let rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
+        guard var rect = unionOfLineFragmentRects(forGlyphRange: glyphRange, origin: origin) else { return }
+        if charRange.location == 0, leadingQuotePadding > 0,
+           textStorage?.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil {
+            rect.origin.y -= leadingQuotePadding
+            rect.size.height += leadingQuotePadding
+        }
         color.setFill()
         let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
         context.addPath(path.cgPath)
@@ -158,6 +164,20 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             if textBottom > textTop {
                 rect.origin.y = origin.y + textTop
                 rect.size.height = textBottom - textTop
+                // When the outer quote contains only nested content, its bar must
+                // still span the second-level quote's surrounding blank space.
+                // Inner bars remain aligned to their own text, including level 3.
+                if depth == 1 {
+                    let firstDepth = storage.attribute(.thkBlockQuoteBar, at: charRange.location, effectiveRange: nil) as? Int ?? 1
+                    let lastDepth = storage.attribute(.thkBlockQuoteBar, at: NSMaxRange(charRange) - 1, effectiveRange: nil) as? Int ?? 1
+                    if firstDepth >= 2 {
+                        rect.origin.y -= THKBlockQuoteMetrics.secondLevelTopSpacing
+                        rect.size.height += THKBlockQuoteMetrics.secondLevelTopSpacing
+                    }
+                    if lastDepth >= 2 {
+                        rect.size.height += THKBlockQuoteMetrics.secondLevelBottomSpacing
+                    }
+                }
             }
         }
         guard rect.height > 0 else { return }

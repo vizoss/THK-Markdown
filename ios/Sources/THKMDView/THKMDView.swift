@@ -167,7 +167,23 @@ public final class THKMDView: UIView {
                 }
                 applyTheme(to: segmentView.layoutManager)
                 segmentView.attachments.forEach { $0.cancelLoading() }
-                segmentView.textView.attributedText = attributed
+                // TextKit ignores paragraphSpacingBefore at the container's start.
+                // Transfer leading quote padding into a real container inset without
+                // inserting a character (copy ranges must remain unchanged).
+                let displayText = NSMutableAttributedString(attributedString: attributed)
+                var leadingPadding: CGFloat = 0
+                if displayText.length > 0,
+                   displayText.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil,
+                   let style = displayText.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle {
+                    leadingPadding = style.paragraphSpacingBefore
+                    let firstParagraph = (displayText.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
+                    let adjusted = style.mutableCopy() as! NSMutableParagraphStyle
+                    adjusted.paragraphSpacingBefore = 0
+                    displayText.addAttribute(.paragraphStyle, value: adjusted, range: firstParagraph)
+                }
+                segmentView.textView.textContainerInset = UIEdgeInsets(top: leadingPadding, left: 0, bottom: 0, right: 0)
+                segmentView.layoutManager.leadingQuotePadding = leadingPadding
+                segmentView.textView.attributedText = displayText
                 segmentView.attachments = startImageLoads(in: attributed, into: segmentView.textView)
                 segmentView.copyableBlocks = copyableBlocks
                 rebuildCopyButtons(for: segmentView)
@@ -317,7 +333,8 @@ public final class THKMDView: UIView {
             // The line fragment excludes the paragraph's reserved trailing gutter.
             // Anchor to the view's right edge, not the text's right edge.
             var x = textView.bounds.width - textView.textContainerInset.right - size - margin
-            let y = textView.textContainerInset.top + firstLineRect.minY + margin
+            let leadingQuote = block.range.location == 0 && textView.textStorage.attribute(.thkCopyableBlockQuote, at: 0, effectiveRange: nil) != nil
+            let y = (leadingQuote ? 0 : textView.textContainerInset.top) + firstLineRect.minY + margin
             while x > 0 && occupied.contains(where: { $0.intersects(CGRect(x: x, y: y, width: size, height: size)) }) {
                 x = max(0, x - size - margin)
             }

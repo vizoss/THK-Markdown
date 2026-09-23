@@ -13,6 +13,19 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun nestedQuoteBarsEndAtTextRatherThanSharedBottomPadding() {
+        val second = ThemedQuoteSpan(barColor = 0, nestedBottomPaddingPx = 10)
+        val third = ThemedQuoteSpan(barColor = 0)
+        // Last line baseline 40, font descent 4, and 10px of level-2 padding.
+        assertEquals(44, second.barBottomForLine(40, 54, 4, true))
+        assertEquals(44, third.barBottomForLine(40, 54, 4, true))
+        // A non-final line stays continuous into the next line.
+        assertEquals(54, second.barBottomForLine(40, 54, 4, false))
+        // The containing outer bar still spans the nested block's blank space.
+        val outer = ThemedQuoteSpan(barColor = 0, backgroundColor = 0, barVerticalInsetPx = 3)
+        assertEquals(51, outer.barBottomForLine(40, 54, 4, true))
+    }
+
     @Test fun secondLevelBottomPaddingOnlyAppliesToLastLine() {
         val span = ThemedQuoteSpan(
             barColor = 0, spanStart = 0, spanEnd = 5,

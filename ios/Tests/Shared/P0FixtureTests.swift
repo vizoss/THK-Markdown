@@ -6,6 +6,28 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testLeadingNestedQuoteUsesContainerPaddingAndClearsItOnReuse() throws {
+        let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-03" })
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 200))
+        func descendants(of parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants(of: $0) }
+        }
+        view.setMarkdown(fixture.markdown)
+        view.layoutIfNeeded()
+        let textView = try XCTUnwrap(descendants(of: view).compactMap { $0 as? UITextView }.first)
+        XCTAssertEqual(textView.textContainerInset.top, 18)
+        let style = try XCTUnwrap(textView.textStorage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)
+        XCTAssertEqual(style.paragraphSpacingBefore, 0)
+        XCTAssertTrue(textView.text.hasPrefix("只有第二级内容"))
+        let manager = try XCTUnwrap(textView.layoutManager as? THKBackgroundLayoutManager)
+        XCTAssertEqual(manager.leadingQuotePadding, 18)
+
+        view.setMarkdown("普通文本")
+        XCTAssertEqual(textView.textContainerInset.top, 0)
+        XCTAssertEqual(manager.leadingQuotePadding, 0)
+        XCTAssertEqual(textView.text, "普通文本")
+    }
+
     func testNestedQuoteParagraphSpacingDoesNotAccumulate() throws {
         let fixture = try XCTUnwrap(try MarkdownFixture.load().first { $0.id == "P0-02" })
         let text = NSMutableAttributedString()

@@ -212,6 +212,16 @@ internal class ThemedQuoteSpan(
 
     override fun getLeadingMargin(first: Boolean): Int = leftInsetPx + stripeWidthPx + gapWidthPx
 
+    internal fun barBottomForLine(baseline: Int, bottom: Int, fontDescent: Int, isLastLine: Boolean): Int {
+        if (!isLastLine) return bottom
+        // All nested quotes on this line share its expanded descent, including
+        // padding contributed by an ancestor. Subtracting only our own padding
+        // gives level 2 and level 3 different ends. Use the unexpanded font's
+        // baseline-relative bottom for every nested bar instead.
+        return if (backgroundColor == null) baseline + fontDescent
+        else bottom - barVerticalInsetPx
+    }
+
     // Drawn as a rounded "pill" (only its very top and very bottom corners rounded, same
     // flat-in-the-middle technique as drawRoundedLineBackground, so a multi-line bar reads
     // as one continuous shape) inset a little from the block's left/top/bottom edges,
@@ -235,9 +245,8 @@ internal class ThemedQuoteSpan(
         val isFirstLine = start <= spanStart
         val isLastLine = end >= spanEnd
         var barTop = top
-        var barBottom = bottom
+        val barBottom = barBottomForLine(baseline, bottom, paint.fontMetricsInt.descent, isLastLine)
         if (isFirstLine) barTop += barVerticalInsetPx + nestedTopPaddingPx
-        if (isLastLine) barBottom -= barVerticalInsetPx + nestedBottomPaddingPx
         drawRoundedLineBackground(
             canvas, paint,
             left = minOf(barLeft, barRight).toInt(), right = maxOf(barLeft, barRight).toInt(),
