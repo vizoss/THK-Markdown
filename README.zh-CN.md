@@ -30,6 +30,63 @@ CocoaPods（用 Maaku 解析，因为 swift-markdown 没有发布 CocoaPods trun
   `prepareForReuse` 里调用，确保被复用的 cell 不会残留上一条消息的渲染尾巴。
 - 可插拔的渲染器与主题、链接/图片点击回调、GFM 扩展语法（表格、删除线、任务列表）。
 
+## 主题配置
+
+双端 Markdown SDK 的颜色与字号由 `THKMDTheme` 统一配置；给 `markdownView.theme` 赋值后会重新渲染当前内容，无需再次调用 `setMarkdown`。iOS 的 SPM 和 CocoaPods 共用这些配置。
+
+### 配置项
+
+| 配置项（Android / iOS 同名，除特别说明外） | 用途 |
+| --- | --- |
+| `bodyTextColor` | 正文、列表和表格正文颜色 |
+| `headingTextColor` | 标题和表格表头文字颜色 |
+| `linkColor` | 链接颜色 |
+| `codeTextColor` | 行内代码、代码块和复制图标颜色 |
+| `codeBackgroundColor` | 行内代码与代码块背景色 |
+| `codeBlockCornerRadiusDp` / `codeBlockCornerRadius` | 代码和引用背景圆角；Android 为 dp，iOS 为 pt |
+| `blockQuoteBarColor` | 引用竖条及水平分隔线颜色 |
+| `blockQuoteTextColor` | 引用正文颜色，不覆盖链接和代码自身颜色 |
+| `blockQuoteBackgroundColor` | 最外层引用背景色，内层引用共享背景 |
+| `tableBorderColor` | 表格网格边框颜色 |
+| `tableHeaderBackgroundColor` | 表格表头背景色 |
+| `backgroundColor` | 整个 Markdown 视图背景色，默认透明 |
+| `bodyFontSizeSp` / `bodyFontSize` | 正文基准字号；Android 为 sp，iOS 为 pt；默认 15 |
+| `codeFontSizeSp` / `codeFontSize` | 代码字号；Android 为 sp，iOS 为 pt；默认 13 |
+| `heading1Scale`～`heading6Scale` | 标题相对正文字号倍率，默认依次为 1.6、1.4、1.25、1.15、1.05、1.0 |
+| `imagePlaceholderColor` | 图片加载中或失败时的占位色 |
+| `copyFeedbackTextColor`（仅 iOS） | 自绘复制成功提示的文字颜色 |
+| `copyFeedbackBackgroundColor`（仅 iOS） | 复制成功提示背景色，包含透明度 |
+| `copyFeedbackFontSize`（仅 iOS） | 复制成功提示字号，单位 pt，默认 12；提示尺寸随字号自适应 |
+
+Android 复制成功提示使用系统 Toast，样式由系统管理。
+
+### 使用示例
+
+```swift
+var theme = THKMDTheme.default
+theme.bodyFontSize = 18
+theme.heading1Scale = 1.8
+theme.imagePlaceholderColor = .lightGray
+theme.copyFeedbackFontSize = 14
+markdownView.theme = theme
+```
+
+```kotlin
+markdownView.theme = THKMDTheme.Default.copy(
+    bodyFontSizeSp = 18f,
+    heading1Scale = 1.8f,
+    imagePlaceholderColor = android.graphics.Color.LTGRAY
+)
+```
+
+### Mermaid 与配置边界
+
+Mermaid 复用同一主题：正文颜色/字号控制图中文字，代码背景控制节点底色，表格边框控制节点边框与连线，引用/表头背景控制次级区域。源码不变时切换主题，图形也会更新。
+
+主题控制 Markdown SDK 自有渲染及 Mermaid 模板，不接管示例 App 导航栏、输入框、选择器等宿主 UI。默认主题是固定配色，不自动切换深色模式；需要时由宿主提供主题。透明子视图用于背景合成；iOS 复制图标的黑色笔画只是模板遮罩，实际显示颜色来自主题。Mock 图片颜色属于测试数据。
+
+所有字段都可通过 API 配置；示例主题面板尚未为每个新增字段提供控件。配置项源码注释见 [Android 主题](android/thkmdview/src/main/java/com/thk/mdview/THKMDTheme.kt)和 [iOS 主题](ios/Sources/THKMDView/THKMDTheme.swift)。改造验证记录见 [主题验证记录](docs/theme-configuration.md)。
+
 ## 现状
 
 当前示例已改为双端共享的 18 个 P0 用例，支持选择、全文、播放、暂停和单步。数据源、覆盖范围及手动验收步骤见 [P0 验收说明](docs/P0.zh-CN.md)。

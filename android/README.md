@@ -79,16 +79,16 @@ replies — headings/emphasis/quotes, code+task lists, nested/ordered lists, a r
 aligned table plus a cached network image, and a full kitchen-sink reply — each streamed
 in via `appendMarkdownChunk` on random 30–80ms delays so you can watch every construct
 render live. The **Theme** button opens `ThemeSettingsSheet`, a
-`BottomSheetDialogFragment` exposing every `THKMDTheme` property live — see "Theme
+`BottomSheetDialogFragment` exposing core `THKMDTheme` properties live — see "Theme
 settings sheet" below.
 
 ### Theme settings sheet
 
 `sample/src/main/java/com/thk/mdview/sample/ThemeSettingsSheet.kt` is a
-`BottomSheetDialogFragment` that exposes every configurable `THKMDTheme` property as a
+`BottomSheetDialogFragment` that exposes core `THKMDTheme` properties as a
 live-editable control:
 
-- **Colors** (all 11 color properties — body/heading/link/code text, code background,
+- **Colors** (11 color controls — body/heading/link/code text, code background,
   block-quote bar/text/background, table border/header background, and the view
   background) render as a row: a circular swatch preview + label. Tapping a swatch opens
   a small dialog with a curated ~16-color grid (a few neutrals, plus a light and a
@@ -259,6 +259,10 @@ recycling.
 `THKMDView.theme` is a settable `THKMDTheme`; assigning a new value re-renders whatever
 content is currently displayed with the new colors/sizes — no fresh `setMarkdown` call
 needed. `THKMDTheme.Default` matches the v0 look.
+
+See the root [theme configuration reference](../README.md#theme-configuration) for
+all properties, units, and examples. The sample sheet does not expose every new field;
+heading scales and image placeholder color can be configured through the API.
 
 ### `reset()` and RecyclerView reuse
 

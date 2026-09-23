@@ -33,6 +33,71 @@ for install instructions and details.
 - Pluggable renderer + theme, tap handlers for links/images, GFM extensions
   (tables, strikethrough, task lists).
 
+## Theme configuration
+
+All SDK-owned Markdown colors and font sizes are configured through `THKMDTheme`.
+Assigning `markdownView.theme` re-renders existing content; no new `setMarkdown` call is needed.
+The iOS SPM and CocoaPods renderers share these settings.
+
+| Property (same name on both platforms unless noted) | Purpose |
+| --- | --- |
+| `bodyTextColor` | Body, list and table body text |
+| `headingTextColor` | Headings and table header text |
+| `linkColor` | Links |
+| `codeTextColor` | Inline code, code blocks and copy icons |
+| `codeBackgroundColor` | Inline/code block backgrounds |
+| `codeBlockCornerRadiusDp` / `codeBlockCornerRadius` | Code/quote background radius, in Android dp / iOS pt |
+| `blockQuoteBarColor` | Quote bars and thematic breaks |
+| `blockQuoteTextColor` | Quote text; preserves link/code colors |
+| `blockQuoteBackgroundColor` | Outermost quote background, shared by nested quotes |
+| `tableBorderColor` | Table grid borders |
+| `tableHeaderBackgroundColor` | Table header background |
+| `backgroundColor` | Entire Markdown view background; transparent by default |
+| `bodyFontSizeSp` / `bodyFontSize` | Base body size, Android sp / iOS pt; default 15 |
+| `codeFontSizeSp` / `codeFontSize` | Code size, Android sp / iOS pt; default 13 |
+| `heading1Scale` through `heading6Scale` | Body-size multipliers; defaults 1.6, 1.4, 1.25, 1.15, 1.05, 1.0 |
+| `imagePlaceholderColor` | Loading/failed image placeholder fill |
+| `copyFeedbackTextColor` (iOS only) | Custom copy confirmation text |
+| `copyFeedbackBackgroundColor` (iOS only) | Copy confirmation background, including alpha |
+| `copyFeedbackFontSize` (iOS only) | Copy confirmation size in pt; default 12; label dimensions adapt |
+
+Android uses a system-styled Toast for copy confirmation.
+
+### Examples
+
+```swift
+var theme = THKMDTheme.default
+theme.bodyFontSize = 18
+theme.heading1Scale = 1.8
+theme.imagePlaceholderColor = .lightGray
+theme.copyFeedbackFontSize = 14
+markdownView.theme = theme
+```
+
+```kotlin
+markdownView.theme = THKMDTheme.Default.copy(
+    bodyFontSizeSp = 18f,
+    heading1Scale = 1.8f,
+    imagePlaceholderColor = android.graphics.Color.LTGRAY
+)
+```
+
+### Mermaid and scope
+
+Mermaid uses body color/size for text, code background for node fills, table border color
+for borders/edges, and quote/header backgrounds for secondary regions. Changing the theme
+updates diagrams even when their source stays unchanged.
+
+These settings cover SDK rendering, not the sample app's navigation, composer or selectors.
+Default colors are fixed, not automatically dark-mode adaptive; hosts can provide an
+appropriate theme. Transparent child views are compositing details; the iOS copy icon's
+black template mask is tinted with the theme at display time. Mock image colors are test data.
+
+Every field is available through the API, but the sample theme panels do not yet expose
+every new field. See the commented [Android](android/thkmdview/src/main/java/com/thk/mdview/THKMDTheme.kt)
+and [iOS](ios/Sources/THKMDView/THKMDTheme.swift) definitions, and the
+[verification record](docs/theme-configuration.md) (Chinese).
+
 ## Status
 
 Initial scaffold: project structure, build tooling, the core rendering pipeline, unit

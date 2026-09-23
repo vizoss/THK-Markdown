@@ -214,7 +214,7 @@ a real table (mixed column alignment) + a cached image
 (`https://picsum.photos/seed/thkmdview/480/270`), inert raw HTML, an "everything"
 showcase, and a live-rendered Mermaid flowchart. The nav bar's **Theme** button presents a
 modal settings sheet (`Example/Sources/ThemeSettingsViewController.swift`) with a live
-control for every `THKMDTheme` property — a `UIColorWell` per color, a `UISlider` per size
+control for core `THKMDTheme` properties — a `UIColorWell` per color, a `UISlider` per size
 — plus two quick-select preset buttons (`.default` and a custom "Vibrant" theme, matching
 Android's `ALT_THEME` hex-for-hex) that populate every control at once. Every control
 change rebuilds a full `THKMDTheme` from all current control values and pushes it onto
@@ -223,6 +223,11 @@ to prove theming re-renders in place. The sheet uses `UISheetPresentationControl
 (`.medium()`/`.large()` detents) and `UIColorWell`, so the Example app's own deployment
 target is iOS 15 — higher than the SDK's own iOS 13 minimum, which is fine since the
 Example app is a demo, not part of the shipped package.
+
+See the root [theme configuration reference](../README.md#theme-configuration) for
+all properties, units, and examples. The sample sheet does not expose every new field;
+heading scales, image placeholder color, and copy feedback styling are configurable
+through the API.
 
 It's generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen) from
 `Example/project.yml`, and both `project.yml` and the generated `Example.xcodeproj` are
