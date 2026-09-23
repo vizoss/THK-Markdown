@@ -105,14 +105,17 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             rect.origin.x = left
             rect.size.width = max(0, right - left)
         }
-        if includesQuotePadding, charRange.location == 0, leadingQuotePadding > 0,
-           textStorage?.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil {
+        // Container-edge paragraph spacing is transferred to textContainerInset by
+        // THKMDView. Extend the owning background over that inset. Quoted code
+        // must not consume the quote's inset a second time.
+        let ownsInset = includesQuotePadding ||
+            textStorage?.attribute(.thkBlockQuoteBackground, at: charRange.location, effectiveRange: nil) == nil
+        if ownsInset, charRange.location == 0, leadingQuotePadding > 0 {
             rect.origin.y -= leadingQuotePadding
             rect.size.height += leadingQuotePadding
         }
-        if includesQuotePadding, let storage = textStorage, NSMaxRange(charRange) == storage.length,
-           trailingQuotePadding > 0,
-           storage.attribute(.thkBlockQuoteBackground, at: storage.length - 1, effectiveRange: nil) != nil {
+        if ownsInset, let storage = textStorage, NSMaxRange(charRange) == storage.length,
+           trailingQuotePadding > 0 {
             rect.size.height += trailingQuotePadding
         }
         color.setFill()

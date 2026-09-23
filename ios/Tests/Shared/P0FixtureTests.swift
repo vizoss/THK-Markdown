@@ -6,6 +6,31 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testCodeAtContainerEdgesReservesPaddingAndClearsOnReuse() throws {
+        let fixtures = try MarkdownFixture.load(suite: "p1")
+            .filter { ["P1-25", "P1-26", "P1-27", "P1-28"].contains($0.id) }
+        XCTAssertEqual(fixtures.count, 4)
+        func descendants(_ parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants($0) }
+        }
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 300))
+        for fixture in fixtures {
+            view.setMarkdown(fixture.markdown)
+            view.layoutIfNeeded()
+            let text = try XCTUnwrap(descendants(view).compactMap { $0 as? UITextView }.first)
+            XCTAssertEqual(text.textContainerInset.top, THKCodeBlockMetrics.verticalPaddingTop, fixture.id)
+            XCTAssertEqual(text.textContainerInset.bottom, THKCodeBlockMetrics.verticalPaddingBottom, fixture.id)
+            let first = try XCTUnwrap(text.textStorage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)
+            let last = try XCTUnwrap(text.textStorage.attribute(.paragraphStyle, at: text.textStorage.length - 1, effectiveRange: nil) as? NSParagraphStyle)
+            XCTAssertEqual(first.paragraphSpacingBefore, 0)
+            XCTAssertEqual(last.paragraphSpacing, 0)
+            XCTAssertEqual(text.text, fixture.expected.copyTexts.first, "Padding must not add copyable whitespace")
+            view.setMarkdown("普通正文")
+            view.layoutIfNeeded()
+            XCTAssertEqual(text.textContainerInset, .zero, "Reused body must not retain code padding")
+        }
+    }
+
     func testShortTableColumnsHaveSharedMinimumWidth() throws {
         let renderer = DefaultMarkdownRenderer()
         let model = try XCTUnwrap(renderer.render("| 甲 | 乙 |\n| --- | --- |\n| 一 | 二 |").compactMap {

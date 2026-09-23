@@ -177,12 +177,13 @@ public final class THKMDView: UIView {
                 segmentView.textView.linkTextAttributes = [.foregroundColor: theme.linkColor, .underlineStyle: NSUnderlineStyle.single.rawValue]
                 segmentView.attachments.forEach { $0.cancelLoading() }
                 // TextKit ignores paragraphSpacingBefore at the container's start.
-                // Transfer leading quote padding into a real container inset without
+                // Transfer leading quote/code padding into a real container inset without
                 // inserting a character (copy ranges must remain unchanged).
                 let displayText = NSMutableAttributedString(attributedString: attributed)
                 var leadingPadding: CGFloat = 0
                 if displayText.length > 0,
-                   displayText.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil,
+                   (displayText.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil ||
+                    displayText.attribute(.thkCodeBlockBackground, at: 0, effectiveRange: nil) != nil),
                    let style = displayText.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle {
                     leadingPadding = style.paragraphSpacingBefore
                     let firstParagraph = (displayText.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
@@ -195,7 +196,8 @@ public final class THKMDView: UIView {
                 // the top, and clear the paragraph value to avoid double padding.
                 var trailingPadding: CGFloat = 0
                 if displayText.length > 0,
-                   displayText.attribute(.thkBlockQuoteBackground, at: displayText.length - 1, effectiveRange: nil) != nil,
+                   (displayText.attribute(.thkBlockQuoteBackground, at: displayText.length - 1, effectiveRange: nil) != nil ||
+                    displayText.attribute(.thkCodeBlockBackground, at: displayText.length - 1, effectiveRange: nil) != nil),
                    let style = displayText.attribute(.paragraphStyle, at: displayText.length - 1, effectiveRange: nil) as? NSParagraphStyle {
                     trailingPadding = style.paragraphSpacing
                     let lastParagraph = (displayText.string as NSString).paragraphRange(for: NSRange(location: displayText.length - 1, length: 0))
