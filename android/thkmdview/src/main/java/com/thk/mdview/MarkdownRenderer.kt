@@ -27,6 +27,7 @@ class DefaultMarkdownRenderer(
 ) : MarkdownRenderer {
 
     private val density = context.resources.displayMetrics.density
+    private val resources = context.resources
 
     private val parser: Parser = Parser.builder()
         .extensions(
@@ -46,7 +47,7 @@ class DefaultMarkdownRenderer(
             placeholderColor = theme.imagePlaceholderColor,
             clickHandler = imageClickHandler
         )
-        val visitor = MarkdownSpanVisitor(theme, density, linkHandler, imageContext)
+        val visitor = MarkdownSpanVisitor(theme, density, linkHandler, imageContext, resources.displayMetrics.scaledDensity)
         return visitor.render(document)
     }
 

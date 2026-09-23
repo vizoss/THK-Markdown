@@ -1,4 +1,5 @@
 <resources>
+    <string name="theme_list_bullet_scale">List Bullet Scale</string>
     <string name="theme_footnote_scale">Footnote Scale</string>
     <string name="theme_math_scale">Math Scale</string>
     <string name="theme_alert_note">Alert Note</string>

@@ -44,6 +44,7 @@ The iOS source and binary distributions share the same renderer and settings.
 | `bodyTextColor` | Body, list and table body text |
 | `headingTextColor` | Headings and table header text |
 | `linkColor` | Links |
+| `listBulletScale` (Android only) | Bullet diameter / body size, default 0.20; follows system font scale in plain lists, quotes and alerts. Configurable/persisted in the demo; iOS retains its native `•` glyph |
 | `alertNoteColor`, `alertTipColor`, `alertImportantColor`, `alertWarningColor`, `alertCautionColor` | Alert title/bar colors; body/background use quote settings |
 | `footnoteScale` | Footnote-reference size relative to body; default 0.75; uses `linkColor` |
 | `mathScale` | Math size relative to body; default 1; uses `bodyTextColor`, transparent background |

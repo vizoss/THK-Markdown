@@ -15,6 +15,7 @@ object DemoThemeStore {
             prefs.getFloat(key, fallback).takeIf { it.isFinite() && it >= 0f && (it > 0f || key == "codeBlockCornerRadiusDp") } ?: fallback
         } catch (_: ClassCastException) { fallback }
         return defaults.copy(
+            listBulletScale = size("listBulletScale", defaults.listBulletScale),
             footnoteScale = size("footnoteScale", defaults.footnoteScale),
             mathScale = size("mathScale", defaults.mathScale),
             alertNoteColor = color("alertNoteColor", defaults.alertNoteColor),
@@ -48,6 +49,7 @@ object DemoThemeStore {
 
     fun save(context: Context, theme: THKMDTheme) {
         preferences(context).edit()
+            .putFloat("listBulletScale", theme.listBulletScale)
             .putFloat("footnoteScale", theme.footnoteScale)
             .putFloat("mathScale", theme.mathScale)
             .putInt("alertNoteColor", theme.alertNoteColor)

@@ -63,7 +63,10 @@ data class THKMDTheme(
     /** 脚注引用序号相对正文字号的倍率；颜色使用 linkColor，不跳转外部浏览器。 */
     val footnoteScale: Float = 0.75f,
     /** 公式相对正文字号的倍率；颜色使用 bodyTextColor，背景透明。 */
-    val mathScale: Float = 1f
+    val mathScale: Float = 1f,
+    /** 无序列表圆点直径相对正文字号的倍率，默认 0.20；跟随 sp/系统字体缩放。
+     * 仅 Android：iOS 使用正文字体的原生 • 字形。普通列表、引用和提示块共用。 */
+    val listBulletScale: Float = 0.20f
 ) {
     internal fun alertColor(kind: String): Int? = when (kind) {
         "NOTE" -> alertNoteColor

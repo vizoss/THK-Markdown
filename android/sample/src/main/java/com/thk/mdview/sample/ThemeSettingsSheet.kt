@@ -40,6 +40,7 @@ private enum class ColorProperty(val labelResId: Int) {
 }
 
 private enum class SizeProperty(val labelResId: Int, val valueFrom: Float, val valueTo: Float, val unit: String) {
+    LIST_BULLET_SCALE(R.string.theme_list_bullet_scale, 0.1f, 0.4f, "×"),
     FOOTNOTE_SCALE(R.string.theme_footnote_scale, 0.5f, 1f, "×"),
     MATH_SCALE(R.string.theme_math_scale, 0.5f, 2f, "×"),
     CODE_CORNER_RADIUS(R.string.theme_prop_code_corner_radius, 0f, 20f, "dp"),
@@ -122,6 +123,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun loadValues(theme: THKMDTheme) {
+        sizeValues[SizeProperty.LIST_BULLET_SCALE] = theme.listBulletScale
         sizeValues[SizeProperty.FOOTNOTE_SCALE] = theme.footnoteScale
         sizeValues[SizeProperty.MATH_SCALE] = theme.mathScale
         colorValues[ColorProperty.ALERT_NOTE] = theme.alertNoteColor
@@ -237,6 +239,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun buildTheme(): THKMDTheme = initialTheme.copy(
+        listBulletScale = sizeValues.getValue(SizeProperty.LIST_BULLET_SCALE),
         footnoteScale = sizeValues.getValue(SizeProperty.FOOTNOTE_SCALE),
         mathScale = sizeValues.getValue(SizeProperty.MATH_SCALE),
         alertNoteColor = colorValues.getValue(ColorProperty.ALERT_NOTE),

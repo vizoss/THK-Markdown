@@ -13,6 +13,51 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun listBulletDiameterFollowsThemeAndFontScaleInEveryContainer() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val parser = org.commonmark.parser.Parser.builder().build()
+        for (source in listOf("- 条目", "> - 条目", "> [!WARNING]\n> - 条目", "- 外层\n  - 内层")) {
+            for (size in listOf(15f, 24f)) for (scaledDensity in listOf(1f, 2f, 3f)) for (ratio in listOf(0.2f, 0.3f)) {
+                val theme = THKMDTheme.Default.copy(bodyFontSizeSp = size, listBulletScale = ratio)
+                val images = ImageRenderContext(ImageBounds(240, 320), 8f, theme.imagePlaceholderColor) { false }
+                val visitor = MarkdownSpanVisitor(theme, 2f, { false }, images, scaledDensity)
+                val bullets = visitor.render(parser.parse(source) as org.commonmark.node.Document)
+                    .filterIsInstance<RenderedSegment.TextSegment>().flatMap { segment ->
+                        val text = segment.spanned as Spanned
+                        text.getSpans(0, text.length, ThemedBulletSpan::class.java).toList()
+                    }
+                assertEquals(if (source.contains("内层")) 2 else 1, bullets.size)
+                bullets.forEach { assertEquals(size * scaledDensity * ratio, it.diameterPx, 0.001f) }
+            }
+        }
+        val renderer = DefaultMarkdownRenderer(context)
+        val text = renderer.render("- 实际渲染器", THKMDTheme.Default, ImageBounds(240, 320))
+            .filterIsInstance<RenderedSegment.TextSegment>().first().spanned as Spanned
+        val bullet = text.getSpans(0, text.length, ThemedBulletSpan::class.java).single()
+        assertEquals(15f * context.resources.displayMetrics.scaledDensity * 0.2f, bullet.diameterPx, 0.001f)
+    }
+
+    @Test fun bulletDrawsOnceAtTextBaselineAndRestoresPaint() {
+        val span = ThemedBulletSpan(6f, 8)
+        val text = android.text.SpannableString("第一行\n第二行")
+        text.setSpan(span, 0, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        val paint = android.graphics.Paint().apply { textSize = 24f; style = android.graphics.Paint.Style.STROKE; isAntiAlias = false }
+        var calls = 0
+        val canvas = object : android.graphics.Canvas() {
+            override fun drawCircle(x: Float, y: Float, radius: Float, p: android.graphics.Paint) {
+                calls++
+                assertEquals(3f, radius, 0.001f)
+                assertEquals(20f + (p.fontMetrics.ascent + p.fontMetrics.descent) / 2, y, 0.001f)
+                assertEquals(android.graphics.Paint.Style.FILL, p.style)
+            }
+        }
+        span.drawLeadingMargin(canvas, paint, 0, 1, 0, 20, 100, text, 0, 3, true, null)
+        span.drawLeadingMargin(canvas, paint, 0, 1, 100, 120, 200, text, 4, text.length, true, null)
+        assertEquals(1, calls)
+        assertEquals(14, span.getLeadingMargin(true))
+        assertEquals(android.graphics.Paint.Style.STROKE, paint.style)
+        assertFalse(paint.isAntiAlias)
+    }
     @Test fun p3SyntaxIsolationAndNumbering() {
         val prepared = MarkdownExtensions.prepare("先[^b] 后[^a] 再[^b]。\n\n[^a]: A\n[^b]: B\n[^unused]: UNUSED")
         assertTrue(prepared.contains("先[1](thk-footnote://reference) 后[2](thk-footnote://reference)"))

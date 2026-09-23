@@ -4,7 +4,6 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.text.Spannable
 import android.text.SpannableStringBuilder
-import android.text.style.BulletSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.LeadingMarginSpan
 import android.text.style.RelativeSizeSpan
@@ -42,7 +41,8 @@ internal class MarkdownSpanVisitor(
     private val theme: THKMDTheme,
     private val densityPx: Float,
     private val linkHandler: (String) -> Boolean,
-    private val imageContext: ImageRenderContext
+    private val imageContext: ImageRenderContext,
+    private val scaledDensityPx: Float = densityPx
 ) : AbstractVisitor() {
 
     private class ListContext(val ordered: Boolean, var index: Int, val level: Int)
@@ -282,7 +282,11 @@ internal class MarkdownSpanVisitor(
                 TaskListItemSpan(taskMarker.isChecked, (markerPaint.textSize * 0.85f).toInt(), (4 * densityPx).toInt())
             }
             ctx.ordered -> OrderedListItemSpan(ctx.index, measuredMarkerWidthPx("${ctx.index}."), gapPx)
-            else -> BulletSpan(gapPx)
+            else -> ThemedBulletSpan(
+                theme.bodyFontSizeSp * scaledDensityPx *
+                    (theme.listBulletScale.takeIf { it.isFinite() && it > 0f } ?: THKMDTheme.Default.listBulletScale),
+                gapPx
+            )
         }
 
         var child: Node? = if (taskMarker != null) listItem.firstChild.next else listItem.firstChild

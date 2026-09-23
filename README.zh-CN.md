@@ -41,6 +41,7 @@ SPM 提供源码，CocoaPods 提供预编译 XCFramework；远端 pod 安装需�
 | `bodyTextColor` | 正文、列表和表格正文颜色 |
 | `headingTextColor` | 标题和表格表头文字颜色 |
 | `linkColor` | 链接颜色 |
+| `listBulletScale`（仅 Android） | 无序列表圆点直径 / 正文字号，默认 0.20，随系统字体缩放；普通列表、引用、提示块共用。iOS 保持原生 `•` 字形。Android 示例可调整并本地保存 |
 | `alertNoteColor` / `alertTipColor` / `alertImportantColor` / `alertWarningColor` / `alertCautionColor` | 对应提示块的标题和竖条颜色；正文和背景复用引用配置 |
 | `footnoteScale` | 脚注上标序号相对正文字号倍率，默认 0.75；颜色复用 `linkColor`，不打开外部链接 |
 | `mathScale` | 公式相对正文字号倍率，默认 1；颜色复用 `bodyTextColor`，背景透明 |
