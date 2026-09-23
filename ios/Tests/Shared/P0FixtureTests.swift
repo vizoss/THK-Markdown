@@ -21,10 +21,19 @@ final class P0FixtureTests: XCTestCase {
         XCTAssertTrue(textView.text.hasPrefix("只有第二级内容"))
         let manager = try XCTUnwrap(textView.layoutManager as? THKBackgroundLayoutManager)
         XCTAssertEqual(manager.leadingQuotePadding, 18)
+        let bottomPadding = THKBlockQuoteMetrics.verticalPaddingBottom
+            + THKBlockQuoteMetrics.secondLevelBottomSpacing
+            + THKBlockQuoteMetrics.interiorLineSpacing
+        XCTAssertEqual(textView.textContainerInset.bottom, bottomPadding)
+        XCTAssertEqual(manager.trailingQuotePadding, bottomPadding)
+        let lastStyle = try XCTUnwrap(textView.textStorage.attribute(.paragraphStyle, at: textView.textStorage.length - 1, effectiveRange: nil) as? NSParagraphStyle)
+        XCTAssertEqual(lastStyle.paragraphSpacing, 0)
 
         view.setMarkdown("普通文本")
         XCTAssertEqual(textView.textContainerInset.top, 0)
         XCTAssertEqual(manager.leadingQuotePadding, 0)
+        XCTAssertEqual(textView.textContainerInset.bottom, 0)
+        XCTAssertEqual(manager.trailingQuotePadding, 0)
         XCTAssertEqual(textView.text, "普通文本")
     }
 

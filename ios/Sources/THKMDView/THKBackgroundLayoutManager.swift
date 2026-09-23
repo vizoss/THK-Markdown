@@ -6,6 +6,7 @@ import UIKit
 /// them itself in `drawBackground(forGlyphRange:at:)`, which runs before glyph drawing.
 final class THKBackgroundLayoutManager: NSLayoutManager {
     var leadingQuotePadding: CGFloat = 0
+    var trailingQuotePadding: CGFloat = 0
     var codeBlockBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var inlineCodeBackgroundColor: UIColor = UIColor.secondarySystemBackground
     var blockQuoteBarColor: UIColor = UIColor.systemGray3
@@ -100,6 +101,11 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
            textStorage?.attribute(.thkBlockQuoteBackground, at: 0, effectiveRange: nil) != nil {
             rect.origin.y -= leadingQuotePadding
             rect.size.height += leadingQuotePadding
+        }
+        if let storage = textStorage, NSMaxRange(charRange) == storage.length,
+           trailingQuotePadding > 0,
+           storage.attribute(.thkBlockQuoteBackground, at: storage.length - 1, effectiveRange: nil) != nil {
+            rect.size.height += trailingQuotePadding
         }
         color.setFill()
         let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)

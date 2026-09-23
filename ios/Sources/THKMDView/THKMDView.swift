@@ -181,8 +181,22 @@ public final class THKMDView: UIView {
                     adjusted.paragraphSpacingBefore = 0
                     displayText.addAttribute(.paragraphStyle, value: adjusted, range: firstParagraph)
                 }
-                segmentView.textView.textContainerInset = UIEdgeInsets(top: leadingPadding, left: 0, bottom: 0, right: 0)
+                // The last paragraph's spacing is not a reliable part of the text
+                // view's fitting height either. Reserve it explicitly, just as at
+                // the top, and clear the paragraph value to avoid double padding.
+                var trailingPadding: CGFloat = 0
+                if displayText.length > 0,
+                   displayText.attribute(.thkBlockQuoteBackground, at: displayText.length - 1, effectiveRange: nil) != nil,
+                   let style = displayText.attribute(.paragraphStyle, at: displayText.length - 1, effectiveRange: nil) as? NSParagraphStyle {
+                    trailingPadding = style.paragraphSpacing
+                    let lastParagraph = (displayText.string as NSString).paragraphRange(for: NSRange(location: displayText.length - 1, length: 0))
+                    let adjusted = style.mutableCopy() as! NSMutableParagraphStyle
+                    adjusted.paragraphSpacing = 0
+                    displayText.addAttribute(.paragraphStyle, value: adjusted, range: lastParagraph)
+                }
+                segmentView.textView.textContainerInset = UIEdgeInsets(top: leadingPadding, left: 0, bottom: trailingPadding, right: 0)
                 segmentView.layoutManager.leadingQuotePadding = leadingPadding
+                segmentView.layoutManager.trailingQuotePadding = trailingPadding
                 segmentView.textView.attributedText = displayText
                 segmentView.attachments = startImageLoads(in: attributed, into: segmentView.textView)
                 segmentView.copyableBlocks = copyableBlocks
