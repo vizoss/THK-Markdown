@@ -1,0 +1,56 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'">
+<script>
+// Only bundled base + AMS, no autoload/require/HTML/link extensions or network.
+window.MathJax = {
+  startup: {typeset: false},
+  tex: {packages: ['base', 'ams'], maxMacros: 1000, maxBuffer: 8192, tags: 'none'},
+  svg: {fontCache: 'none'}
+};
+function reply(value) {
+  const json = JSON.stringify(value);
+  if (window.webkit && window.webkit.messageHandlers.math) window.webkit.messageHandlers.math.postMessage(json);
+  else if (window.MathBridge) window.MathBridge.result(json);
+}
+let queue = Promise.resolve();
+let pending = 0;
+window.renderMath = function(request) {
+  if (pending >= 64) { reply({id: request.id, error: true}); return; }
+  pending++;
+  queue = queue.then(async () => {
+    try {
+      await MathJax.startup.promise;
+      // Do not let one message define macros that affect subsequent messages.
+      if (/\\(?:def|gdef|edef|xdef|let|futurelet|newcommand|renewcommand|providecommand|newenvironment|renewenvironment)\b/.test(request.tex)) throw Error('macro definitions disabled');
+      MathJax.texReset();
+      const node = await MathJax.tex2svgPromise(request.tex, {display: request.display, em: request.size, ex: request.size / 2});
+      const svg = node.querySelector('svg');
+      if (!svg || svg.querySelector('[data-mjx-error]')) throw Error('invalid TeX');
+      // Font-independent SVG paths become a transparent bitmap; surrounding text
+      // stays native/selectable. Width and baseline are returned in logical units.
+      const viewBox = svg.getAttribute('viewBox').split(/\s+/).map(Number);
+      const unit = request.size / 1000;
+      const width = Math.max(1, viewBox[2] * unit), height = Math.max(1, viewBox[3] * unit);
+      if (!Number.isFinite(width + height) || width > 4096 || height > 2048) throw Error('oversize');
+      const descent = Math.max(0, (viewBox[1] + viewBox[3]) * unit);
+      svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      svg.setAttribute('width', width); svg.setAttribute('height', height);
+      svg.style.color = request.color;
+      svg.querySelectorAll('[fill="currentColor"]').forEach(n => n.setAttribute('fill', request.color));
+      svg.querySelectorAll('[stroke="currentColor"]').forEach(n => n.setAttribute('stroke', request.color));
+      const serialized = new XMLSerializer().serializeToString(svg);
+      const image = new Image();
+      const ready = new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
+      image.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(serialized)));
+      await ready;
+      const canvas = document.createElement('canvas');
+      const scale = Math.min(3, Math.max(1, request.scale));
+      if (width * height * scale * scale > 4 * 1024 * 1024) throw Error('bitmap budget');
+      canvas.width = Math.ceil(width * scale); canvas.height = Math.ceil(height * scale);
+      canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+      reply({id: request.id, png: canvas.toDataURL('image/png').split(',')[1], width, height, descent});
+    } catch (_) { reply({id: request.id, error: true}); }
+  }).then(() => { pending--; });
+};
+</script><script src="mathjax-3.2.2.js"></script></head><body></body></html>

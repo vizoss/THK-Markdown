@@ -23,6 +23,7 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
     private let altText: String
     private weak var textStorage: NSTextStorage?
     private var loadTask: Task<Void, Never>?
+    private let theme: THKMDTheme
     /// Set by `THKMDView` so a growing/shrinking image can tell the containing view's own
     /// intrinsic content size is stale too — `invalidateLayout` alone only tells TextKit to
     /// re-measure the text view's internal layout, not the Auto Layout constraints above it.
@@ -31,15 +32,32 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
     public init(url: URL, altText: String, theme: THKMDTheme = .default) {
         self.url = url
         self.altText = altText
+        self.theme = theme
         super.init(data: nil, ofType: nil)
         let placeholderSize = Self.placeholderSize()
         self.image = Self.placeholderImage(size: placeholderSize, color: theme.imagePlaceholderColor)
         self.bounds = CGRect(origin: .zero, size: placeholderSize)
         self.accessibilityLabel = altText
+        if let source = THKMathEngine.source(url) {
+            let attributes: [NSAttributedString.Key: Any] = [.font: UIFont.monospacedSystemFont(ofSize: theme.bodyFontSize * theme.mathScale, weight: .regular), .foregroundColor: theme.bodyTextColor]
+            let text = NSAttributedString(string: source, attributes: attributes)
+            let measured = text.boundingRect(with: CGSize(width: Self.maxWidth, height: Self.maxHeight), options: [.usesLineFragmentOrigin], context: nil).size
+            let size = CGSize(width: max(1, ceil(measured.width)), height: max(1, ceil(measured.height)))
+            self.image = UIGraphicsImageRenderer(size: size).image { _ in text.draw(in: CGRect(origin: .zero, size: size)) }
+            self.bounds = CGRect(origin: .zero, size: size)
+            self.accessibilityLabel = source
+        }
     }
 
     public required init?(coder: NSCoder) {
         fatalError("THKAsyncImageTextAttachment does not support NSCoding")
+    }
+
+    public override func attachmentBounds(for textContainer: NSTextContainer?, proposedLineFragment lineFrag: CGRect, glyphPosition position: CGPoint, characterIndex charIndex: Int) -> CGRect {
+        guard url.scheme == "thk-math", let container = textContainer else { return bounds }
+        let available = max(1, container.size.width - 2 * container.lineFragmentPadding)
+        let factor = min(1, available / max(1, bounds.width))
+        return CGRect(x: 0, y: bounds.minY * factor, width: bounds.width * factor, height: bounds.height * factor)
     }
 
     /// Called by `THKMDView` once the attachment's attributed string has been assigned to a
@@ -50,6 +68,11 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
         loadTask?.cancel()
         loadTask = Task { [weak self] in
             guard let self else { return }
+            if self.url.scheme == "thk-math" {
+                guard let result = await THKMathEngine.shared.render(self.url, theme: self.theme), !Task.isCancelled else { return }
+                await self.applyLoadedImage(result.image, descent: result.descent)
+                return
+            }
             guard let loaded = await imageLoader.load(url: self.url) else { return }
             if Task.isCancelled { return }
             await self.applyLoadedImage(loaded)
@@ -66,10 +89,10 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
     }
 
     @MainActor
-    private func applyLoadedImage(_ loadedImage: UIImage) {
+    private func applyLoadedImage(_ loadedImage: UIImage, descent: CGFloat = 0) {
         let fitted = Self.scaledSize(for: loadedImage.size)
         image = loadedImage
-        bounds = CGRect(origin: .zero, size: fitted)
+        bounds = CGRect(x: 0, y: -descent * fitted.height / loadedImage.size.height, width: fitted.width, height: fitted.height)
 
         guard let textStorage, let range = attachmentRange(in: textStorage) else { return }
         textStorage.beginEditing()

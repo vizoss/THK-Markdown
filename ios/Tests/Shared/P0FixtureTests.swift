@@ -6,6 +6,38 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testP3SyntaxIsolationAndNumbering() {
+        let source = "先[^b] 后[^a] 再[^b]。\n\n[^a]: A\n[^b]: B\n[^unused]: UNUSED"
+        let prepared = THKMarkdownExtensions.prepare(source)
+        XCTAssertTrue(prepared.contains("先[1](thk-footnote://reference) 后[2](thk-footnote://reference)"))
+        XCTAssertTrue(prepared.contains("1. B\n2. A"))
+        XCTAssertFalse(prepared.contains("UNUSED"))
+        for literal in ["`$x$ [^a]`", "```text\n$x$\n[^a]: not a note\n```", "    $x$", "[url](https://example.com/$x$)", "\\$x\\$"] {
+            XCTAssertEqual(THKMarkdownExtensions.prepare(literal), literal)
+        }
+        XCTAssertEqual(THKMarkdownExtensions.prepare("[^missing]"), "[^missing]")
+        XCTAssertFalse(THKMarkdownExtensions.prepare("$$\nx+1").contains("thk-math"))
+        XCTAssertTrue(THKMarkdownExtensions.prepare("$\\frac{a}{b}$").contains("thk-math://inline/"))
+    }
+
+    func testP3AlertAndFootnoteTheme() throws {
+        var theme = THKMDTheme.default
+        theme.alertNoteColor = .purple
+        theme.footnoteScale = 0.6
+        let renderer = DefaultMarkdownRenderer(theme: theme)
+        guard case .text(let text, _) = renderer.render("> [!NOTE]\n> 内容").first else { return XCTFail("alert") }
+        XCTAssertTrue(text.string.hasPrefix("NOTE\n"))
+        XCTAssertEqual(text.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor, .purple)
+        let notes = renderer.render("正文[^a]。\n\n[^a]: 定义")
+        guard case .text(let note, _) = notes.first else { return XCTFail("footnote") }
+        let index = (note.string as NSString).range(of: "1").location
+        XCTAssertNotEqual(index, NSNotFound)
+        if index != NSNotFound {
+            XCTAssertNil(note.attribute(.link, at: index, effectiveRange: nil))
+            let font = try XCTUnwrap(note.attribute(.font, at: index, effectiveRange: nil) as? UIFont)
+            XCTAssertEqual(font.pointSize, theme.bodyFontSize * theme.footnoteScale, accuracy: 0.01)
+        }
+    }
     func testLargeFontSeparatorsAndNestedQuoteSpacing() throws {
         var theme = THKMDTheme.default
         theme.bodyFontSize = 24
@@ -492,12 +524,17 @@ final class P0FixtureTests: XCTestCase {
         try assertCatalog(suite: "p2", count: 25)
     }
 
+    func testP3CatalogRendersEveryPrefixAndFinalContracts() throws {
+        try assertCatalog(suite: "p3", count: 36)
+    }
+
     func testCombinedCatalogSuiteBoundaries() throws {
         let ids = try MarkdownFixture.loadAll().map(\.id)
-        XCTAssertEqual(ids.count, 103)
+        XCTAssertEqual(ids.count, 139)
         XCTAssertEqual(Array(ids[17...18]), ["P0-18", "P1-01"])
         XCTAssertEqual(Array(ids[77...78]), ["P1-60", "P2-01"])
-        XCTAssertEqual(ids.last, "P2-25")
+        XCTAssertEqual(Array(ids[102...103]), ["P2-25", "P3-01"])
+        XCTAssertEqual(ids.last, "P3-36")
     }
 
     private func assertCatalog(suite: String, count: Int) throws {
@@ -524,7 +561,7 @@ final class P0FixtureTests: XCTestCase {
                         XCTAssertGreaterThan(copy.range.length, 0, fixture.id)
                         XCTAssertLessThanOrEqual(NSMaxRange(copy.range), text.length, fixture.id)
                         if NSMaxRange(copy.range) <= text.length {
-                            XCTAssertEqual(copy.text, (text.string as NSString).substring(with: copy.range), fixture.id)
+                            XCTAssertEqual(copy.text, thkCopyText(text, range: copy.range), fixture.id)
                         }
                     }
                 }
@@ -545,6 +582,22 @@ final class P0FixtureTests: XCTestCase {
             }
             XCTAssertEqual(tableCount, fixture.expected.tableCount, fixture.id)
             XCTAssertEqual(diagramCount, fixture.expected.diagramCount, fixture.id)
+            if let expected = fixture.expected.mathCount {
+                var mathCount = 0
+                func count(_ text: NSAttributedString) {
+                    text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, _, _ in
+                        if (value as? THKAsyncImageTextAttachment)?.url.scheme == "thk-math" { mathCount += 1 }
+                    }
+                }
+                for segment in segments {
+                    switch segment {
+                    case .text(let text, _): count(text)
+                    case .table(let table): ([table.headerCells] + table.rows).flatMap { $0 }.forEach(count)
+                    case .diagram: break
+                    }
+                }
+                XCTAssertEqual(mathCount, expected, fixture.id)
+            }
             for expected in fixture.expected.copyTexts { XCTAssertTrue(copies.contains(expected), "\(fixture.id): copy \(expected)") }
         }
     }

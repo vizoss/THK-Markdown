@@ -156,6 +156,10 @@ internal class MarkdownSpanVisitor(
     }
 
     override fun visit(blockQuote: BlockQuote) {
+        val marker = (blockQuote.firstChild as? org.commonmark.node.Paragraph)?.firstChild as? org.commonmark.node.Text
+        val originalMarker = marker?.literal.orEmpty()
+        val kind = if (originalMarker.startsWith("[!") && originalMarker.endsWith("]")) originalMarker.drop(2).dropLast(1) else ""
+        val alertColor = if (blockQuoteDepth == 0 && listStack.isEmpty()) theme.alertColor(kind) else null
         // A standalone quote gets its own text container, leaving a real right-hand
         // gutter for the copy button without narrowing the surrounding paragraphs.
         val standalone = blockQuoteDepth == 0 && listStack.isEmpty()
@@ -168,7 +172,12 @@ internal class MarkdownSpanVisitor(
         // `> > quote` add its own ThemedQuoteSpan over the inner range, so nested
         // quotes stack as multiple side-by-side bars. Only the outermost span also gets
         // the rounded background fill - see the comment on ThemedQuoteSpan for why.
+        if (alertColor != null) marker?.literal = kind
+        val softBreak = if (alertColor != null) marker?.next as? org.commonmark.node.SoftLineBreak else null
+        val hardBreak = softBreak?.let { org.commonmark.node.HardLineBreak().also { replacement -> it.insertBefore(replacement); it.unlink() } }
         visitChildren(blockQuote)
+        if (hardBreak != null) { hardBreak.insertBefore(softBreak); hardBreak.unlink() }
+        if (alertColor != null) marker?.literal = originalMarker
         blockQuoteDepth--
         val end = builder.length
         if (end > start) {
@@ -176,7 +185,7 @@ internal class MarkdownSpanVisitor(
             // metrics: Android can carry those enlarged metrics into wrapped lines.
             builder.setSpan(
                 ThemedQuoteSpan(
-                    barColor = theme.blockQuoteBarColor,
+                    barColor = alertColor ?: theme.blockQuoteBarColor,
                     backgroundColor = if (isOutermost) theme.blockQuoteBackgroundColor else null,
                     cornerRadiusPx = theme.codeBlockCornerRadiusDp * densityPx,
                     topPaddingPx = if (standalone) 0 else (BLOCK_VERTICAL_PADDING_DP * densityPx).toInt(),
@@ -195,7 +204,19 @@ internal class MarkdownSpanVisitor(
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or
                     ((254 - blockQuoteDepth - listStack.size).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)
             )
-            builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            // Preserve explicit code/link/footnote colors inside an alert/quote.
+            var colorStart = start
+            while (colorStart < end) {
+                val colorEnd = builder.nextSpanTransition(colorStart, end, ForegroundColorSpan::class.java)
+                if (builder.getSpans(colorStart, colorEnd, ForegroundColorSpan::class.java).isEmpty()) {
+                    builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), colorStart, colorEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                colorStart = colorEnd
+            }
+            if (alertColor != null) {
+                builder.setSpan(ForegroundColorSpan(alertColor), start, start + kind.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                builder.setSpan(StyleSpan(android.graphics.Typeface.BOLD), start, start + kind.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
             // A little extra leading between wrapped/multi-paragraph lines *inside* the
             // quote (distinct from ThemedQuoteSpan's own first/last-line padding above),
             // so multi-line quotes don't read as cramped.
@@ -204,7 +225,7 @@ internal class MarkdownSpanVisitor(
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             if (isOutermost) {
-                copyableBlocks.add(CopyableBlock(start until end, builder.subSequence(start, end).toString()))
+                copyableBlocks.add(CopyableBlock(start until end, copyText(builder, start, end)))
             }
         }
         if (standalone) flushTextSegment()

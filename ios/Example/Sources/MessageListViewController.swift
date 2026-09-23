@@ -358,7 +358,7 @@ fixtures = try MarkdownFixture.loadAll()
     }
 
     private func selectFixture() {
-        let groups = ["P0", "P1", "P2"]
+        let groups = ["P0", "P1", "P2", "P3"]
         let currentID = fixtures.indices.contains(selectedFixture) ? fixtures[selectedFixture].id : ""
         let labels = groups.map { group in
             "\(group) · \(fixtures.filter { $0.id.hasPrefix(group + "-") }.count) 个用例  ›"

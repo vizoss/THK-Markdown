@@ -1,4 +1,11 @@
 <resources>
+    <string name="theme_footnote_scale">Footnote Scale</string>
+    <string name="theme_math_scale">Math Scale</string>
+    <string name="theme_alert_note">Alert Note</string>
+    <string name="theme_alert_tip">Alert Tip</string>
+    <string name="theme_alert_important">Alert Important</string>
+    <string name="theme_alert_warning">Alert Warning</string>
+    <string name="theme_alert_caution">Alert Caution</string>
     <string name="app_name">THKMDView Sample</string>
     <!-- In-app toolbar title - kept identical to the iOS Example app's nav bar title
          (see ios/Example/Sources/MessageListViewController.swift) for consistency. -->

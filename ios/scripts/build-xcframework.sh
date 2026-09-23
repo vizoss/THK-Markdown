@@ -33,6 +33,9 @@ simulator="$build_dir/simulator.xcarchive/Products/Library/Frameworks/THKMDView.
 for framework in "$device" "$simulator"; do
   test -f "$framework/mermaid_template.html"
   test -f "$framework/mermaid.min.js"
+  test -f "$framework/math_template.html"
+  test -f "$framework/mathjax-3.2.2.js"
+  test -f "$framework/mathjax-LICENSE.txt"
   if xcrun otool -L "$framework/THKMDView" | grep -E '(Markdown|cmark|Maaku)'; then
     echo "Unexpected external parser dependency"; exit 1
   fi

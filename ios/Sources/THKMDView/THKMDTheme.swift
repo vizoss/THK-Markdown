@@ -3,6 +3,31 @@ import UIKit
 /// Colors and text sizes used across the shared `MarkdownRendering` implementation and `THKTableView`.
 /// Settable on `THKMDView.theme`; changing it re-renders the current content in place.
 public struct THKMDTheme {
+    /// 脚注引用序号相对正文字号的倍率；颜色使用 linkColor，不跳转外部浏览器。
+    public var footnoteScale: CGFloat = 0.75
+    /// 公式相对正文字号的倍率；颜色使用 bodyTextColor，背景透明。
+    public var mathScale: CGFloat = 1
+    /// NOTE 提示块标题和竖条颜色；正文/背景继续使用引用主题。
+    public var alertNoteColor: UIColor = UIColor(thkHex: 0x0969DA)
+    /// TIP 提示块标题和竖条颜色。
+    public var alertTipColor: UIColor = UIColor(thkHex: 0x1A7F37)
+    /// IMPORTANT 提示块标题和竖条颜色。
+    public var alertImportantColor: UIColor = UIColor(thkHex: 0x8250DF)
+    /// WARNING 提示块标题和竖条颜色。
+    public var alertWarningColor: UIColor = UIColor(thkHex: 0x9A6700)
+    /// CAUTION 提示块标题和竖条颜色。
+    public var alertCautionColor: UIColor = UIColor(thkHex: 0xCF222E)
+
+    internal func alertColor(_ kind: String) -> UIColor? {
+        switch kind {
+        case "NOTE": return alertNoteColor
+        case "TIP": return alertTipColor
+        case "IMPORTANT": return alertImportantColor
+        case "WARNING": return alertWarningColor
+        case "CAUTION": return alertCautionColor
+        default: return nil
+        }
+    }
     /// 图片加载中或失败时的占位背景色。
     public var imagePlaceholderColor: UIColor = UIColor(thkHex: 0xE5E5EA)
     /// 复制成功提示文字颜色（iOS 自绘提示）。

@@ -39,7 +39,7 @@ class DefaultMarkdownRenderer(
         .build()
 
     override fun render(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment> {
-        val document = parser.parse(markdown) as Document
+        val document = parser.parse(MarkdownExtensions.prepare(markdown)) as Document
         val imageContext = ImageRenderContext(
             bounds = imageBounds,
             cornerRadiusPx = theme.codeBlockCornerRadiusDp * density,

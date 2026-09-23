@@ -74,7 +74,7 @@ internal object InlineSpanBuilder {
             }
             is Code -> appendCode(node.literal, builder, theme)
             is Link -> appendLink(node, builder, theme, linkHandler, imageContext)
-            is Image -> appendImage(node, builder, imageContext)
+            is Image -> appendImage(node, builder, imageContext, theme)
             is CustomNode -> if (node is Strikethrough) {
                 withSpan(builder, StrikethroughSpan()) {
                     appendInline(node.firstChild, builder, theme, linkHandler, imageContext)
@@ -110,6 +110,18 @@ internal object InlineSpanBuilder {
         appendInline(link.firstChild, builder, theme, linkHandler, imageContext)
         val end = builder.length
         if (end == start) return
+        if (url == "thk-footnote://reference") {
+            builder.setSpan(object : android.text.style.MetricAffectingSpan() {
+                private fun apply(paint: android.text.TextPaint) {
+                    paint.baselineShift -= (paint.textSize * (1 - theme.footnoteScale)).toInt()
+                    paint.textSize *= theme.footnoteScale
+                }
+                override fun updateDrawState(paint: android.text.TextPaint) = apply(paint)
+                override fun updateMeasureState(paint: android.text.TextPaint) = apply(paint)
+            }, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            builder.setSpan(ForegroundColorSpan(theme.linkColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            return
+        }
         builder.setSpan(LinkClickableSpan(url, linkHandler), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         builder.setSpan(ForegroundColorSpan(theme.linkColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
@@ -117,17 +129,19 @@ internal object InlineSpanBuilder {
     private fun appendImage(
         image: Image,
         builder: SpannableStringBuilder,
-        imageContext: ImageRenderContext
+        imageContext: ImageRenderContext,
+        theme: THKMDTheme
     ) {
         val url = image.destination ?: ""
-        val altText = plainTextOf(image)
+        val altText = THKMathEngine.source(url) ?: plainTextOf(image)
         val span = AsyncImageSpan(
             url = url,
             altText = altText,
             maxWidthPx = imageContext.bounds.maxWidthPx,
             absoluteMaxHeightPx = imageContext.bounds.maxHeightPx,
             cornerRadiusPx = imageContext.cornerRadiusPx,
-            placeholderColor = imageContext.placeholderColor
+            placeholderColor = imageContext.placeholderColor,
+            mathTheme = if (url.startsWith("thk-math://")) theme else null
         )
         val start = builder.length
         // An image is an inline object, not whitespace. Android may omit trailing
@@ -136,7 +150,7 @@ internal object InlineSpanBuilder {
         builder.append('\uFFFC')
         val end = builder.length
         builder.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-        builder.setSpan(LinkClickableSpan(url, imageContext.clickHandler), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        if (!url.startsWith("thk-math://")) builder.setSpan(LinkClickableSpan(url, imageContext.clickHandler), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
     }
 
     private fun plainTextOf(node: Node): String {

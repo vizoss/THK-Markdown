@@ -1,5 +1,7 @@
 # THKMDView (Android)
 
+P3 提示块、基础脚注、离线公式以及 36 个共享用例见 [P3 文档](../docs/P3.zh-CN.md)。MathJax JS/模板/许可证随 AAR assets 打包；新增主题字段在示例设置中可修改并保存。尚待双端编译、渲染和视觉验收。
+
 A `com.android.library` module that renders streaming Markdown inside an LLM chat
 bubble. See [`../docs/RESEARCH.md`](../docs/RESEARCH.md) for the full architecture
 rationale (§9 covers the v1 segmented-rendering/table/image/theme design); this file

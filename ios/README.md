@@ -1,5 +1,7 @@
 # THKMDView (iOS)
 
+P3 提示块、基础脚注与离线公式已接入，36 个共享用例及主题配置见 [P3 文档](../docs/P3.zh-CN.md)。SPM/XCFramework 均需携带 MathJax JS、HTML 模板和许可证；示例不进入二进制。尚待双端编译、渲染和视觉验收。
+
 A UIKit Swift Package that renders streaming Markdown inside a chat bubble — the kind of
 view you drop into a `UITableView`/`UICollectionView` cell to show an LLM reply as it
 arrives over SSE. See [`../docs/RESEARCH.md`](../docs/RESEARCH.md) for the full

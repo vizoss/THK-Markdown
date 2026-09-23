@@ -35,7 +35,8 @@ internal class AsyncImageSpan(
     private val maxWidthPx: Int,
     private val absoluteMaxHeightPx: Int,
     private val cornerRadiusPx: Float,
-    placeholderColor: Int
+    placeholderColor: Int,
+    private val mathTheme: THKMDTheme? = null
 ) : ReplacementSpan() {
 
     @Volatile private var bitmap: Bitmap? = null
@@ -43,6 +44,8 @@ internal class AsyncImageSpan(
     @Volatile private var currentHeightPx: Int = (maxWidthPx * PLACEHOLDER_ASPECT_RATIO).toInt()
     private var loadJob: Job? = null
     private var hostView: View? = null
+    private var descentPx = 0
+    private var fallbackLayout: android.text.StaticLayout? = null
 
     private val placeholderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = placeholderColor }
     private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -52,8 +55,11 @@ internal class AsyncImageSpan(
         this.hostView = hostView
         if (loadJob != null || bitmap != null) return
         loadJob = scope.launch {
-            val loaded = loader.load(url) ?: return@launch
+            val math = mathTheme?.let { THKMathEngine.render(hostView.context, url, it) }
+            val loaded = if (mathTheme != null) math?.bitmap else loader.load(url)
+            if (loaded == null) return@launch
             val (width, height) = sizeRespectingRealAspectRatio(loaded.width, loaded.height)
+            descentPx = ((math?.descentPx ?: 0f) * height / loaded.height).toInt()
             bitmap = if (width == loaded.width && height == loaded.height) {
                 loaded
             } else {
@@ -87,9 +93,21 @@ internal class AsyncImageSpan(
         end: Int,
         fm: Paint.FontMetricsInt?
     ): Int {
+        if (mathTheme != null && bitmap == null) {
+            val textPaint = android.text.TextPaint(paint).apply {
+                textSize *= mathTheme.mathScale
+                color = mathTheme.bodyTextColor
+                typeface = android.graphics.Typeface.MONOSPACE
+            }
+            currentWidthPx = kotlin.math.ceil(textPaint.measureText(altText).toDouble()).toInt().coerceIn(1, maxWidthPx.coerceAtLeast(1))
+            @Suppress("DEPRECATION")
+            val layout = android.text.StaticLayout(altText, textPaint, currentWidthPx, android.text.Layout.Alignment.ALIGN_NORMAL, 1f, 0f, false)
+            fallbackLayout = layout
+            currentHeightPx = fallbackLayout!!.height.coerceAtMost(absoluteMaxHeightPx)
+        }
         fm?.let {
-            it.ascent = -currentHeightPx
-            it.descent = 0
+            it.ascent = minOf(paint.fontMetricsInt.ascent, -currentHeightPx + descentPx)
+            it.descent = maxOf(paint.fontMetricsInt.descent, descentPx)
             it.top = it.ascent
             it.bottom = it.descent
         }
@@ -112,9 +130,17 @@ internal class AsyncImageSpan(
         // never centered inside a separately-sized reservation.
         // getSize reserves space above the baseline, not above the line bottom
         // (which may include text descenders and paragraph spacing).
-        val box = RectF(x, (y - currentHeightPx).toFloat(), x + currentWidthPx, y.toFloat())
+        val box = RectF(x, (y - currentHeightPx + descentPx).toFloat(), x + currentWidthPx, (y + descentPx).toFloat())
         val bmp = bitmap
         if (bmp == null) {
+            if (mathTheme != null) {
+                canvas.save()
+                canvas.translate(box.left, box.top)
+                canvas.clipRect(0, 0, currentWidthPx, currentHeightPx)
+                fallbackLayout?.draw(canvas)
+                canvas.restore()
+                return
+            }
             canvas.drawRoundRect(box, cornerRadiusPx, cornerRadiusPx, placeholderPaint)
             return
         }

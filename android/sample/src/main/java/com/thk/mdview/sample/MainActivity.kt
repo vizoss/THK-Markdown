@@ -164,7 +164,7 @@ fixtures = try { MarkdownFixture.loadAll(this) } catch (error: Exception) {
     }
 
     private fun selectFixtureGroup() {
-        val groups = listOf("P0", "P1", "P2")
+        val groups = listOf("P0", "P1", "P2", "P3")
         val currentID = fixtures.getOrNull(selectedFixture)?.id
         DemoDialog.show(this, "Markdown 用例", choices = groups.map { group ->
             "$group · ${fixtures.count { it.id.startsWith("$group-") }} 个用例  ›"

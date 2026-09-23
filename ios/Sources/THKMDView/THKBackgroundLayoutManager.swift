@@ -204,7 +204,8 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
         }
         guard rect.height > 0 else { return }
 
-        blockQuoteBarColor.setFill()
+        let alertColor = depth == 1 ? textStorage?.attribute(NSAttributedString.Key("THKAlertColor"), at: charRange.location, effectiveRange: nil) as? UIColor : nil
+        (alertColor ?? blockQuoteBarColor).setFill()
         let path = UIBezierPath(roundedRect: rect, cornerRadius: THKBlockQuoteMetrics.barWidth / 2)
         context.addPath(path.cgPath)
         context.fillPath()

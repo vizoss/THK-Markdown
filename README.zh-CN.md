@@ -28,6 +28,7 @@ SPM 提供源码，CocoaPods 提供预编译 XCFramework；远端 pod 安装需�
 - **`reset()`** —— 清空缓冲区/流式渲染状态；需要在 `onViewRecycled` /
   `prepareForReuse` 里调用，确保被复用的 cell 不会残留上一条消息的渲染尾巴。
 - 可插拔的渲染器与主题、链接/图片点击回调、GFM 扩展语法（表格、删除线、任务列表）。
+- P3：原生提示块、基础编号脚注、离线行内/块级数学公式；语法、限制及验收见 [P3 说明](docs/P3.zh-CN.md)。代码语法高亮仍暂不支持。
 
 ## 主题配置
 
@@ -40,6 +41,9 @@ SPM 提供源码，CocoaPods 提供预编译 XCFramework；远端 pod 安装需�
 | `bodyTextColor` | 正文、列表和表格正文颜色 |
 | `headingTextColor` | 标题和表格表头文字颜色 |
 | `linkColor` | 链接颜色 |
+| `alertNoteColor` / `alertTipColor` / `alertImportantColor` / `alertWarningColor` / `alertCautionColor` | 对应提示块的标题和竖条颜色；正文和背景复用引用配置 |
+| `footnoteScale` | 脚注上标序号相对正文字号倍率，默认 0.75；颜色复用 `linkColor`，不打开外部链接 |
+| `mathScale` | 公式相对正文字号倍率，默认 1；颜色复用 `bodyTextColor`，背景透明 |
 | `codeTextColor` | 行内代码、代码块和复制图标颜色 |
 | `codeBackgroundColor` | 行内代码与代码块背景色 |
 | `codeBlockCornerRadiusDp` / `codeBlockCornerRadius` | 代码和引用背景圆角；Android 为 dp，iOS 为 pt |
@@ -101,7 +105,7 @@ Mermaid 复用同一主题：正文颜色/字号控制图中文字，代码背�
 
 示例 App 修改 Markdown 主题后会自动保存到本地（Android SharedPreferences / iOS UserDefaults），下次启动恢复，包括颜色透明度、字号、圆角和标题倍率。选择 Default 预设也会保存；卸载或清除 App 数据后恢复默认。此行为仅属于示例工程，SDK 不会自行持久化宿主主题。
 
-当前示例提供双端共享的 18 个 P0、60 个 P1 和 25 个 P2 用例，支持分组选择、全文、播放、暂停和单步。上一条/下一条按 P0 → P1 → P2 连续切换，仅全目录首尾禁用。数据源、覆盖范围及手动验收步骤见 [P0 验收说明](docs/P0.zh-CN.md)、[P1 用例与验收](docs/P1.zh-CN.md) 和 [P2 用例与验收](docs/P2.zh-CN.md)。P1/P2 已接入测试入口，尚待执行测试及双端视觉验收，不代表全部通过。
+当前示例提供双端共享的 18 个 P0、60 个 P1、25 个 P2、36 个 P3 用例，共 139 个，支持分组选择、全文、播放、暂停和单步。上一条/下一条按 P0 → P1 → P2 → P3 连续切换，仅全目录首尾禁用。覆盖和验收步骤见 [P0](docs/P0.zh-CN.md)、[P1](docs/P1.zh-CN.md)、[P2](docs/P2.zh-CN.md)、[P3](docs/P3.zh-CN.md)。P1/P2/P3 已接入测试入口，尚待执行双端渲染测试和视觉验收，不代表全部通过。新增 P3 主题字段在两端示例面板均可修改并本地保存。
 
 初始脚手架：工程结构、构建工具链、核心渲染管线、单元测试，以及每个平台各自的示例 App
 （一个可交互的"和 LLM 聊天"演示：用户输入文本消息，mock 的助手回复覆盖全部 Markdown

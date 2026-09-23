@@ -1,5 +1,17 @@
 import UIKit
 
+/// Copy formula source rather than the attachment's U+FFFC placeholder.
+func thkCopyText(_ text: NSAttributedString, range: NSRange) -> String {
+    let part = text.attributedSubstring(from: range)
+    let output = NSMutableString(string: part.string)
+    part.enumerateAttribute(.attachment, in: NSRange(location: 0, length: part.length), options: .reverse) { value, range, _ in
+        if let attachment = value as? THKAsyncImageTextAttachment, let source = THKMathEngine.source(attachment.url) {
+            output.replaceCharacters(in: range, with: source)
+        }
+    }
+    return output as String
+}
+
 private let thkListDepthKey = NSAttributedString.Key("THKListDepth")
 
 /// Block separators belong to the joining layer; retain interior HTML whitespace.

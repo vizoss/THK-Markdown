@@ -22,6 +22,18 @@ sealed interface RenderedSegment {
  */
 data class CopyableBlock(val range: IntRange, val text: String)
 
+/** Copy formula source, not the inline object's U+FFFC glyph. */
+internal fun copyText(text: android.text.Spanned, start: Int, end: Int): String {
+    val result = StringBuilder(text.subSequence(start, end).toString())
+    text.getSpans(start, end, AsyncImageSpan::class.java).sortedByDescending { text.getSpanStart(it) }.forEach { span ->
+        val source = THKMathEngine.source(span.url) ?: return@forEach
+        val from = text.getSpanStart(span)
+        val to = text.getSpanEnd(span)
+        if (from >= start && to <= end) result.replace(from - start, to - start, source)
+    }
+    return result.toString()
+}
+
 enum class THKTableAlignment { START, CENTER, END }
 
 /** A fully-rendered GFM table: cell content is already inline-Markdown-spanned. */

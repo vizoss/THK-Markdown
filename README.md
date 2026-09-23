@@ -30,6 +30,8 @@ before remote pod installation. See [binary distribution](ios/Binary/README.md).
   `prepareForReuse` so a recycled cell never shows another message's tail update.
 - Pluggable renderer + theme, tap handlers for links/images, GFM extensions
   (tables, strikethrough, task lists).
+- P3: native alerts, basic numbered footnotes and offline inline/display math.
+  Scope, configuration, safety limits and pending validation: [P3 guide](docs/P3.zh-CN.md).
 
 ## Theme configuration
 
@@ -42,6 +44,9 @@ The iOS source and binary distributions share the same renderer and settings.
 | `bodyTextColor` | Body, list and table body text |
 | `headingTextColor` | Headings and table header text |
 | `linkColor` | Links |
+| `alertNoteColor`, `alertTipColor`, `alertImportantColor`, `alertWarningColor`, `alertCautionColor` | Alert title/bar colors; body/background use quote settings |
+| `footnoteScale` | Footnote-reference size relative to body; default 0.75; uses `linkColor` |
+| `mathScale` | Math size relative to body; default 1; uses `bodyTextColor`, transparent background |
 | `codeTextColor` | Inline code, code blocks and copy icons |
 | `codeBackgroundColor` | Inline/code block backgrounds |
 | `codeBlockCornerRadiusDp` / `codeBlockCornerRadius` | Code/quote background radius, in Android dp / iOS pt |
@@ -99,12 +104,12 @@ and [iOS](ios/Sources/THKMDView/THKMDTheme.swift) definitions, and the
 ## Status
 
 The demos share 18 P0 regression fixtures, 60 P1 CommonMark/GFM fixtures and
-25 P2 Unicode, layout, image and scrolling fixtures,
+25 P2 Unicode/layout/image/scrolling fixtures and 36 P3 alert/footnote/math fixtures,
 with full-text and deterministic streaming playback. Both platforms load the same
 JSON sources. See the [P1 coverage and acceptance guide](docs/P1.zh-CN.md) (Chinese).
 See also the [P2 acceptance guide](docs/P2.zh-CN.md). Previous/next navigation crosses
-suite boundaries in P0 → P1 → P2 order, stopping only at the catalog ends.
-P1/P2 are wired into the regression test entry points but have not yet been built,
+suite boundaries in P0 → P1 → P2 → P3 order, stopping only at the catalog ends (139 cases).
+P1/P2/P3 are wired into the regression test entry points but have not yet been built,
 tested or visually accepted; fixture coverage is not a conformance claim.
 
 ### Example UI

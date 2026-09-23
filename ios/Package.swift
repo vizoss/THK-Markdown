@@ -26,7 +26,10 @@ let package = Package(
             // CocoaPods distributes an XCFramework built from these same sources.
             resources: [
                 .copy("mermaid_template.html"),
-                .copy("mermaid.min.js")
+                .copy("mermaid.min.js"),
+                .copy("math_template.html"),
+                .copy("mathjax-3.2.2.js"),
+                .copy("mathjax-LICENSE.txt")
             ]
         ),
         .testTarget(

@@ -49,8 +49,30 @@ data class THKMDTheme(
     /** H5 标题相对正文字号的倍率。 */
     val heading5Scale: Float = 1.05f,
     /** H6 标题相对正文字号的倍率。 */
-    val heading6Scale: Float = 1f
+    val heading6Scale: Float = 1f,
+    /** NOTE 提示块标题和竖条颜色；正文/背景继续使用引用主题。 */
+    val alertNoteColor: Int = 0xFF0969DA.toInt(),
+    /** TIP 提示块标题和竖条颜色。 */
+    val alertTipColor: Int = 0xFF1A7F37.toInt(),
+    /** IMPORTANT 提示块标题和竖条颜色。 */
+    val alertImportantColor: Int = 0xFF8250DF.toInt(),
+    /** WARNING 提示块标题和竖条颜色。 */
+    val alertWarningColor: Int = 0xFF9A6700.toInt(),
+    /** CAUTION 提示块标题和竖条颜色。 */
+    val alertCautionColor: Int = 0xFFCF222E.toInt(),
+    /** 脚注引用序号相对正文字号的倍率；颜色使用 linkColor，不跳转外部浏览器。 */
+    val footnoteScale: Float = 0.75f,
+    /** 公式相对正文字号的倍率；颜色使用 bodyTextColor，背景透明。 */
+    val mathScale: Float = 1f
 ) {
+    internal fun alertColor(kind: String): Int? = when (kind) {
+        "NOTE" -> alertNoteColor
+        "TIP" -> alertTipColor
+        "IMPORTANT" -> alertImportantColor
+        "WARNING" -> alertWarningColor
+        "CAUTION" -> alertCautionColor
+        else -> null
+    }
     /** Mermaid 复用主题：正文控制字号/文字，代码背景控制节点，表格边框控制连线，
      * 引用/表头背景控制次级区域。JSON 序列化保证配置安全传入 WebView。 */
     internal fun mermaidConfiguration(): org.json.JSONObject {

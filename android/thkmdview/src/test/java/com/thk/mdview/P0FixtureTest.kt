@@ -13,6 +13,20 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun p3SyntaxIsolationAndNumbering() {
+        val prepared = MarkdownExtensions.prepare("先[^b] 后[^a] 再[^b]。\n\n[^a]: A\n[^b]: B\n[^unused]: UNUSED")
+        assertTrue(prepared.contains("先[1](thk-footnote://reference) 后[2](thk-footnote://reference)"))
+        assertTrue(prepared.contains("1. B\n2. A"))
+        assertFalse(prepared.contains("UNUSED"))
+        for (literal in listOf("`\$x\$ [^a]`", "```text\n\$x\$\n[^a]: not a note\n```", "    \$x\$", "[url](https://example.com/\$x\$)", "\\\$x\\\$")) {
+            assertEquals(literal, MarkdownExtensions.prepare(literal))
+        }
+        assertEquals("[^missing]", MarkdownExtensions.prepare("[^missing]"))
+        assertFalse(MarkdownExtensions.prepare("$$\nx+1").contains("thk-math"))
+        assertTrue(MarkdownExtensions.prepare("\$\\frac{a}{b}\$").contains("thk-math://inline/"))
+    }
+
+    @Test fun p3SharedCasesRenderEveryPrefixAndMatchTheirContracts() { assertCatalog("p3", 36) }
     @Test fun quoteAndListMarginsFollowContainerNesting() {
         fun margins(source: String, target: String): List<android.text.style.LeadingMarginSpan> {
             val text = render(source).filterIsInstance<RenderedSegment.TextSegment>()
@@ -186,11 +200,12 @@ class P0FixtureTest {
     }
 
     @Test fun combinedCatalogSuiteBoundaries() {
-        val ids = listOf("p0", "p1", "p2").flatMap { cases(it) }.map { it.getString("id") }
-        assertEquals(103, ids.size)
+        val ids = listOf("p0", "p1", "p2", "p3").flatMap { cases(it) }.map { it.getString("id") }
+        assertEquals(139, ids.size)
         assertEquals(listOf("P0-18", "P1-01"), ids.subList(17, 19))
         assertEquals(listOf("P1-60", "P2-01"), ids.subList(77, 79))
-        assertEquals("P2-25", ids.last())
+        assertEquals(listOf("P2-25", "P3-01"), ids.subList(102, 104))
+        assertEquals("P3-36", ids.last())
     }
 
     private fun assertCatalog(suite: String, count: Int) {
@@ -228,7 +243,7 @@ class P0FixtureTest {
                 latest.filterIsInstance<RenderedSegment.TextSegment>().forEach { segment ->
                     segment.copyableBlocks.forEach { block ->
                         assertTrue("$id copy range", block.range.first >= 0 && block.range.last < segment.spanned.length)
-                        assertEquals(block.text, segment.spanned.subSequence(block.range.first, block.range.last + 1).toString())
+                        assertEquals(block.text, copyText(segment.spanned as Spanned, block.range.first, block.range.last + 1))
                     }
                 }
             }
@@ -238,6 +253,18 @@ class P0FixtureTest {
             assertEquals(id, expected.getInt("tableCount"), latest.count { it is RenderedSegment.TableSegment })
             assertEquals(id, expected.getInt("diagramCount"), latest.count { it is RenderedSegment.DiagramSegment })
             val plain = fingerprint(latest).joinToString("\n")
+            if (expected.has("mathCount")) {
+                fun count(text: CharSequence): Int {
+                    val spans = text as? Spanned ?: return 0
+                    return spans.getSpans(0, spans.length, AsyncImageSpan::class.java).count { it.url.startsWith("thk-math://") }
+                }
+                val total = latest.sumOf { segment -> when (segment) {
+                    is RenderedSegment.TextSegment -> count(segment.spanned)
+                    is RenderedSegment.TableSegment -> (listOf(segment.table.headerRow) + segment.table.bodyRows).sumOf { row -> row.sumOf { count(it) } }
+                    is RenderedSegment.DiagramSegment -> 0
+                } }
+                assertEquals(id, expected.getInt("mathCount"), total)
+            }
             val fragments = expected.getJSONArray("textContains")
             for (i in 0 until fragments.length()) assertTrue("$id missing ${fragments.getString(i)}", plain.contains(fragments.getString(i)))
             val copies = latest.filterIsInstance<RenderedSegment.TextSegment>().flatMap { it.copyableBlocks }.map { it.text }

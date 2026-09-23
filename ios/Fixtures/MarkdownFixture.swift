@@ -19,6 +19,7 @@ public struct MarkdownFixture: Decodable {
     }
 
     public struct Expectations: Decodable {
+        public let mathCount: Int?
         public let textContains: [String]
         public let copyTexts: [String]
         public let tableCount: Int
@@ -49,7 +50,7 @@ public struct MarkdownFixture: Decodable {
 
     /// Load one suite; keep P0 as the default for existing regression tests.
     public static func load(suite: String = "p0") throws -> [MarkdownFixture] {
-        guard ["p0", "p1", "p2"].contains(suite) else { throw CocoaError(.fileNoSuchFile) }
+        guard ["p0", "p1", "p2", "p3"].contains(suite) else { throw CocoaError(.fileNoSuchFile) }
         #if SWIFT_PACKAGE
         let bundle = Bundle.module
         #else
@@ -63,7 +64,7 @@ public struct MarkdownFixture: Decodable {
     }
 
     public static func loadAll() throws -> [MarkdownFixture] {
-        try ["p0", "p1", "p2"].flatMap { try load(suite: $0) }
+        try ["p0", "p1", "p2", "p3"].flatMap { try load(suite: $0) }
     }
 }
 

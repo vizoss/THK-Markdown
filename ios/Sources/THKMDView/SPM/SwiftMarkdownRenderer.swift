@@ -12,7 +12,7 @@ public final class DefaultMarkdownRenderer: MarkdownRendering {
     }
 
     public func render(_ markdown: String) -> [THKRenderSegment] {
-        let document = Document(parsing: markdown)
+        let document = Document(parsing: THKMarkdownExtensions.prepare(markdown))
         var visitor = AttributedStringVisitor(baseFont: baseFont, theme: theme)
         return visitor.renderSegments(document)
     }
@@ -102,12 +102,11 @@ struct AttributedStringVisitor: MarkupVisitor {
     private func collectCopyableBlocks(in attributed: NSAttributedString) -> [THKCopyableBlock] {
         guard attributed.length > 0 else { return [] }
         let fullRange = NSRange(location: 0, length: attributed.length)
-        let nsString = attributed.string as NSString
         var found: [(NSRange, String)] = []
         for key in [NSAttributedString.Key.thkCopyableCodeBlock, .thkCopyableBlockQuote] {
             attributed.enumerateAttribute(key, in: fullRange) { value, range, _ in
                 guard value != nil, range.length > 0 else { return }
-                found.append((range, nsString.substring(with: range)))
+                found.append((range, thkCopyText(attributed, range: range)))
             }
         }
         return found.sorted { $0.0.location < $1.0.location }.map { THKCopyableBlock(range: $0.0, text: $0.1) }
@@ -217,6 +216,12 @@ struct AttributedStringVisitor: MarkupVisitor {
         for child in link.children {
             result.append(visit(child))
         }
+        if link.destination == "thk-footnote://reference" {
+            result.addAttributes([.font: baseFont.withSize(baseFont.pointSize * theme.footnoteScale),
+                                  .baselineOffset: baseFont.pointSize * (1 - theme.footnoteScale),
+                                  .foregroundColor: theme.linkColor], range: NSRange(location: 0, length: result.length))
+            return result
+        }
         if let destination = link.destination, let url = URL(string: destination), result.length > 0 {
             let fullRange = NSRange(location: 0, length: result.length)
             result.addAttribute(.link, value: url, range: fullRange)
@@ -236,6 +241,12 @@ struct AttributedStringVisitor: MarkupVisitor {
     }
 
     mutating func visitBlockQuote(_ blockQuote: BlockQuote) -> NSAttributedString {
+        // Recognize only a literal marker on the first line, never inline code or
+        // a partially streamed marker. Nested quotes remain ordinary quotes.
+        let marker = (blockQuote.child(at: 0) as? Paragraph)?.child(at: 0) as? Text
+        let markerText = marker?.string ?? ""
+        let kind = markerText.hasPrefix("[!") && markerText.hasSuffix("]") ? String(markerText.dropFirst(2).dropLast()) : ""
+        let alertColor = blockQuoteDepth == 0 && listDepth == 0 ? theme.alertColor(kind) : nil
         let isOutermost = blockQuoteDepth == 0
         let depth = blockQuoteDepth + 1
         blockQuoteDepth = depth
@@ -248,6 +259,17 @@ struct AttributedStringVisitor: MarkupVisitor {
         // "flat +2pt everywhere" rhythm.
         let result = joinBlocksTightly(Array(blockQuote.children))
         blockQuoteDepth = depth - 1
+
+        if let alertColor, result.string.hasPrefix(markerText) {
+            result.replaceCharacters(in: NSRange(location: 0, length: (markerText as NSString).length), with: kind)
+            if result.length > kind.utf16.count, (result.string as NSString).substring(with: NSRange(location: kind.utf16.count, length: 1)) == " " {
+                result.replaceCharacters(in: NSRange(location: kind.utf16.count, length: 1), with: "\n")
+            }
+            result.addAttributes([.font: UIFont.boldSystemFont(ofSize: baseFont.pointSize),
+                                  .foregroundColor: alertColor], range: NSRange(location: 0, length: kind.utf16.count))
+            result.addAttribute(NSAttributedString.Key("THKAlertColor"), value: alertColor,
+                                range: NSRange(location: 0, length: result.length))
+        }
 
         if result.length > 0 {
             let paragraphStyle = NSMutableParagraphStyle()

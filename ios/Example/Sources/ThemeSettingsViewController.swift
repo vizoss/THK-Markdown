@@ -5,6 +5,11 @@ import THKMDView
 enum DemoThemeStore {
     private static let key = "markdown_theme_v1"
     private static let colors: [String: WritableKeyPath<THKMDTheme, UIColor>] = [
+        "alertNoteColor": \.alertNoteColor,
+        "alertTipColor": \.alertTipColor,
+        "alertImportantColor": \.alertImportantColor,
+        "alertWarningColor": \.alertWarningColor,
+        "alertCautionColor": \.alertCautionColor,
         "bodyTextColor": \.bodyTextColor,
         "headingTextColor": \.headingTextColor,
         "linkColor": \.linkColor,
@@ -21,6 +26,8 @@ enum DemoThemeStore {
         "copyFeedbackBackgroundColor": \.copyFeedbackBackgroundColor
     ]
     private static let sizes: [String: WritableKeyPath<THKMDTheme, CGFloat>] = [
+        "footnoteScale": \.footnoteScale,
+        "mathScale": \.mathScale,
         "codeBlockCornerRadius": \.codeBlockCornerRadius,
         "bodyFontSize": \.bodyFontSize,
         "codeFontSize": \.codeFontSize,
@@ -180,6 +187,11 @@ final class ThemeSettingsViewController: UIViewController {
     }
 
     private func addColorRows() {
+        addColorRow(title: "Alert Note", get: { $0.alertNoteColor }, set: { $0.alertNoteColor = $1 })
+        addColorRow(title: "Alert Tip", get: { $0.alertTipColor }, set: { $0.alertTipColor = $1 })
+        addColorRow(title: "Alert Important", get: { $0.alertImportantColor }, set: { $0.alertImportantColor = $1 })
+        addColorRow(title: "Alert Warning", get: { $0.alertWarningColor }, set: { $0.alertWarningColor = $1 })
+        addColorRow(title: "Alert Caution", get: { $0.alertCautionColor }, set: { $0.alertCautionColor = $1 })
         addColorRow(title: "Body Text", get: { $0.bodyTextColor }, set: { $0.bodyTextColor = $1 })
         addColorRow(title: "Heading Text", get: { $0.headingTextColor }, set: { $0.headingTextColor = $1 })
         addColorRow(title: "Link", get: { $0.linkColor }, set: { $0.linkColor = $1 })
@@ -194,6 +206,8 @@ final class ThemeSettingsViewController: UIViewController {
     }
 
     private func addSizeRows() {
+        addSliderRow(title: "Footnote Scale", min: 0.5, max: 1, get: { Float($0.footnoteScale) }, set: { $0.footnoteScale = CGFloat($1) })
+        addSliderRow(title: "Math Scale", min: 0.5, max: 2, get: { Float($0.mathScale) }, set: { $0.mathScale = CGFloat($1) })
         addSliderRow(
             title: "Code Corner Radius", min: 0, max: 20,
             get: { Float($0.codeBlockCornerRadius) }, set: { $0.codeBlockCornerRadius = CGFloat($1) }
@@ -274,7 +288,7 @@ final class ThemeSettingsViewController: UIViewController {
     }
 
     private static func formatValue(_ value: Float) -> String {
-        String(format: "%.1f", value)
+        String(format: value < 3 ? "%.2f" : "%.1f", value)
     }
 
     @objc private func colorWellChanged(_ sender: UIColorWell) {

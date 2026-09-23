@@ -15,6 +15,13 @@ object DemoThemeStore {
             prefs.getFloat(key, fallback).takeIf { it.isFinite() && it >= 0f && (it > 0f || key == "codeBlockCornerRadiusDp") } ?: fallback
         } catch (_: ClassCastException) { fallback }
         return defaults.copy(
+            footnoteScale = size("footnoteScale", defaults.footnoteScale),
+            mathScale = size("mathScale", defaults.mathScale),
+            alertNoteColor = color("alertNoteColor", defaults.alertNoteColor),
+            alertTipColor = color("alertTipColor", defaults.alertTipColor),
+            alertImportantColor = color("alertImportantColor", defaults.alertImportantColor),
+            alertWarningColor = color("alertWarningColor", defaults.alertWarningColor),
+            alertCautionColor = color("alertCautionColor", defaults.alertCautionColor),
             bodyTextColor = color("bodyTextColor", defaults.bodyTextColor),
             headingTextColor = color("headingTextColor", defaults.headingTextColor),
             linkColor = color("linkColor", defaults.linkColor),
@@ -41,6 +48,13 @@ object DemoThemeStore {
 
     fun save(context: Context, theme: THKMDTheme) {
         preferences(context).edit()
+            .putFloat("footnoteScale", theme.footnoteScale)
+            .putFloat("mathScale", theme.mathScale)
+            .putInt("alertNoteColor", theme.alertNoteColor)
+            .putInt("alertTipColor", theme.alertTipColor)
+            .putInt("alertImportantColor", theme.alertImportantColor)
+            .putInt("alertWarningColor", theme.alertWarningColor)
+            .putInt("alertCautionColor", theme.alertCautionColor)
             .putInt("bodyTextColor", theme.bodyTextColor)
             .putInt("headingTextColor", theme.headingTextColor)
             .putInt("linkColor", theme.linkColor)

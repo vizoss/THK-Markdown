@@ -21,6 +21,11 @@ import com.thk.mdview.THKMDTheme
 import kotlin.math.roundToInt
 
 private enum class ColorProperty(val labelResId: Int) {
+    ALERT_NOTE(R.string.theme_alert_note),
+    ALERT_TIP(R.string.theme_alert_tip),
+    ALERT_IMPORTANT(R.string.theme_alert_important),
+    ALERT_WARNING(R.string.theme_alert_warning),
+    ALERT_CAUTION(R.string.theme_alert_caution),
     BODY_TEXT(R.string.theme_prop_body_text),
     HEADING_TEXT(R.string.theme_prop_heading_text),
     LINK(R.string.theme_prop_link),
@@ -35,6 +40,8 @@ private enum class ColorProperty(val labelResId: Int) {
 }
 
 private enum class SizeProperty(val labelResId: Int, val valueFrom: Float, val valueTo: Float, val unit: String) {
+    FOOTNOTE_SCALE(R.string.theme_footnote_scale, 0.5f, 1f, "×"),
+    MATH_SCALE(R.string.theme_math_scale, 0.5f, 2f, "×"),
     CODE_CORNER_RADIUS(R.string.theme_prop_code_corner_radius, 0f, 20f, "dp"),
     BODY_FONT_SIZE(R.string.theme_prop_body_font_size, 10f, 24f, "sp"),
     CODE_FONT_SIZE(R.string.theme_prop_code_font_size, 10f, 24f, "sp")
@@ -115,6 +122,13 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun loadValues(theme: THKMDTheme) {
+        sizeValues[SizeProperty.FOOTNOTE_SCALE] = theme.footnoteScale
+        sizeValues[SizeProperty.MATH_SCALE] = theme.mathScale
+        colorValues[ColorProperty.ALERT_NOTE] = theme.alertNoteColor
+        colorValues[ColorProperty.ALERT_TIP] = theme.alertTipColor
+        colorValues[ColorProperty.ALERT_IMPORTANT] = theme.alertImportantColor
+        colorValues[ColorProperty.ALERT_WARNING] = theme.alertWarningColor
+        colorValues[ColorProperty.ALERT_CAUTION] = theme.alertCautionColor
         colorValues[ColorProperty.BODY_TEXT] = theme.bodyTextColor
         colorValues[ColorProperty.HEADING_TEXT] = theme.headingTextColor
         colorValues[ColorProperty.LINK] = theme.linkColor
@@ -132,6 +146,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun applyPreset(theme: THKMDTheme) {
+        initialTheme = theme
         loadValues(theme)
         colorValues.forEach { (prop, color) -> swatchViews[prop]?.background = swatchDrawable(requireContext(), color) }
         sizeValues.forEach { (prop, value) ->
@@ -161,7 +176,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
         val slider = row.findViewById<Slider>(R.id.slider)
         slider.valueFrom = prop.valueFrom
         slider.valueTo = prop.valueTo
-        slider.stepSize = 1f
+        slider.stepSize = if (prop.unit == "×") 0f else 1f
         val current = sizeValues.getValue(prop)
         slider.value = current.coerceIn(prop.valueFrom, prop.valueTo)
         label.text = sizeLabelText(prop, current)
@@ -175,7 +190,7 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
     }
 
     private fun sizeLabelText(prop: SizeProperty, value: Float): String =
-        "${getString(prop.labelResId)}: ${value.roundToInt()}${prop.unit}"
+        "${getString(prop.labelResId)}: ${if (prop.unit == "×") String.format(java.util.Locale.ROOT, "%.2f", value) else value.roundToInt().toString()}${prop.unit}"
 
     private fun showColorPicker(prop: ColorProperty) {
         val context = requireContext()
@@ -221,7 +236,14 @@ class ThemeSettingsSheet : BottomSheetDialogFragment() {
         onThemeChanged(buildTheme())
     }
 
-    private fun buildTheme(): THKMDTheme = THKMDTheme(
+    private fun buildTheme(): THKMDTheme = initialTheme.copy(
+        footnoteScale = sizeValues.getValue(SizeProperty.FOOTNOTE_SCALE),
+        mathScale = sizeValues.getValue(SizeProperty.MATH_SCALE),
+        alertNoteColor = colorValues.getValue(ColorProperty.ALERT_NOTE),
+        alertTipColor = colorValues.getValue(ColorProperty.ALERT_TIP),
+        alertImportantColor = colorValues.getValue(ColorProperty.ALERT_IMPORTANT),
+        alertWarningColor = colorValues.getValue(ColorProperty.ALERT_WARNING),
+        alertCautionColor = colorValues.getValue(ColorProperty.ALERT_CAUTION),
         bodyTextColor = colorValues.getValue(ColorProperty.BODY_TEXT),
         headingTextColor = colorValues.getValue(ColorProperty.HEADING_TEXT),
         linkColor = colorValues.getValue(ColorProperty.LINK),

@@ -535,6 +535,7 @@ extension THKMDView: UITextViewDelegate {
         interaction: UITextItemInteraction
     ) -> Bool {
         guard let imageAttachment = textAttachment as? THKAsyncImageTextAttachment else { return true }
+        if imageAttachment.url.scheme == "thk-math" { return false }
         return onImageTap?(imageAttachment.url) ?? true
     }
 }

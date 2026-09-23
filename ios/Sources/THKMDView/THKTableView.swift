@@ -162,6 +162,7 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
 
     public func textView(_ textView: UITextView, shouldInteractWith textAttachment: NSTextAttachment, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
         guard let image = textAttachment as? THKAsyncImageTextAttachment else { return false }
+        if image.url.scheme == "thk-math" { return false }
         return !((onImageTap ?? onLinkTap)?(image.url) ?? false)
     }
 }

@@ -1,0 +1,1262 @@
+{
+  "schemaVersion": 1,
+  "cases": [
+    {
+      "id": "P3-01",
+      "title": "NOTE 基础提示",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!NOTE]\n> 普通提示正文。",
+      "chunks": [
+        "> [!NOT",
+        "E]\n> 普通",
+        "提示正文。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "NOTE",
+          "普通提示正文。"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-02",
+      "title": "TIP 行内格式",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!TIP]\n> 使用 **粗体** 和 `code`。",
+      "chunks": [
+        "> [!TIP",
+        "]\n> 使用 ",
+        "**粗体** ",
+        "和 `code",
+        "`。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "TIP",
+          "粗体",
+          "code"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-03",
+      "title": "IMPORTANT 多段",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!IMPORTANT]\n> 第一段。\n>\n> 第二段。",
+      "chunks": [
+        "> [!IMP",
+        "ORTANT]",
+        "\n> 第一段。",
+        "\n>\n> 第二",
+        "段。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "IMPORTANT",
+          "第一段",
+          "第二段"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-04",
+      "title": "WARNING 列表",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!WARNING]\n> - 条目甲\n> - 条目乙",
+      "chunks": [
+        "> [!WAR",
+        "NING]\n>",
+        " - 条目甲\n",
+        "> - 条目乙"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "WARNING",
+          "条目甲",
+          "条目乙"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-05",
+      "title": "CAUTION 链接",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!CAUTION]\n> [查看说明](https://example.com)",
+      "chunks": [
+        "> [!CAU",
+        "TION]\n>",
+        " [查看说明]",
+        "(https:",
+        "//examp",
+        "le.com)"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "CAUTION",
+          "查看说明"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-06",
+      "title": "提示块代码",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!NOTE]\n>\n> ```text\n> [!WARNING] 不变为提示\n> ```",
+      "chunks": [
+        "> [!NOT",
+        "E]\n>\n> ",
+        "```text",
+        "\n> [!WA",
+        "RNING] ",
+        "不变为提示\n>",
+        " ```"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "NOTE",
+          "[!WARNING] 不变为提示"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-07",
+      "title": "未知提示降级",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!UNKNOWN]\n> 保持普通引用。",
+      "chunks": [
+        "> [!UNK",
+        "NOWN]\n>",
+        " 保持普通引用",
+        "。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "[!UNKNOWN]",
+          "保持普通引用"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-08",
+      "title": "提示标记未完成",
+      "category": "alerts",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!WAR",
+      "chunks": [
+        "> [!WAR"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "[!WAR"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "提示类型标题独立一行；颜色由主题配置，复制不越界。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-09",
+      "title": "基础脚注",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "正文[^a]。\n\n[^a]: 基础脚注内容。",
+      "chunks": [
+        "正文[^a]。",
+        "\n\n[^a]:",
+        " 基础脚注内容",
+        "。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "正文",
+          "基础脚注内容"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-10",
+      "title": "重复引用",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "第一次[^same]，第二次[^same]。\n\n[^same]: 只生成一条定义。",
+      "chunks": [
+        "第一次[^sa",
+        "me]，第二次",
+        "[^same]",
+        "。\n\n[^sa",
+        "me]: 只生",
+        "成一条定义。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "第一次",
+          "第二次",
+          "只生成一条定义"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-11",
+      "title": "脚注引用顺序",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "先乙[^b]，后甲[^a]。\n\n[^a]: 甲定义。\n[^b]: 乙定义。",
+      "chunks": [
+        "先乙[^b]，",
+        "后甲[^a]。",
+        "\n\n[^a]:",
+        " 甲定义。\n[",
+        "^b]: 乙定",
+        "义。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "先乙",
+          "后甲",
+          "甲定义",
+          "乙定义"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-12",
+      "title": "脚注多行",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "正文[^long]。\n\n[^long]: 第一行\n    续行内容\n\n    第二段内容",
+      "chunks": [
+        "正文[^lon",
+        "g]。\n\n[^",
+        "long]: ",
+        "第一行\n   ",
+        " 续行内容\n\n",
+        "    第二段",
+        "内容"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "第一行",
+          "续行内容",
+          "第二段内容"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-13",
+      "title": "脚注格式",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "正文[^format]。\n\n[^format]: **加粗**、*斜体*、[链接](https://example.com) 和 `code`。",
+      "chunks": [
+        "正文[^for",
+        "mat]。\n\n",
+        "[^forma",
+        "t]: **加",
+        "粗**、*斜体",
+        "*、[链接](",
+        "https:/",
+        "/exampl",
+        "e.com) ",
+        "和 `code",
+        "`。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "加粗",
+          "斜体",
+          "链接",
+          "code"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-14",
+      "title": "未定义脚注",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "找不到[^missing]，不要吞字。",
+      "chunks": [
+        "找不到[^mi",
+        "ssing]，",
+        "不要吞字。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "[^missing]",
+          "不要吞字"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-15",
+      "title": "未使用和重复定义",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "正文[^a]。\n\n[^unused]: 不应显示。\n[^a]: 第一个定义。\n[^a]: 第二个定义不显示。",
+      "chunks": [
+        "正文[^a]。",
+        "\n\n[^unu",
+        "sed]: 不",
+        "应显示。\n[^",
+        "a]: 第一个",
+        "定义。\n[^a",
+        "]: 第二个定",
+        "义不显示。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "第一个定义"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-16",
+      "title": "脚注代码隔离",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "`[^a]` 不引用。\n\n```text\n[^a]: 代码内不是定义\n```\n\n[^a]: 不应生成文末脚注。",
+      "chunks": [
+        "`[^a]` ",
+        "不引用。\n\n`",
+        "``text\n",
+        "[^a]: 代",
+        "码内不是定义\n",
+        "```\n\n[^",
+        "a]: 不应生",
+        "成文末脚注。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "[^a]",
+          "代码内不是定义"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-17",
+      "title": "脚注引用容器",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> 引用内[^a]。\n\n- 列表内[^a]。\n\n[^a]: 共享一个定义。",
+      "chunks": [
+        "> 引用内[^",
+        "a]。\n\n- ",
+        "列表内[^a]",
+        "。\n\n[^a]",
+        ": 共享一个定",
+        "义。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "引用内",
+          "列表内",
+          "共享一个定义"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-18",
+      "title": "脚注定义后到",
+      "category": "footnotes",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "流式正文[^later]。\n\n[^later]: 定义到达后再编号。",
+      "chunks": [
+        "流式正文[^l",
+        "ater]。\n",
+        "\n[^late",
+        "r]: 定义到",
+        "达后再编号。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "流式正文",
+          "定义到达后再编号"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "按首次引用顺序编号；重复引用共用定义；不存在的定义保持原文。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-19",
+      "title": "行内公式",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "质能关系 $E=mc^2$，正文继续。",
+      "chunks": [
+        "质能关系 $E",
+        "=mc^2$，",
+        "正文继续。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "质能关系",
+          "正文继续"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-20",
+      "title": "括号行内公式",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "中文 \\(a^2+b^2=c^2\\) English。",
+      "chunks": [
+        "中文 \\(a^",
+        "2+b^2=c",
+        "^2\\) En",
+        "glish。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "中文",
+          "English"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-21",
+      "title": "块级分式",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "公式之前。\n\n$$\n\\frac{1}{2}+\\frac{a}{b}\n$$\n\n公式之后。",
+      "chunks": [
+        "公式之前。\n\n",
+        "$$\n\\fra",
+        "c{1}{2}",
+        "+\\frac{",
+        "a}{b}\n$",
+        "$\n\n公式之后",
+        "。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "公式之前",
+          "公式之后"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-22",
+      "title": "块级根号",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "\\[\n\\sqrt{x^2+y^2}\n\\]",
+      "chunks": [
+        "\\[\n\\sqr",
+        "t{x^2+y",
+        "^2}\n\\]"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-23",
+      "title": "求和积分",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "$$\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2},\\quad \\int_0^1 x^2\\,dx=\\frac13\n$$",
+      "chunks": [
+        "$$\n\\sum",
+        "_{i=1}^",
+        "{n} i =",
+        " \\frac{",
+        "n(n+1)}",
+        "{2},\\qu",
+        "ad \\int",
+        "_0^1 x^",
+        "2\\,dx=\\",
+        "frac13\n",
+        "$$"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-24",
+      "title": "矩阵",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "$$\n\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}\n$$",
+      "chunks": [
+        "$$\n\\beg",
+        "in{pmat",
+        "rix}a&b",
+        "\\\\c&d\\e",
+        "nd{pmat",
+        "rix}\n$$"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-25",
+      "title": "多行等式",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "$$\n\\begin{aligned}a&=b+c\\\\d&=e-f\\end{aligned}\n$$",
+      "chunks": [
+        "$$\n\\beg",
+        "in{alig",
+        "ned}a&=",
+        "b+c\\\\d&",
+        "=e-f\\en",
+        "d{align",
+        "ed}\n$$"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-26",
+      "title": "公式代码隔离",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "`$x$` 保留。\n\n```text\n$$\nx^2\n$$\n```\n\n正常 $y$。",
+      "chunks": [
+        "`$x$` 保",
+        "留。\n\n```",
+        "text\n$$",
+        "\nx^2\n$$",
+        "\n```\n\n正",
+        "常 $y$。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "$x$",
+          "x^2",
+          "正常"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-27",
+      "title": "货币与转义",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "价格 $20 和 $30；转义 \\$x\\$；公式 $x+1$。",
+      "chunks": [
+        "价格 $20 ",
+        "和 $30；转",
+        "义 \\$x\\$",
+        "；公式 $x+",
+        "1$。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "$20",
+          "$30",
+          "$x$"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-28",
+      "title": "公式未闭合",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "公式 $\\frac{a}{b} 未闭合。\n\n$$\nx+1",
+      "chunks": [
+        "公式 $\\fr",
+        "ac{a}{b",
+        "} 未闭合。\n",
+        "\n$$\nx+1"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "公式",
+          "未闭合",
+          "x+1"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 0,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-29",
+      "title": "错误公式回退",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "错误 $\\notARealCommand{x}$ 后仍有正文。",
+      "chunks": [
+        "错误 $\\no",
+        "tARealC",
+        "ommand{",
+        "x}$ 后仍有",
+        "正文。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "错误",
+          "后仍有正文"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-30",
+      "title": "公式引用和列表",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> 引用内 $x^2$。\n\n- 列表内 $y_1$。",
+      "chunks": [
+        "> 引用内 $",
+        "x^2$。\n\n",
+        "- 列表内 $",
+        "y_1$。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "引用内",
+          "列表内"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 2,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-31",
+      "title": "公式表格",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "| 名称 | 公式 |\n| --- | --- |\n| 分式 | $\\frac{a}{b}$ |",
+      "chunks": [
+        "| 名称 | ",
+        "公式 |\n| ",
+        "--- | -",
+        "-- |\n| ",
+        "分式 | $\\",
+        "frac{a}",
+        "{b}$ |"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "分式"
+        ],
+        "copyTexts": [],
+        "tableCount": 1,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-32",
+      "title": "窄屏长公式",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "$$\na_1+a_2+a_3+a_4+a_5+a_6+a_7+a_8+a_9+a_{10}=S\n$$",
+      "chunks": [
+        "$$\na_1+",
+        "a_2+a_3",
+        "+a_4+a_",
+        "5+a_6+a",
+        "_7+a_8+",
+        "a_9+a_{",
+        "10}=S\n$",
+        "$"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-33",
+      "title": "主题和大字体",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "调整主题字号与颜色：$x^2+\\sqrt{y}$。\n\n> [!TIP]\n> 提示颜色可配置。",
+      "chunks": [
+        "调整主题字号与",
+        "颜色：$x^2",
+        "+\\sqrt{",
+        "y}$。\n\n>",
+        " [!TIP]",
+        "\n> 提示颜色",
+        "可配置。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "调整主题字号与颜色",
+          "TIP"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-34",
+      "title": "公式安全降级",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "$\\href{https://example.com}{link}$\n\n$\\require{html}$\n\n正文不执行脚本。",
+      "chunks": [
+        "$\\href{",
+        "https:/",
+        "/exampl",
+        "e.com}{",
+        "link}$\n",
+        "\n$\\requ",
+        "ire{htm",
+        "l}$\n\n正文",
+        "不执行脚本。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "正文不执行脚本"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 2,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-35",
+      "title": "三项混排",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "> [!IMPORTANT]\n> 公式 $E=mc^2$ 与脚注[^physics]。\n\n[^physics]: 能量和质量的关系。",
+      "chunks": [
+        "> [!IMP",
+        "ORTANT]",
+        "\n> 公式 $",
+        "E=mc^2$",
+        " 与脚注[^p",
+        "hysics]",
+        "。\n\n[^ph",
+        "ysics]:",
+        " 能量和质量的",
+        "关系。"
+      ],
+      "history": [],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "IMPORTANT",
+          "能量和质量的关系"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    },
+    {
+      "id": "P3-36",
+      "title": "复用和流式",
+      "category": "math",
+      "platforms": [
+        "android",
+        "ios-spm",
+        "ios-binary"
+      ],
+      "markdown": "第一段 $a+b$。\n\n第二段[^n]。\n\n> [!NOTE]\n> 消息复用后不得残留旧公式。\n\n[^n]: 文末内容。",
+      "chunks": [
+        "第一段 $a+",
+        "b$。\n\n第二",
+        "段[^n]。\n",
+        "\n> [!NO",
+        "TE]\n> 消",
+        "息复用后不得残",
+        "留旧公式。\n\n",
+        "[^n]: 文",
+        "末内容。"
+      ],
+      "history": [
+        "旧消息 $x$。",
+        "历史消息。"
+      ],
+      "checkpoints": [],
+      "expected": {
+        "textContains": [
+          "第一段",
+          "第二段",
+          "NOTE",
+          "文末内容"
+        ],
+        "copyTexts": [],
+        "tableCount": 0,
+        "diagramCount": 0,
+        "mathCount": 1,
+        "notes": [
+          "完整公式离线渲染；流式未完成/无效公式保留源码，异步高度更新；主题切换和复用不残留。",
+          "双端默认和大字号、窄屏下验收；此目录不代表已完成 UI 验收。"
+        ]
+      }
+    }
+  ]
+}
