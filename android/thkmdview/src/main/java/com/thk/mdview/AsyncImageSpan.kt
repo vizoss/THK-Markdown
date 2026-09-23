@@ -5,6 +5,9 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.text.style.ReplacementSpan
+import android.text.Spanned
+import android.text.SpannableString
+import android.widget.TextView
 import android.view.View
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +61,15 @@ internal class AsyncImageSpan(
             }
             currentWidthPx = width
             currentHeightPx = height
+            // requestLayout alone can reuse TextView's old Layout/line breaks.
+            // Rebind the same spans (including this loaded bitmap) to invalidate it,
+            // but never overwrite content if the host has already been recycled.
+            if (hostView is TextView) {
+                val text = hostView.text as? Spanned
+                if (text != null && text.getSpanStart(this@AsyncImageSpan) >= 0) {
+                    hostView.setText(SpannableString(text), TextView.BufferType.SPANNABLE)
+                }
+            }
             hostView.requestLayout()
             hostView.invalidate()
         }
@@ -98,7 +110,9 @@ internal class AsyncImageSpan(
         // Left-aligned with the paragraph: the box starts exactly at `x` (the span's own
         // position in the line), width/height always match the reported getSize() box -
         // never centered inside a separately-sized reservation.
-        val box = RectF(x, (bottom - currentHeightPx).toFloat(), x + currentWidthPx, bottom.toFloat())
+        // getSize reserves space above the baseline, not above the line bottom
+        // (which may include text descenders and paragraph spacing).
+        val box = RectF(x, (y - currentHeightPx).toFloat(), x + currentWidthPx, y.toFloat())
         val bmp = bitmap
         if (bmp == null) {
             canvas.drawRoundRect(box, cornerRadiusPx, cornerRadiusPx, placeholderPaint)
