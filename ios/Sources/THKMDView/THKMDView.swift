@@ -348,16 +348,24 @@ public final class THKMDView: UIView {
             // Anchor to the view's right edge, not the text's right edge.
             var x = textView.bounds.width - textView.textContainerInset.right - size - margin
             // Use one trailing column inside the quoted code's 8pt inset.
-            if textView.textStorage.attribute(.thkBlockQuoteBackground, at: block.range.location, effectiveRange: nil) != nil,
-               segmentView.copyableBlocks.count > 1 {
+            let compact = textView.textStorage.attribute(.thkBlockQuoteBackground, at: block.range.location, effectiveRange: nil) != nil && segmentView.copyableBlocks.count > 1
+            if compact {
                 x -= THKCodeBlockMetrics.horizontalPadding
             }
             let leadingQuote = block.range.location == 0 && textView.textStorage.attribute(.thkCopyableBlockQuote, at: 0, effectiveRange: nil) != nil
-            let y = (leadingQuote ? 0 : textView.textContainerInset.top) + firstLineRect.minY + margin
-            while x > 0 && occupied.contains(where: { $0.intersects(CGRect(x: x, y: y, width: size, height: size)) }) {
+            var y = (leadingQuote ? 0 : textView.textContainerInset.top) + firstLineRect.minY + margin
+            var height = size
+            if compact, let font = textView.textStorage.attribute(.font, at: block.range.location, effectiveRange: nil) as? UIFont {
+                // Fit the hit target to the text row, never enlarge text to fit a button.
+                // The 16pt icon stays unchanged and is centered on the font's baseline box.
+                height = min(size, max(16, font.lineHeight))
+                let baseline = textView.textContainerInset.top + firstLineRect.minY + layoutManager.location(forGlyphAt: glyphRange.location).y
+                y = baseline - (font.ascender + font.descender) / 2 - height / 2
+            }
+            while x > 0 && occupied.contains(where: { $0.intersects(CGRect(x: x, y: y, width: size, height: height)) }) {
                 x = max(0, x - size - margin)
             }
-            button.frame = CGRect(x: max(0, x), y: max(0, y), width: size, height: size)
+            button.frame = CGRect(x: max(0, x), y: max(0, y), width: size, height: height)
             occupied.append(button.frame)
         }
     }

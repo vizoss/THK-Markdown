@@ -24,6 +24,15 @@ class THKMDViewReuseTest {
         assertThat(buttons).hasSize(2)
         assertThat(buttons[0].left).isEqualTo(buttons[1].left)
         assertThat(buttons[1].top).isAtLeast(buttons[0].bottom)
+        // Button alignment must not be achieved by inserting a tall blank header.
+        val firstLineHeight = frame.textView.layout.getLineBottom(0) - frame.textView.layout.getLineTop(0)
+        val reference = THKMDView(ApplicationProvider.getApplicationContext())
+        reference.setMarkdown("> 引用说明。\n>\n> 引用结束。")
+        reference.measure(android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+            android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED))
+        reference.layout(0, 0, width, reference.measuredHeight)
+        val naturalLayout = (reference.getChildAt(0) as TextSegmentFrame).textView.layout
+        assertThat(firstLineHeight).isEqualTo(naturalLayout.getLineBottom(0) - naturalLayout.getLineTop(0))
     }
 
     private class RecordingRenderer : MarkdownRenderer {

@@ -356,13 +356,23 @@ internal class TextSegmentFrame(context: Context) : FrameLayout(context) {
             val line = layout.getLineForOffset(offset)
             var x = (textView.right - sizePx - marginPx).coerceAtLeast(0)
             if (isQuote && copyBlocks.size > 1) x = (x - (8 * density).toInt()).coerceAtLeast(0)
-            val y = textView.top + (if (hasCopyGutter && offset == 0) 0 else textView.paddingTop) +
+            var y = textView.top + (if (hasCopyGutter && offset == 0) 0 else textView.paddingTop) +
                 layout.getLineTop(line) + marginPx
-            while (x > 0 && positioned.any { android.graphics.Rect.intersects(it, android.graphics.Rect(x, y, x + sizePx, y + sizePx)) }) {
+            var height = sizePx
+            if (isQuote && copyBlocks.size > 1) {
+                // Keep the 16dp icon, but fit its target to the natural text row.
+                val metrics = textView.paint.fontMetricsInt
+                height = (metrics.descent - metrics.ascent).coerceIn((16 * density).toInt(), sizePx)
+                val center = textView.top + textView.paddingTop + layout.getLineBaseline(line) + (metrics.ascent + metrics.descent) / 2
+                y = center - height / 2
+                val verticalPadding = ((height - 16 * density) / 2).toInt().coerceAtLeast(0)
+                button.setPadding((8 * density).toInt(), verticalPadding, (8 * density).toInt(), verticalPadding)
+            }
+            while (x > 0 && positioned.any { android.graphics.Rect.intersects(it, android.graphics.Rect(x, y, x + sizePx, y + height)) }) {
                 x = (x - sizePx - marginPx).coerceAtLeast(0)
             }
-            positioned += android.graphics.Rect(x, y, x + sizePx, y + sizePx)
-            button.layout(x, y, x + sizePx, y + sizePx)
+            positioned += android.graphics.Rect(x, y, x + sizePx, y + height)
+            button.layout(x, y, x + sizePx, y + height)
         }
     }
 

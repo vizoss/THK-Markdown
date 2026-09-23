@@ -199,12 +199,6 @@ internal class MarkdownSpanVisitor(
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
             )
             if (isOutermost) {
-                val codes = builder.getSpans(start, end, CodeBlockBackgroundSpan::class.java)
-                if (codes.isNotEmpty() && codes.none { builder.getSpanStart(it) == start }) {
-                    val firstLineEnd = builder.indexOf("\n", start).let { if (it < 0) end else it }
-                    builder.setSpan(QuoteCopyHeaderSpan((36 * densityPx).toInt()), start, firstLineEnd,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                }
                 copyableBlocks.add(CopyableBlock(start until end, builder.subSequence(start, end).toString()))
             }
         }

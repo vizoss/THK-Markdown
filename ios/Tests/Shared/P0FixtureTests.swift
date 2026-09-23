@@ -18,6 +18,9 @@ final class P0FixtureTests: XCTestCase {
         guard buttons.count == 2 else { return }
         XCTAssertEqual(buttons[0].frame.minX, buttons[1].frame.minX, accuracy: 0.5)
         XCTAssertGreaterThanOrEqual(buttons[1].frame.minY, buttons[0].frame.maxY)
+        let textView = try XCTUnwrap(descendants(view).compactMap { $0 as? UITextView }.first)
+        let style = try XCTUnwrap(textView.textStorage.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)
+        XCTAssertEqual(style.minimumLineHeight, 0, "Copy buttons must not inflate the quote header")
     }
 
     func testThemeControlsHeadingScaleAndMermaidFont() throws {

@@ -86,14 +86,6 @@ func thkReserveQuoteCopyGutter(in text: NSMutableAttributedString) {
         style.tailIndent = min(style.tailIndent, -gutter)
         text.addAttribute(.paragraphStyle, value: style, range: range)
     }
-    if hasCode && !startsWithCode {
-        // Reserve a real header row for the enclosing quote's 32pt hit target.
-        // The child button can then stay in the same trailing column.
-        let first = (text.string as NSString).paragraphRange(for: NSRange(location: 0, length: 0))
-        let style = (text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle ?? NSMutableParagraphStyle()
-        style.minimumLineHeight = max(style.minimumLineHeight, THKCopyButtonMetrics.size + THKCopyButtonMetrics.margin)
-        text.addAttribute(.paragraphStyle, value: style, range: first)
-    }
 }
 
 /// A renderer walks Markdown text into an ordered list of segments (see `THKRenderSegment`)
