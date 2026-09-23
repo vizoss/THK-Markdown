@@ -13,6 +13,30 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun quoteAndListMarginsFollowContainerNesting() {
+        fun margins(source: String, target: String): List<android.text.style.LeadingMarginSpan> {
+            val text = render(source).filterIsInstance<RenderedSegment.TextSegment>()
+                .first { it.spanned.toString().contains(target) }.spanned as Spanned
+            val start = text.toString().indexOf(target)
+            return text.getSpans(start, start + 1, android.text.style.LeadingMarginSpan::class.java).toList()
+        }
+        for (marker in listOf("-", "1.", "- [ ]")) {
+            val spans = margins("> $marker 引用列表", "引用列表")
+            val quote = spans.indexOfFirst { it is ThemedQuoteSpan }
+            val item = spans.indexOfFirst {
+                it is android.text.style.BulletSpan || it is OrderedListItemSpan || it is TaskListItemSpan
+            }
+            assertTrue("Quote bar must precede the list marker: $marker", quote >= 0 && item > quote)
+        }
+        val nested = margins("> > - 深层列表", "深层列表")
+        val bullet = nested.indexOfFirst { it is android.text.style.BulletSpan }
+        assertEquals(2, nested.take(bullet).count { it is ThemedQuoteSpan })
+        val inList = margins("- 外层列表\n\n  > 引用内容", "引用内容")
+        assertTrue("Outer list margin must precede its quote", inList.first() !is ThemedQuoteSpan)
+        assertTrue(inList.any { it is ThemedQuoteSpan })
+        assertFalse(margins("- 普通列表", "普通列表").any { it is ThemedQuoteSpan })
+    }
+
     @Test fun p0LayoutMatrixAndRebinding() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val view = THKMDView(context)

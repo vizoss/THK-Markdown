@@ -193,7 +193,7 @@ internal class MarkdownSpanVisitor(
                     nestedBottomPaddingPx = if (blockQuoteDepth == 1) (10 * densityPx).toInt() else 0
                 ),
                 start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or
-                    ((254 - blockQuoteDepth).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)
+                    ((254 - blockQuoteDepth - listStack.size).coerceAtLeast(1) shl Spannable.SPAN_PRIORITY_SHIFT)
             )
             builder.setSpan(ForegroundColorSpan(theme.blockQuoteTextColor), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             // A little extra leading between wrapped/multi-paragraph lines *inside* the
@@ -285,7 +285,10 @@ internal class MarkdownSpanVisitor(
             ownRanges += start until end
         }
         for ((index, range) in ownRanges.withIndex()) {
-            val flags = Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or (255 shl Spannable.SPAN_PRIORITY_SHIFT)
+            // Android draws leading margins in priority order. Follow container
+            // nesting, not span type: quote > list and list > quote both occur.
+            val priority = (254 - blockQuoteDepth - ctx.level).coerceAtLeast(1)
+            val flags = Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or (priority shl Spannable.SPAN_PRIORITY_SHIFT)
             builder.setSpan(LeadingMarginSpan.Standard(indentPx), range.first, range.last + 1, flags)
             val span = if (index == 0) markerSpan else LeadingMarginSpan.Standard(markerSpan.getLeadingMargin(true))
             builder.setSpan(span, range.first, range.last + 1, flags)
