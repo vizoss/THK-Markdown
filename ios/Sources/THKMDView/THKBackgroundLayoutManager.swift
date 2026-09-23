@@ -110,23 +110,31 @@ final class THKBackgroundLayoutManager: NSLayoutManager {
             rect.origin.x = left
             rect.size.width = max(0, right - left)
         }
-        // Container-edge paragraph spacing is transferred to textContainerInset by
-        // THKMDView. Extend the owning background over that inset. Quoted code
-        // must not consume the quote's inset a second time.
-        let ownsInset = includesQuotePadding ||
-            textStorage?.attribute(.thkBlockQuoteBackground, at: charRange.location, effectiveRange: nil) == nil
-        if ownsInset, charRange.location == 0, leadingQuotePadding > 0 {
-            rect.origin.y -= leadingQuotePadding
-            rect.size.height += leadingQuotePadding
-        }
-        if ownsInset, let storage = textStorage, NSMaxRange(charRange) == storage.length,
-           trailingQuotePadding > 0 {
-            rect.size.height += trailingQuotePadding
-        }
+        let edgeInsets = containerEdgeInsets(for: charRange, includesQuotePadding: includesQuotePadding)
+        rect.origin.y -= edgeInsets.top
+        rect.size.height += edgeInsets.top + edgeInsets.bottom
         color.setFill()
         let path = UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius)
         context.addPath(path.cgPath)
         context.fillPath()
+    }
+
+    /// Edge spacing is transferred into textContainerInset. The quote owns all of
+    /// it; nested code owns only its code-padding portion, not the outer quote gap.
+    /// Interior blocks retain their paragraph spacing and need no adjustment.
+    func containerEdgeInsets(for range: NSRange, includesQuotePadding: Bool) -> UIEdgeInsets {
+        guard let storage = textStorage, range.length > 0,
+              range.location >= 0, NSMaxRange(range) <= storage.length else { return .zero }
+        let quotedCode = !includesQuotePadding &&
+            storage.attribute(.thkBlockQuoteBackground, at: range.location, effectiveRange: nil) != nil
+        let top = range.location == 0 ? max(0, leadingQuotePadding) : 0
+        let bottom = NSMaxRange(range) == storage.length ? max(0, trailingQuotePadding) : 0
+        return UIEdgeInsets(
+            top: quotedCode ? min(top, THKCodeBlockMetrics.verticalPaddingTop) : top,
+            left: 0,
+            bottom: quotedCode ? min(bottom, THKCodeBlockMetrics.verticalPaddingBottom) : bottom,
+            right: 0
+        )
     }
 
     private func drawInlineBackground(for charRange: NSRange, color: UIColor, origin: CGPoint, cornerRadius: CGFloat) {

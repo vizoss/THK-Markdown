@@ -6,6 +6,46 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testQuotedCodeRestoresOnlyItsOwnContainerEdgePadding() throws {
+        func descendants(_ parent: UIView) -> [UIView] {
+            parent.subviews.flatMap { [$0] + descendants($0) }
+        }
+        let sources: [(String, CGFloat, CGFloat)] = [
+            ("> [!NOTE]\n>\n> ```text\n> [!WARNING] 不变为提示\n> ```", 0, 8),
+            ("> ```text\n> code\n> ```", 8, 8),
+            ("> ```text\n> code\n> ```\n>\n> 结尾", 8, 0),
+            ("> 开头\n>\n> ```text\n> code\n> ```\n>\n> 结尾", 0, 0)
+        ]
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 340, height: 300))
+        for fontSize: CGFloat in [15, 24] {
+            var theme = THKMDTheme.default
+            theme.bodyFontSize = fontSize
+            view.theme = theme
+            for (source, top, bottom) in sources {
+                view.setMarkdown(source)
+                view.layoutIfNeeded()
+                let text = try XCTUnwrap(descendants(view).compactMap { $0 as? UITextView }.first)
+                let manager = try XCTUnwrap(text.layoutManager as? THKBackgroundLayoutManager)
+                let full = NSRange(location: 0, length: text.textStorage.length)
+                var codeRange: NSRange?
+                text.textStorage.enumerateAttribute(.thkCodeBlockBackground, in: full) { value, range, _ in
+                    if value != nil { codeRange = range }
+                }
+                let code = try XCTUnwrap(codeRange)
+                let codeInsets = manager.containerEdgeInsets(for: code, includesQuotePadding: false)
+                XCTAssertEqual(codeInsets.top, top, source)
+                XCTAssertEqual(codeInsets.bottom, bottom, source)
+                let quoteInsets = manager.containerEdgeInsets(for: full, includesQuotePadding: true)
+                XCTAssertEqual(quoteInsets.top, text.textContainerInset.top)
+                XCTAssertEqual(quoteInsets.bottom, text.textContainerInset.bottom)
+                if bottom > 0 { XCTAssertGreaterThan(quoteInsets.bottom, codeInsets.bottom) }
+                view.setMarkdown("普通正文")
+                let reused = try XCTUnwrap(descendants(view).compactMap { $0 as? UITextView }.first)
+                XCTAssertEqual(reused.textContainerInset, .zero)
+            }
+        }
+    }
+
     func testP3SyntaxIsolationAndNumbering() {
         let source = "先[^b] 后[^a] 再[^b]。\n\n[^a]: A\n[^b]: B\n[^unused]: UNUSED"
         let prepared = THKMarkdownExtensions.prepare(source)
