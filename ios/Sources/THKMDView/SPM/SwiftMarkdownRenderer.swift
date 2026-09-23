@@ -408,7 +408,7 @@ struct AttributedStringVisitor: MarkupVisitor {
     }
 
     private mutating func renderListItem(_ item: ListItem, marker: String) -> NSAttributedString {
-        let content = joinBlocks(Array(item.children))
+        let content = joinBlocksTightly(Array(item.children))
 
         let line = NSMutableAttributedString()
         if let checkbox = item.checkbox {

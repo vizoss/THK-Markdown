@@ -386,7 +386,7 @@ struct MaakuAttributedStringVisitor {
     }
 
     private mutating func renderListItem(items: [Block], prefix: NSAttributedString) -> NSAttributedString {
-        let content = joinBlocks(items)
+        let content = joinBlocksTightly(items)
 
         let line = NSMutableAttributedString(attributedString: prefix)
         line.append(content)

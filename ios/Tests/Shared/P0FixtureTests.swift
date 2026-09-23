@@ -167,6 +167,7 @@ final class P0FixtureTests: XCTestCase {
             return (text.attribute(.paragraphStyle, at: index, effectiveRange: nil) as? NSParagraphStyle)?.headIndent ?? 0
         }
         XCTAssertLessThan(indents[0], indents[1])
+        XCTAssertFalse(text.string.contains("\n\n"), "Nested list boundaries must not insert empty paragraphs")
         XCTAssertLessThan(indents[1], indents[2])
         let codeCase = try XCTUnwrap(fixtures.first { $0.id == "P0-06" })
         for segment in renderer.render(codeCase.markdown) {
