@@ -34,10 +34,13 @@ data class MarkdownFixture(
 }
 
 /** P0 images are deterministic and offline, including delayed failure. */
-class FixtureImageLoader : THKImageLoader {
+class FixtureImageLoader(context: Context) : THKImageLoader {
+    private val density = context.resources.displayMetrics.density
     override suspend fun load(url: String): Bitmap? {
         delay(200)
         if (url != "https://fixtures.thk.invalid/ok.png") return null
-        return Bitmap.createBitmap(120, 64, Bitmap.Config.ARGB_8888).apply { eraseColor(0xFF0A84FF.toInt()) }
+        // Match the iOS fixture's 120 × 64 logical points, not raw device pixels.
+        return Bitmap.createBitmap((120 * density).toInt(), (64 * density).toInt(), Bitmap.Config.ARGB_8888)
+            .apply { eraseColor(0xFF0A84FF.toInt()) }
     }
 }

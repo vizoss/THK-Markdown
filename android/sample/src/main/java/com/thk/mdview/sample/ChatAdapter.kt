@@ -63,7 +63,7 @@ class ChatAdapter(
         } else {
             val view = inflater.inflate(R.layout.item_message_assistant, parent, false)
             AssistantViewHolder(view, view.findViewById(R.id.markdownView)).also { holder ->
-                holder.markdown.imageLoader = FixtureImageLoader()
+                holder.markdown.imageLoader = FixtureImageLoader(parent.context)
                 holder.markdown.addOnLayoutChangeListener { _, _, top, _, bottom, _, oldTop, _, oldBottom ->
                     if (bottom - top != oldBottom - oldTop) onAssistantContentUpdated()
                 }

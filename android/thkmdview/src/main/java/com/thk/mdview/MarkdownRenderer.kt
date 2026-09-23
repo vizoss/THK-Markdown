@@ -51,6 +51,6 @@ class DefaultMarkdownRenderer(
     }
 
     private companion object {
-        const val IMAGE_PLACEHOLDER_COLOR = -0x111112 // light gray, ARGB 0xFFEEEEEE
+        const val IMAGE_PLACEHOLDER_COLOR = -0x1a1a16 // ARGB 0xFFE5E5EA; visible against light message bubbles
     }
 }
