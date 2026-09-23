@@ -6,6 +6,94 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testIncrementalCatalogsMatchFullParsing() throws {
+        let stable = "# 前文\n\n- 已完成\n  - 嵌套\n\n> 引用结束\n\n---\n\n"
+        for suite in ["p0", "p1", "p2", "p3"] {
+            for fixture in try MarkdownFixture.load(suite: suite) {
+                let incremental = DefaultMarkdownRenderer()
+                let full = DefaultMarkdownRenderer()
+                full.incrementalParsingEnabled = false
+                var source = stable
+                _ = incremental.render(source)
+                for chunk in fixture.chunks {
+                    source += chunk
+                    assertIncrementalSegments(incremental.render(source), full.render(source), fixture.id)
+                }
+                for edited in [source.replacingOccurrences(of: "前文", with: "修改"), String(source.prefix(source.count / 2)), "短文"] {
+                    assertIncrementalSegments(incremental.render(edited), full.render(edited), fixture.id)
+                }
+                incremental.clearIncrementalState()
+                assertIncrementalSegments(incremental.render(source), full.render(source), fixture.id)
+            }
+        }
+    }
+
+    func testIncrementalAmbiguousBoundariesAndReuse() {
+        let stable = "# 前文\n\n- 已完成\n  - 嵌套\n\n> 引用结束\n\n---\n\n"
+        let cases = ["- one\n\n- two\n\n  continuation\n\n- three",
+            "> quote\n>\n> - item\n>   continuation\n\nend",
+            "a | b\n--- | ---\n1 | **two**\n\nend", "```text\na\n\nb\n```\n\nend",
+            "~~~mermaid\ngraph LR\nA-->B\n~~~\n\nend", "title\n---\n\n    indented\n\n    code\n\nend",
+            "<div>\n\ntext\n</div>\n\nend", "<!-- open\n\ncomment -->\n\nend",
+            "[a\\]b]\n\n[a\\]b]: /target\n\nend", "[a\nb]\n\n[a\nb]: /target\n\nend",
+            "$$\na\n\nb\n$$\n\nend", "`a\n\nb`\n\nend", "one[^a]\n\n[^a]: footnote\n\nend",
+            "- a\r\n\r\n- b\r\n\r\nend"]
+        for suffix in cases {
+            let incremental = DefaultMarkdownRenderer()
+            let full = DefaultMarkdownRenderer()
+            full.incrementalParsingEnabled = false
+            _ = incremental.render(stable)
+            for end in 1...suffix.count {
+                let source = stable + suffix.prefix(end)
+                assertIncrementalSegments(incremental.render(source), full.render(source), source)
+            }
+        }
+        let renderer = DefaultMarkdownRenderer()
+        let source = String(repeating: stable, count: 20) + "```\nactive"
+        _ = renderer.render(source)
+        _ = renderer.render(source + " more")
+        XCTAssertLessThan(renderer.lastParsedCharacters, 100)
+        let definition = source + " more\n```\n\n[ref]: /url"
+        _ = renderer.render(definition)
+        XCTAssertEqual(renderer.lastParsedCharacters, THKMarkdownExtensions.prepare(definition).utf16.count)
+    }
+
+    private func assertIncrementalSegments(_ actual: [THKRenderSegment], _ expected: [THKRenderSegment], _ context: String) {
+        func normalized(_ text: NSAttributedString) -> NSAttributedString {
+            let result = NSMutableAttributedString(attributedString: text)
+            text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+                if let image = value as? THKAsyncImageTextAttachment {
+                    result.removeAttribute(.attachment, range: range)
+                    result.addAttribute(NSAttributedString.Key("testImageURL"), value: image.url.absoluteString, range: range)
+                }
+            }
+            return result
+        }
+        func compare(_ a: NSAttributedString, _ b: NSAttributedString) {
+            XCTAssertTrue(normalized(a).isEqual(to: normalized(b)), context)
+        }
+        XCTAssertEqual(actual.count, expected.count, context)
+        for (a, b) in zip(actual, expected) {
+            switch (a, b) {
+            case let (.text(x, xc), .text(y, yc)):
+                compare(x, y)
+                XCTAssertEqual(xc.map(\.range), yc.map(\.range), context)
+                XCTAssertEqual(xc.map(\.text), yc.map(\.text), context)
+            case let (.table(x), .table(y)):
+                XCTAssertEqual(x.alignments, y.alignments, context)
+                XCTAssertEqual(x.headerCells.count, y.headerCells.count, context)
+                zip(x.headerCells, y.headerCells).forEach { compare($0, $1) }
+                XCTAssertEqual(x.rows.count, y.rows.count, context)
+                for (xr, yr) in zip(x.rows, y.rows) {
+                    XCTAssertEqual(xr.count, yr.count, context)
+                    zip(xr, yr).forEach { compare($0, $1) }
+                }
+            case let (.diagram(x), .diagram(y)): XCTAssertEqual(x, y, context)
+            default: XCTFail("Segment type mismatch: \(context)")
+            }
+        }
+    }
+
     func testQuotedCodeRestoresOnlyItsOwnContainerEdgePadding() throws {
         func descendants(_ parent: UIView) -> [UIView] {
             parent.subviews.flatMap { [$0] + descendants($0) }

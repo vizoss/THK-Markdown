@@ -6,6 +6,7 @@ import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension
 import org.commonmark.ext.gfm.tables.TablesExtension
 import org.commonmark.ext.task.list.items.TaskListItemsExtension
 import org.commonmark.parser.Parser
+import org.commonmark.parser.IncludeSourceSpans
 
 /** Pluggable Markdown -> segment renderer; swap in via [THKMDView.setMarkdownRenderer]. */
 interface MarkdownRenderer {
@@ -34,43 +35,49 @@ class DefaultMarkdownRenderer(
     internal var lastParsedCharacters = 0
         private set
     internal var incrementalParsingEnabled = true
-    private val blockStart = Regex("^ {0,3}(?:[#>+*_=~`|\\-]|[0-9]+[.)](?: |$))")
+    private var sealedSource = ""
 
-    // Conservative incremental path: completed ordinary paragraphs are independent.
-    // Global references, extensions and block syntax always use the full parser.
+    // Keep two trailing top-level blocks mutable: an unfinished line can become a
+    // list marker and merge with the preceding list. Never split a container/fence.
     private fun parse(markdown: String): Document {
-        val safe = incrementalParsingEnabled && markdown.none { it in "[]<>$\\`\r\t" } && markdown.lines().none {
-            it.startsWith("    ") || blockStart.containsMatchIn(it)
-        }
-        if (!safe || !markdown.startsWith(previousSource)) {
+        val prepared = MarkdownExtensions.prepare(markdown).replace("\r\n", "\n").replace('\r', '\n')
+        // Deliberately over-detect definitions, including escaped/multiline labels.
+        val safe = incrementalParsingEnabled && !prepared.contains("]:") && !markdown.contains("[^")
+        if (!safe || !markdown.startsWith(previousSource) || !prepared.startsWith(sealedSource)) {
             sealedLength = 0
             sealedNodes.clear()
+            sealedSource = ""
         }
         previousSource = markdown
         lastParsedCharacters = 0
         if (!safe) {
-            lastParsedCharacters = markdown.length
-            return parser.parse(MarkdownExtensions.prepare(markdown)) as Document
+            lastParsedCharacters = prepared.length
+            return parser.parse(prepared) as Document
         }
-        val separator = markdown.lastIndexOf("\n\n")
-        val boundary = if (separator < 0) 0 else separator + 2
-        if (boundary > sealedLength) {
-            val part = markdown.substring(sealedLength, boundary)
-            lastParsedCharacters += part.length
-            var node = parser.parse(part).firstChild
-            while (node != null) { val next = node.next; node.unlink(); sealedNodes.add(node); node = next }
-            sealedLength = boundary
-        }
+        val tail = prepared.substring(sealedLength)
+        lastParsedCharacters = tail.length
+        val parsed = parser.parse(tail)
+        val nodes = mutableListOf<org.commonmark.node.Node>()
+        var node = parsed.firstChild
+        while (node != null) { nodes.add(node); node = node.next }
         val result = Document()
         sealedNodes.forEach { result.appendChild(it) }
-        val tail = markdown.substring(sealedLength)
-        lastParsedCharacters += tail.length
-        var node = parser.parse(tail).firstChild
-        while (node != null) { val next = node.next; result.appendChild(node); node = next }
+        if (nodes.size > 2) {
+            val line = nodes[nodes.size - 2].sourceSpans.firstOrNull()?.lineIndex
+            if (line != null && line > 0) {
+                var offset = 0
+                repeat(line) { offset = tail.indexOf('\n', offset) + 1 }
+                sealedNodes.addAll(nodes.dropLast(2))
+                sealedLength += offset
+                sealedSource = prepared.substring(0, sealedLength)
+            }
+        }
+        nodes.forEach { result.appendChild(it) }
         return result
     }
 
     private val parser: Parser = Parser.builder()
+        .includeSourceSpans(IncludeSourceSpans.BLOCKS)
         .extensions(
             listOf(
                 TablesExtension.create(),
@@ -93,7 +100,7 @@ class DefaultMarkdownRenderer(
     }
 
     internal fun clearIncrementalState() {
-        previousSource = ""; sealedLength = 0; sealedNodes.clear()
+        previousSource = ""; sealedSource = ""; sealedLength = 0; sealedNodes.clear()
     }
 
 }

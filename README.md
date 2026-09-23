@@ -119,10 +119,13 @@ Repeated assignment of an equal theme skips rendering. Fixed extension patterns 
 compiled once. Unchanged text-only tables reuse cells (formatting, alignment and theme
 are compared); image/formula cells and unsupported custom Android spans conservatively
 rebind. The iOS demo coalesces height updates from content notifications instead of
-polling throughout playback. Append-only ordinary paragraphs reuse completed paragraph
-syntax trees and parse the remaining tail; complex block syntax, references and extensions
-fall back to full-document parsing. Source validation and rendering still visit the full
-document, so this is not a general-purpose incremental CommonMark parser.
+polling throughout playback. Append-only Markdown reuses stable top-level syntax trees,
+including lists, quotes, tables, headings and code fences. The final two top-level blocks
+are reparsed together so incomplete syntax can change or merge their structure. Containers
+are never split. Reference definitions, footnotes, historical edits, or extension rewrites
+of the cached prefix fall back to full parsing. Extension preparation and rendering still
+visit the full document; this optimizes parser work, not every stage of rendering. A single
+large unfinished block still needs reparsing. See [performance notes](docs/performance-review.md).
 Ordinary text updates retain an unchanged prefix where safe. Concurrent identical math
 requests share one render; cancelling a subscriber does not cancel other subscribers.
 

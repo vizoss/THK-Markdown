@@ -39,7 +39,7 @@ class THKMDViewReuseTest {
         val prefix = "stable paragraph\n\n".repeat(100)
         incremental.render(prefix + "tail", THKMDTheme.Default, bounds)
         incremental.render(prefix + "tail more", THKMDTheme.Default, bounds)
-        assertThat(incremental.lastParsedCharacters).isEqualTo("tail more".length)
+        assertThat(incremental.lastParsedCharacters).isEqualTo("stable paragraph\n\ntail more".length)
     }
 
     @Test fun temporaryDetachKeepsViewsAndResumesPendingText() {

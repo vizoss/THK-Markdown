@@ -65,7 +65,7 @@ final class THKMDViewTests: XCTestCase {
         let prefix = String(repeating: "stable paragraph\n\n", count: 100)
         _ = incremental.render(prefix + "tail")
         _ = incremental.render(prefix + "tail more")
-        XCTAssertEqual(incremental.lastParsedCharacters, "tail more".utf16.count)
+        XCTAssertEqual(incremental.lastParsedCharacters, "stable paragraph\n\ntail more".utf16.count)
     }
 
     func testUnchangedThemeSkipsRenderingButChangedThemeRenders() {
