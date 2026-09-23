@@ -6,6 +6,37 @@ import MarkdownFixtures
 #endif
 
 final class P0FixtureTests: XCTestCase {
+    func testChineseEmphasisKeepsSkewAcrossContainers() {
+        let renderer = DefaultMarkdownRenderer()
+        for source in ["*中文 English* 普通", "***中文 English*** 普通",
+                       "## *中文 English* 普通", "> *中文 English* 普通",
+                       "[*中文 English*](https://example.com) 普通",
+                       "| 内容 |\n| --- |\n| *中文 English* 普通 |"] {
+            let texts = renderer.render(source).flatMap { segment -> [NSAttributedString] in
+                switch segment {
+                case .text(let text, _): return [text]
+                case .table(let table): return table.headerCells + table.rows.flatMap { $0 }
+                case .diagram: return []
+                }
+            }
+            guard let text = texts.first(where: { $0.string.contains("中文") }) else {
+                XCTFail(source); continue
+            }
+            let chinese = (text.string as NSString).range(of: "中文").location
+            let english = (text.string as NSString).range(of: "English").location
+            let ordinary = (text.string as NSString).range(of: "普通").location
+            XCTAssertEqual((text.attribute(.obliqueness, at: chinese, effectiveRange: nil) as? NSNumber)?.doubleValue, 0.2, source)
+            XCTAssertNil(text.attribute(.obliqueness, at: ordinary, effectiveRange: nil), source)
+            XCTAssertNil(text.attribute(.obliqueness, at: english, effectiveRange: nil), source)
+            let englishFont = text.attribute(.font, at: english, effectiveRange: nil) as? UIFont
+            XCTAssertTrue(englishFont?.fontDescriptor.symbolicTraits.contains(.traitItalic) == true, source)
+            if source.hasPrefix("***") || source.hasPrefix("##") {
+                let font = text.attribute(.font, at: chinese, effectiveRange: nil) as? UIFont
+                XCTAssertTrue(font?.fontDescriptor.symbolicTraits.contains(.traitBold) == true, source)
+            }
+        }
+    }
+
     func testInPlaceFontChangeNotifiesHostAndUpdatesQuoteHeight() throws {
         let fixture = try XCTUnwrap(MarkdownFixture.load().first { $0.id == "P0-01" })
         let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 280, height: 300))

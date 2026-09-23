@@ -416,6 +416,9 @@ struct MaakuAttributedStringVisitor {
             let descriptor = font.fontDescriptor.withSymbolicTraits(traits) ?? font.fontDescriptor
             attrString.addAttribute(.font, value: UIFont(descriptor: descriptor, size: font.pointSize), range: range)
         }
+        if trait == .traitItalic {
+            THKEmphasisStyling.applyCJKFallback(to: attrString)
+        }
     }
 
     // Fills in `color` only where no `.foregroundColor` is already set, so a more specific
