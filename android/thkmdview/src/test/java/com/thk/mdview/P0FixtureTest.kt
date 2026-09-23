@@ -13,6 +13,20 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class P0FixtureTest {
+    @Test fun nestedTableFallbackKeepsHeaderBoldWithoutBoldingBody() {
+        for (id in listOf("P0-12", "P0-13")) {
+            val fixture = cases().single { it.getString("id") == id }
+            val text = (render(fixture.getString("markdown")).first() as RenderedSegment.TextSegment).spanned as Spanned
+            for (label in listOf("名称", "值")) {
+                val offset = text.toString().indexOf(label)
+                assertTrue(text.getSpans(offset, offset + label.length, android.text.style.StyleSpan::class.java)
+                    .any { it.style == android.graphics.Typeface.BOLD })
+            }
+            val body = text.toString().indexOf(if (id == "P0-12") "alpha" else "beta")
+            assertFalse(text.getSpans(body, body + 1, android.text.style.StyleSpan::class.java)
+                .any { it.style == android.graphics.Typeface.BOLD })
+        }
+    }
     @Test fun nestedListMarginsDoNotAccumulateAncestorMarkers() {
         val text = (render("- 一级\n  - 二级\n    - 三级\n- 返回一级").first() as RenderedSegment.TextSegment).spanned as Spanned
         val density = ApplicationProvider.getApplicationContext<android.content.Context>().resources.displayMetrics.density

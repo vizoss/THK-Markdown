@@ -296,7 +296,11 @@ internal class MarkdownSpanVisitor(
                     if (row > 0) builder.append('\n')
                     cells.forEachIndexed { column, cell ->
                         if (column > 0) builder.append(" | ")
+                        val cellStart = builder.length
                         builder.append(cell)
+                        if (row == 0 && builder.length > cellStart) {
+                            builder.setSpan(StyleSpan(Typeface.BOLD), cellStart, builder.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
                     }
                 }
                 return
