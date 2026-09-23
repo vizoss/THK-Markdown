@@ -66,18 +66,21 @@ public final class THKAsyncImageTextAttachment: NSTextAttachment {
     public func startLoading(imageLoader: THKImageLoading, into textStorage: NSTextStorage) {
         self.textStorage = textStorage
         loadTask?.cancel()
+        let url = self.url
+        let theme = self.theme
         loadTask = Task { [weak self] in
-            guard let self else { return }
-            if self.url.scheme == "thk-math" {
-                guard let result = await THKMathEngine.shared.render(self.url, theme: self.theme), !Task.isCancelled else { return }
-                await self.applyLoadedImage(result.image, descent: result.descent)
+            if url.scheme == "thk-math" {
+                guard let result = await THKMathEngine.shared.render(url, theme: theme), !Task.isCancelled else { return }
+                await self?.applyLoadedImage(result.image, descent: result.descent)
                 return
             }
-            guard let loaded = await imageLoader.load(url: self.url) else { return }
+            guard let loaded = await imageLoader.load(url: url) else { return }
             if Task.isCancelled { return }
-            await self.applyLoadedImage(loaded)
+            await self?.applyLoadedImage(loaded)
         }
     }
+
+    deinit { loadTask?.cancel() }
 
     /// Must be called before the attachment (or its owning text segment) is discarded — a
     /// recycled-away view's in-flight image load must never paint onto its replacement, the

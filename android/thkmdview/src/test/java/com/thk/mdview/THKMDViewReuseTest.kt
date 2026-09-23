@@ -10,6 +10,55 @@ import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class THKMDViewReuseTest {
+    @Test fun temporaryDetachKeepsViewsAndResumesPendingText() {
+        val controller = org.robolectric.Robolectric.buildActivity(android.app.Activity::class.java).setup().visible()
+        val activity = controller.get()
+        val root = android.widget.FrameLayout(activity)
+        activity.setContentView(root)
+        val view = THKMDView(activity)
+        root.addView(view)
+        view.setMarkdown("before")
+        val child = view.getChildAt(0)
+        root.removeView(view)
+        assertThat(view.getChildAt(0)).isSameInstanceAs(child)
+        view.appendMarkdownChunk(" after")
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1))
+        assertThat(firstSegmentText(view)).isEqualTo("before")
+        root.addView(view)
+        assertThat(firstSegmentText(view)).isEqualTo("before after")
+        view.reset()
+        controller.pause().stop().destroy()
+    }
+
+    @Test fun unchangedThemeDoesNotRenderAgain() {
+        val view = THKMDView(ApplicationProvider.getApplicationContext())
+        val renderer = RecordingRenderer()
+        view.setMarkdownRenderer(renderer)
+        view.setMarkdown("stable")
+        val count = renderer.callCount
+        view.theme = view.theme.copy()
+        assertThat(renderer.callCount).isEqualTo(count)
+        view.theme = view.theme.copy(bodyFontSizeSp = view.theme.bodyFontSizeSp + 1)
+        assertThat(renderer.callCount).isEqualTo(count + 1)
+    }
+
+    @Test fun tableReusesIdenticalCellsButRebindsFormattingAndThemeChanges() {
+        val view = THKTableView(ApplicationProvider.getApplicationContext())
+        val data = THKTableData(listOf(THKTableAlignment.START), listOf("Header"), listOf(listOf("same")))
+        view.setData(data, THKMDTheme.Default)
+        val original = view.cellViewAt(1, 0)
+        view.setData(data.copy(), THKMDTheme.Default)
+        assertThat(view.cellViewAt(1, 0)).isSameInstanceAs(original)
+        val bold = android.text.SpannableString("same").apply {
+            setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, length, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        view.setData(data.copy(bodyRows = listOf(listOf(bold))), THKMDTheme.Default)
+        assertThat(view.cellViewAt(1, 0)).isNotSameInstanceAs(original)
+        val formatted = view.cellViewAt(1, 0)
+        view.setData(data, THKMDTheme.Default.copy(bodyFontSizeSp = 20f))
+        assertThat(view.cellViewAt(1, 0)).isNotSameInstanceAs(formatted)
+    }
+
     @Test fun listQuoteBackgroundIncludesTheCopyGutter() {
         val view = THKMDView(ApplicationProvider.getApplicationContext())
         view.setMarkdown("- 外层列表\n\n  > 引用第一段。\n  > > 内层引用。\n\n- 列表结尾")

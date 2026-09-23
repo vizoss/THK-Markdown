@@ -51,11 +51,13 @@ class THKMermaidView @JvmOverloads constructor(
     private var currentSource: String? = null
     private var currentTheme: THKMDTheme? = null
     private var pageLoaded = false
+    private var destroyed = false
 
     init {
         webView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, dp(DEFAULT_HEIGHT_DP))
         webView.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String?) {
+                if (destroyed) return
                 pageLoaded = true
                 currentSource?.let { evaluateRender(it) }
             }
@@ -66,6 +68,7 @@ class THKMermaidView @JvmOverloads constructor(
 
     /** Renders (or re-renders, if [source] changed) the given Mermaid diagram source. */
     fun render(source: String, theme: THKMDTheme) {
+        if (destroyed) return
         fallbackText.setTextColor(theme.codeTextColor)
         fallbackText.setBackgroundColor(theme.codeBackgroundColor)
         fallbackText.setTextSize(TypedValue.COMPLEX_UNIT_SP, theme.codeFontSizeSp)
@@ -86,10 +89,13 @@ class THKMermaidView @JvmOverloads constructor(
 
     /** Tears down the WebView; must be called before this view is discarded (see THKMDView.reset()). */
     fun destroy() {
+        if (destroyed) return
+        destroyed = true
         pageLoaded = false
         webView.stopLoading()
         webView.removeJavascriptInterface("AndroidBridge")
         webView.webViewClient = object : WebViewClient() {}
+        removeView(webView)
         webView.destroy()
     }
 
@@ -106,6 +112,7 @@ class THKMermaidView @JvmOverloads constructor(
     // bubble width, and the template's CSS (`max-width: 100%`) already scaled the SVG to
     // fit it - only the resulting height needs to be read back and applied here.
     private fun onRendered(@Suppress("UNUSED_PARAMETER") cssWidthPx: Double, cssHeightPx: Double) {
+        if (destroyed) return
         if (cssHeightPx <= 0) return
         val heightPx = (cssHeightPx * density).roundToInt().coerceAtLeast(dp(MIN_HEIGHT_DP))
         webView.layoutParams = webView.layoutParams.apply { height = heightPx }
@@ -113,6 +120,7 @@ class THKMermaidView @JvmOverloads constructor(
     }
 
     private fun onRenderError(message: String) {
+        if (destroyed) return
         webView.visibility = View.GONE
         val source = currentSource.orEmpty()
         fallbackText.text = "$source\n\n($FALLBACK_NOTE: $message)"

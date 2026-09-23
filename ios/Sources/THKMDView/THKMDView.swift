@@ -6,6 +6,13 @@ import UIKit
 /// `THKTableView`. Pin/size it like any auto-sizing view (it grows with its content via
 /// `intrinsicContentSize`), and call `reset()` from `prepareForReuse`.
 public final class THKMDView: UIView {
+    /// Process-wide formula bitmap budget in bytes (default 8 MB); zero disables caching.
+    /// Clears existing entries, without interrupting current renders. Call on the main actor.
+    @MainActor public static func configureMathCache(maxBytes: Int) {
+        THKMathEngine.shared.configureCache(maxBytes: maxBytes)
+    }
+
+    @MainActor public static func clearMathCache() { THKMathEngine.shared.clearCache() }
     /// Content/theme changes and async images/diagrams can change the required height.
     /// Self-sizing list hosts should schedule a row-height refresh from this callback.
     public var onContentSizeChange: (() -> Void)?
@@ -30,6 +37,7 @@ public final class THKMDView: UIView {
 
     public var theme: THKMDTheme = .default {
         didSet {
+            guard theme != oldValue else { return }
             renderer.theme = theme
             backgroundColor = theme.backgroundColor
             rerenderCurrentBuffer()
@@ -134,6 +142,17 @@ public final class THKMDView: UIView {
         }
         segmentViews = []
         invalidateIntrinsicContentSize()
+    }
+
+    deinit {
+        buffer.cancelPending()
+        for segment in segmentViews {
+            switch segment {
+            case .text(let text): text.attachments.forEach { $0.cancelLoading() }
+            case .table(let table): table.cancelImageLoads()
+            case .diagram: break // Mermaid has its own deinit and weak message proxy.
+            }
+        }
     }
 
     private func applyRenderedText(_ markdown: String) {

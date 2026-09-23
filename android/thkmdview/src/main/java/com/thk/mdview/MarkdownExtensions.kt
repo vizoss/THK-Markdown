@@ -4,6 +4,12 @@ import android.util.Base64
 
 /** Mirrors THKMarkdownExtensions.swift. Protected code/URLs never acquire P3 syntax. */
 internal object MarkdownExtensions {
+    // Fixed patterns are compiled once, never in the per-line parsing loops.
+    private val pattern0 = Regex("^ {0,3}\\[(?!\\^)[^\\]]+\\]:")
+    private val pattern1 = Regex("^ {0,3}\\[\\^([^\\]\\s]+)\\]:[ \\t]*(.*)$")
+    private val pattern2 = Regex("^(?: {0,3}>[ ]?)*")
+    private val pattern3 = Regex("^ {0,3}(`{3,}|~{3,})[ \\t]*$")
+    private val pattern4 = Regex("^ {0,3}(`{3,}|~{3,})(.*)$")
     fun prepare(source: String): String {
         val (protected, literals) = protectCode(source.replace("\r\n", "\n"))
         val lines = protected.split('\n')
@@ -13,10 +19,10 @@ internal object MarkdownExtensions {
         var i = 0
         while (i < lines.size) {
             val line = lines[i]
-            if (fence.protect(line) || line.startsWith("    ") || line.startsWith("\t") || Regex("^ {0,3}\\[(?!\\^)[^\\]]+\\]:").containsMatchIn(line)) {
+            if (fence.protect(line) || line.startsWith("    ") || line.startsWith("\t") || pattern0.containsMatchIn(line)) {
                 body += line; i++; continue
             }
-            val match = Regex("^ {0,3}\\[\\^([^\\]\\s]+)\\]:[ \\t]*(.*)$").matchEntire(line)
+            val match = pattern1.matchEntire(line)
             if (match != null) {
                 var definition = match.groupValues[2]
                 i++
@@ -35,7 +41,7 @@ internal object MarkdownExtensions {
         i = 0
         while (i < body.size) {
             val line = body[i]
-            if (fence.protect(line) || line.startsWith("    ") || line.startsWith("\t") || Regex("^ {0,3}\\[(?!\\^)[^\\]]+\\]:").containsMatchIn(line)) {
+            if (fence.protect(line) || line.startsWith("    ") || line.startsWith("\t") || pattern0.containsMatchIn(line)) {
                 output += line; i++; continue
             }
             val trim = line.trim()
@@ -115,13 +121,13 @@ internal object MarkdownExtensions {
     private class Fence {
         var active: Pair<Char, Int>? = null
         fun protect(line: String): Boolean {
-            val probe = line.replace(Regex("^(?: {0,3}>[ ]?)*"), "")
+            val probe = line.replace(pattern2, "")
             active?.let { (character, length) ->
-                val close = Regex("^ {0,3}(`{3,}|~{3,})[ \\t]*$").matchEntire(probe)
+                val close = pattern3.matchEntire(probe)
                 if (close != null && close.groupValues[1][0] == character && close.groupValues[1].length >= length) active = null
                 return true
             }
-            val open = Regex("^ {0,3}(`{3,}|~{3,})(.*)$").matchEntire(probe) ?: return false
+            val open = pattern4.matchEntire(probe) ?: return false
             active = open.groupValues[1][0] to open.groupValues[1].length
             return true
         }

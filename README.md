@@ -113,6 +113,27 @@ suite boundaries in P0 → P1 → P2 → P3 order, stopping only at the catalog 
 P1/P2/P3 are wired into the regression test entry points but have not yet been built,
 tested or visually accepted; fixture coverage is not a conformance claim.
 
+### Rendering and resource lifetime
+
+Repeated assignment of an equal theme skips rendering. Fixed extension patterns are
+compiled once. Unchanged text-only tables reuse cells (formatting, alignment and theme
+are compared); image/formula cells and unsupported custom Android spans conservatively
+rebind. The iOS demo coalesces height updates from content notifications instead of
+polling throughout playback. Full-document parsing is still used for correctness.
+
+Temporary list detachment does not clear the displayed content. Call `reset()` when
+discarding/recycling Android views to destroy Mermaid WebViews; the sample activities
+also clear their adapters on destruction. iOS image tasks do not retain attachments
+across loading, and network task cancellation is synchronized.
+
+Formula bitmap caching remains process-wide (default 8 MB). Configure on the main
+thread/actor with `THKMDView.configureMathCache(maxBytes = bytes)` on Android or
+`THKMDView.configureMathCache(maxBytes: bytes)` on iOS. Zero disables caching;
+negative values are invalid. Changing the limit clears old entries; `clearMathCache()`
+clears cached bitmaps without interrupting active renders or destroying the engine.
+iOS uses NSCache's advisory cost limit; this is not a cap on total rendering memory.
+Image caching still belongs to the injected image loader; no new image capacity API.
+
 ### Example UI
 
 The launcher has three matching destinations on Android and iOS:

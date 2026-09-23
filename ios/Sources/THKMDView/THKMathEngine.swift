@@ -12,6 +12,16 @@ final class THKMathEngine: NSObject, WKNavigationDelegate, WKScriptMessageHandle
         init(_ image: UIImage, descent: CGFloat) { self.image = image; self.descent = descent }
     }
     private let cache = NSCache<NSString, Result>()
+    private var cacheLimitBytes = 8 * 1024 * 1024
+
+    func configureCache(maxBytes: Int) {
+        precondition(maxBytes >= 0, "maxBytes must be nonnegative")
+        cacheLimitBytes = maxBytes
+        cache.removeAllObjects()
+        cache.totalCostLimit = maxBytes
+    }
+
+    func clearCache() { cache.removeAllObjects() }
     private var web: WKWebView?
     private var loaded = false
     private var waiting: [String: (String, [String: Any], CheckedContinuation<Result?, Never>)] = [:]
@@ -58,7 +68,7 @@ final class THKMathEngine: NSObject, WKNavigationDelegate, WKScriptMessageHandle
         let view = WKWebView(frame: CGRect(x: 0, y: 0, width: 1, height: 1), configuration: configuration)
         view.navigationDelegate = self
         web = view
-        cache.totalCostLimit = 8 * 1024 * 1024
+        cache.totalCostLimit = cacheLimitBytes
         view.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         return true
     }
@@ -87,7 +97,12 @@ final class THKMathEngine: NSObject, WKNavigationDelegate, WKScriptMessageHandle
     }
     private func finish(_ id: String, result: Result?) {
         guard let entry = waiting.removeValue(forKey: id) else { return }
-        if let result { cache.setObject(result, forKey: entry.0 as NSString, cost: (result.image.cgImage?.bytesPerRow ?? 0) * (result.image.cgImage?.height ?? 0)) }
+        if let result {
+            let cost = (result.image.cgImage?.bytesPerRow ?? 0) * (result.image.cgImage?.height ?? 0)
+            if cacheLimitBytes > 0 && cost <= cacheLimitBytes {
+                cache.setObject(result, forKey: entry.0 as NSString, cost: cost)
+            }
+        }
         entry.2.resume(returning: result)
     }
 }

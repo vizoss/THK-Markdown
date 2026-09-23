@@ -10,6 +10,7 @@ class StreamingMarkdownBuffer(
 ) {
     private val raw = StringBuilder()
     private var pendingRender: Runnable? = null
+    internal val hasPendingRender: Boolean get() = pendingRender != null
 
     val currentText: String
         get() = raw.toString()
@@ -43,7 +44,7 @@ class StreamingMarkdownBuffer(
         handler.postDelayed(runnable, debounceMs)
     }
 
-    private fun cancelPending() {
+    internal fun cancelPending() {
         // Must run inside reset() (and before every reschedule) so a recycled-away
         // RecyclerView item's stale render can never land on the view that replaced it.
         pendingRender?.let { handler.removeCallbacks(it) }

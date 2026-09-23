@@ -29,6 +29,18 @@ internal object THKMathEngine {
     private var web: WebView? = null
     private var loaded = false
     private val waiting = linkedMapOf<String, Pending>()
+    private var cacheLimitBytes = 8 * 1024 * 1024
+    fun configureCache(maxBytes: Int) {
+        check(Looper.myLooper() == Looper.getMainLooper()) { "Call on the main thread" }
+        require(maxBytes >= 0) { "maxBytes must be nonnegative" }
+        cacheLimitBytes = maxBytes
+        cache.evictAll()
+        cache.resize(maxBytes.coerceAtLeast(1))
+    }
+    fun clearCache() {
+        check(Looper.myLooper() == Looper.getMainLooper()) { "Call on the main thread" }
+        cache.evictAll()
+    }
     private val cache = object : LruCache<String, Result>(8 * 1024 * 1024) {
         override fun sizeOf(key: String, value: Result) = value.bitmap.byteCount
     }
@@ -89,7 +101,7 @@ internal object THKMathEngine {
     private fun send(request: JSONObject) { web?.evaluateJavascript("window.renderMath($request)", null) }
     private fun finish(id: String, result: Result?) {
         val item = waiting.remove(id) ?: return
-        if (result != null) cache.put(item.key, result)
+        if (result != null && cacheLimitBytes > 0 && result.bitmap.byteCount <= cacheLimitBytes) cache.put(item.key, result)
         item.complete(result)
     }
     private class Bridge(private val density: Float) {

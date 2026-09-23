@@ -58,6 +58,12 @@ class ShowCaseActivity : DemoPageActivity() {
         if (::adapter.isInitialized) adapter.setTheme(DemoThemeStore.load(this))
     }
 
+    override fun onDestroy() {
+        if (::adapter.isInitialized) adapter.clearMessages()
+        if (::recyclerView.isInitialized) recyclerView.adapter = null
+        super.onDestroy()
+    }
+
     override fun onStop() {
         val wasPlaying = playback != null
         playback?.cancel(); playback = null

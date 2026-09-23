@@ -12,6 +12,32 @@ private final class SpyRenderer: MarkdownRendering {
 }
 
 final class THKMDViewTests: XCTestCase {
+    func testUnchangedThemeSkipsRenderingButChangedThemeRenders() {
+        let spy = SpyRenderer()
+        let view = THKMDView(frame: .zero)
+        view.renderer = spy
+        view.setMarkdown("stable")
+        let count = spy.renderedMarkdowns.count
+        view.theme = THKMDTheme.default
+        XCTAssertEqual(spy.renderedMarkdowns.count, count)
+        view.theme.bodyFontSize += 1
+        XCTAssertEqual(spy.renderedMarkdowns.count, count + 1)
+    }
+
+    func testTableReuseDoesNotHideFormattingOrMutableInputChanges() {
+        let view = THKTableView(frame: .zero)
+        let value = NSMutableAttributedString(string: "same")
+        let model = THKTableModel(alignments: [.leading], headerCells: [NSAttributedString(string: "Header")], rows: [[value]])
+        func firstCell() -> UIView { view.subviews[0].subviews[0] }
+        view.configure(model: model, theme: .default)
+        let original = firstCell()
+        view.configure(model: model, theme: .default)
+        XCTAssertTrue(firstCell() === original)
+        value.addAttribute(.foregroundColor, value: UIColor.red, range: NSRange(location: 0, length: value.length))
+        view.configure(model: model, theme: .default)
+        XCTAssertFalse(firstCell() === original)
+    }
+
     func testSetMarkdownRendersImmediatelyWithoutWaiting() {
         let spy = SpyRenderer()
         let view = THKMDView(frame: .zero)

@@ -4,6 +4,13 @@ import Foundation
 /// Code fences, indented code, code spans, escaped punctuation and link destinations
 /// are opaque. Footnote definitions are document-level; nested definitions stay literal.
 enum THKMarkdownExtensions {
+    private static let patterns: [String: NSRegularExpression] = Dictionary(uniqueKeysWithValues: [
+        "^ {0,3}\\[(?!\\^)[^\\]]+\\]:",
+        "^ {0,3}\\[\\^([^\\]\\s]+)\\]:[ \\t]*(.*)$",
+        "^ {0,3}(`{3,}|~{3,})[ \\t]*$",
+        "^ {0,3}(`{3,}|~{3,})(.*)$",
+    ].map { ($0, try! NSRegularExpression(pattern: $0)) })
+    private static let quotePrefix = try! NSRegularExpression(pattern: "^(?: {0,3}>[ ]?)*")
     static func prepare(_ source: String) -> String {
         let protected = protectCode(source.replacingOccurrences(of: "\r\n", with: "\n"))
         let lines = protected.0.components(separatedBy: "\n")
@@ -111,7 +118,7 @@ enum THKMarkdownExtensions {
 
     private static func updateFence(_ line: String, fence: inout (Character, Int)?) -> Bool {
         // Strip quote/list prefixes only for detecting protected fenced code.
-        let probe = line.replacingOccurrences(of: "^(?: {0,3}>[ ]?)*", with: "", options: .regularExpression)
+        let probe = quotePrefix.stringByReplacingMatches(in: line, range: NSRange(line.startIndex..., in: line), withTemplate: "")
         if let active = fence {
             if let m = captures("^ {0,3}(`{3,}|~{3,})[ \\t]*$", probe), m[1].first == active.0, m[1].count >= active.1 { fence = nil }
             return true
@@ -201,7 +208,7 @@ enum THKMarkdownExtensions {
         return nil
     }
     private static func captures(_ pattern: String, _ text: String) -> [String]? {
-        guard let regex = try? NSRegularExpression(pattern: pattern),
+        guard let regex = patterns[pattern],
               let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else { return nil }
         return (0..<match.numberOfRanges).map { (text as NSString).substring(with: match.range(at: $0)) }
     }

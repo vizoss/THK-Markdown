@@ -18,6 +18,28 @@ private func makeImage(width: CGFloat, height: CGFloat) -> UIImage {
 }
 
 final class THKAsyncImageTextAttachmentTests: XCTestCase {
+    @MainActor func testPendingLoadDoesNotRetainDiscardedAttachment() async {
+        final class SuspendedLoader: THKImageLoading {
+            let started = XCTestExpectation(description: "load started")
+            var continuation: CheckedContinuation<UIImage?, Never>?
+            func load(url: URL) async -> UIImage? {
+                await withCheckedContinuation { continuation in
+                    self.continuation = continuation
+                    started.fulfill()
+                }
+            }
+        }
+        let loader = SuspendedLoader()
+        var attachment: THKAsyncImageTextAttachment? = makeAttachment()
+        weak var weakAttachment = attachment
+        attachment?.startLoading(imageLoader: loader, into: NSTextStorage())
+        await fulfillment(of: [loader.started], timeout: 2)
+        attachment = nil
+        XCTAssertNil(weakAttachment)
+        loader.continuation?.resume(returning: nil)
+        loader.continuation = nil
+    }
+
     private func makeAttachment() -> THKAsyncImageTextAttachment {
         THKAsyncImageTextAttachment(url: URL(string: "https://example.com/image.png")!, altText: "alt")
     }

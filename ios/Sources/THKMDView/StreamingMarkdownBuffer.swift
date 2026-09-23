@@ -57,9 +57,13 @@ public final class StreamingMarkdownBuffer {
     }
 
     public func reset() {
+        cancelPending()
+        text = ""
+    }
+
+    func cancelPending() {
         pendingWork?.cancel()
         pendingWork = nil
-        text = ""
     }
 
     private func scheduleRender() {

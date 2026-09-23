@@ -73,12 +73,13 @@ class DemoMessageListViewController: DemoPageViewController {
     var playback: Task<Void, Never>?
     var followsLatestMessage = true
     var isScrollingToTop = false
-    var finalHeightRefreshes = 0
     let tableView = UITableView(frame: .zero, style: .plain)
 
     var messages: [Message] = []
 
     var heightRefreshTimer: Timer?
+    private var heightRefreshRequested = false
+    private var applyingHeightRefresh = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -100,6 +101,7 @@ class DemoMessageListViewController: DemoPageViewController {
 
     // Apply saved settings to visible cells; reused cells read currentTheme.
     func applyTheme(_ theme: THKMDTheme) {
+        guard theme != currentTheme else { return }
         currentTheme = theme
         DemoThemeStore.save(theme)
         for cell in tableView.visibleCells {
@@ -127,16 +129,11 @@ class DemoMessageListViewController: DemoPageViewController {
         view.addSubview(tableView)
     }
 
-    // THKMDView grows via `invalidateIntrinsicContentSize()` as streamed chunks render, but
-    // UITableView.automaticDimension only re-measures a row on its own layout passes — it
-    // does not observe a child view's intrinsic size invalidation. While a row is streaming
-    // in, nudge the table into re-measuring every tick so cells grow smoothly instead of
-    // clipping/overlapping until the next unrelated layout pass. Restarted every time a new
-    // assistant reply starts streaming, since that now happens repeatedly, not just once at
-    // launch.
+    // Coalesce content/size notifications into one layout pass. Retry while scrolling,
+    // but stop once applied: playback alone must not trigger periodic table relayout.
     func startHeightRefreshTimer() {
         guard heightRefreshTimer == nil else { return }
-        let timer = Timer(timeInterval: 0.15, repeats: true) { [weak self] timer in
+        let timer = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] timer in
             guard let self else {
                 timer.invalidate()
                 return
@@ -145,6 +142,13 @@ class DemoMessageListViewController: DemoPageViewController {
             // idle tick catches up using the message's latest streamed content.
             guard !self.tableView.isTracking, !self.tableView.isDragging,
                   !self.tableView.isDecelerating, !self.isScrollingToTop else { return }
+            guard self.heightRefreshRequested else {
+                timer.invalidate()
+                self.heightRefreshTimer = nil
+                return
+            }
+            self.heightRefreshRequested = false
+            self.applyingHeightRefresh = true
             let oldOffset = self.tableView.contentOffset
             UIView.performWithoutAnimation {
                 self.tableView.beginUpdates()
@@ -156,20 +160,17 @@ class DemoMessageListViewController: DemoPageViewController {
                     self.tableView.setContentOffset(oldOffset, animated: false)
                 }
             }
-            if self.playback == nil {
-                self.finalHeightRefreshes -= 1
-                if self.finalHeightRefreshes <= 0 {
-                    timer.invalidate()
-                    self.heightRefreshTimer = nil
-                }
-            }
+            self.applyingHeightRefresh = false
+            timer.invalidate()
+            self.heightRefreshTimer = nil
         }
         heightRefreshTimer = timer
         RunLoop.main.add(timer, forMode: .common)
     }
 
     func requestHeightRefresh() {
-        finalHeightRefreshes = 2
+        guard !applyingHeightRefresh else { return }
+        heightRefreshRequested = true
         startHeightRefreshTimer()
     }
 

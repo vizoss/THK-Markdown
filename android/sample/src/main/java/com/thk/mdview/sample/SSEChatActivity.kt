@@ -66,6 +66,12 @@ class SSEChatActivity : DemoPageActivity() {
 
     override fun onResume() { super.onResume(); adapter.setTheme(DemoThemeStore.load(this)) }
 
+    override fun onDestroy() {
+        adapter.clearMessages()
+        list.adapter = null
+        super.onDestroy()
+    }
+
     private fun send(input: EditText) {
         val text = input.text.toString().trim()
         if (text.isEmpty() || fixtures.isEmpty()) return

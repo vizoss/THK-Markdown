@@ -51,7 +51,25 @@ public final class DefaultTHKImageLoader: THKImageLoading {
     // underlying `URLSessionDataTask` when the surrounding `Task` is cancelled.
     private func fetchData(from url: URL) async -> Data? {
         final class TaskBox: @unchecked Sendable {
-            var task: URLSessionDataTask?
+            private let lock = NSLock()
+            private var task: URLSessionDataTask?
+            private var cancelled = false
+
+            func install(_ task: URLSessionDataTask) {
+                lock.lock()
+                self.task = task
+                let shouldCancel = cancelled
+                lock.unlock()
+                if shouldCancel { task.cancel() }
+            }
+
+            func cancel() {
+                lock.lock()
+                cancelled = true
+                let task = self.task
+                lock.unlock()
+                task?.cancel()
+            }
         }
         let box = TaskBox()
         return await withTaskCancellationHandler {
@@ -63,11 +81,11 @@ public final class DefaultTHKImageLoader: THKImageLoading {
                     }
                     continuation.resume(returning: data)
                 }
-                box.task = task
+                box.install(task)
                 task.resume()
             }
         } onCancel: {
-            box.task?.cancel()
+            box.cancel()
         }
     }
 

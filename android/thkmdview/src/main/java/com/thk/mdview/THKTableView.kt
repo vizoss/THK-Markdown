@@ -39,7 +39,42 @@ class THKTableView @JvmOverloads constructor(
      * on each cell to make those spans tappable; it takes no separate click callback.
      */
     fun setData(data: THKTableData, theme: THKMDTheme) {
+        val key = stableKey(data)
+        if (key != null && key == previousKey && theme == previousTheme) return
+        previousKey = key
+        previousTheme = theme
         grid.bind(data, theme)
+    }
+
+    private var previousKey: List<Any>? = null
+    private var previousTheme: THKMDTheme? = null
+
+    // Unknown/custom spans and async attachments always rebind. Comparing only text
+    // would incorrectly skip formatting, callbacks and image-loader changes.
+    private fun stableKey(data: THKTableData): List<Any>? {
+        val result = mutableListOf<Any>(data.columnAlignments.toList(), data.bodyRows.size)
+        for (row in listOf(data.headerRow) + data.bodyRows) {
+            result.add(row.size)
+            for (cell in row) {
+                result.add(cell.toString())
+                val spans = cell as? android.text.Spanned ?: continue
+                for (span in spans.getSpans(0, spans.length, Any::class.java)) {
+                    val value: Any = when (span.javaClass) {
+                        android.text.style.StyleSpan::class.java -> {
+                            val style = span as android.text.style.StyleSpan
+                            if (android.os.Build.VERSION.SDK_INT >= 33) listOf(style.style, style.fontWeightAdjustment) else style.style
+                        }
+                        android.text.style.ForegroundColorSpan::class.java -> (span as android.text.style.ForegroundColorSpan).foregroundColor
+                        android.text.style.BackgroundColorSpan::class.java -> (span as android.text.style.BackgroundColorSpan).backgroundColor
+                        android.text.style.RelativeSizeSpan::class.java -> (span as android.text.style.RelativeSizeSpan).sizeChange
+                        android.text.style.StrikethroughSpan::class.java -> true
+                        else -> return null
+                    }
+                    result.add(listOf(span.javaClass.name, spans.getSpanStart(span), spans.getSpanEnd(span), spans.getSpanFlags(span), value))
+                }
+            }
+        }
+        return result
     }
 
     /** Exposed for tests: the laid-out cell views, row-major, header first. */

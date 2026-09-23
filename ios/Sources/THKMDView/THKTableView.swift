@@ -16,6 +16,23 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
     private var rows: [[UITextView]] = []
     private var cells: [[UIView]] = []
     private var attachments: [THKAsyncImageTextAttachment] = []
+    private var previousModel: THKTableModel?
+    private var previousTheme: THKMDTheme?
+
+    private func sameContent(_ a: THKTableModel, _ b: THKTableModel) -> Bool {
+        guard a.alignments == b.alignments, a.rows.count == b.rows.count else { return false }
+        for (left, right) in zip([a.headerCells] + a.rows, [b.headerCells] + b.rows) {
+            guard left.count == right.count else { return false }
+            for (x, y) in zip(left, right) {
+                var hasAttachment = false
+                y.enumerateAttribute(.attachment, in: NSRange(location: 0, length: y.length)) { value, _, _ in
+                    if value != nil { hasAttachment = true }
+                }
+                if hasAttachment || !x.isEqual(to: y) { return false }
+            }
+        }
+        return true
+    }
 
     public override init(frame: CGRect) { super.init(frame: frame); commonInit() }
     public required init?(coder: NSCoder) { super.init(coder: coder); commonInit() }
@@ -33,6 +50,12 @@ public final class THKTableView: UIScrollView, UITextViewDelegate {
     }
 
     public func configure(model: THKTableModel, theme: THKMDTheme) {
+        if let previousModel, previousTheme == theme, sameContent(previousModel, model) { return }
+        // Snapshot mutable attributed strings supplied by custom renderers.
+        previousModel = THKTableModel(alignments: model.alignments,
+            headerCells: model.headerCells.map { NSAttributedString(attributedString: $0) },
+            rows: model.rows.map { $0.map { NSAttributedString(attributedString: $0) } })
+        previousTheme = theme
         cancelImageLoads()
         contentContainer.subviews.forEach { $0.removeFromSuperview() }
         rows.removeAll()

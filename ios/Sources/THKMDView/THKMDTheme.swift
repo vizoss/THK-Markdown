@@ -2,7 +2,7 @@ import UIKit
 
 /// Colors and text sizes used across the shared `MarkdownRendering` implementation and `THKTableView`.
 /// Settable on `THKMDView.theme`; changing it re-renders the current content in place.
-public struct THKMDTheme {
+public struct THKMDTheme: Equatable {
     /// 脚注引用序号相对正文字号的倍率；颜色使用 linkColor，不跳转外部浏览器。
     public var footnoteScale: CGFloat = 0.75
     /// 公式相对正文字号的倍率；颜色使用 bodyTextColor，背景透明。

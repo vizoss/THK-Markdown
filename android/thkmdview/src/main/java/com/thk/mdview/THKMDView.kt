@@ -48,6 +48,7 @@ class THKMDView @JvmOverloads constructor(
 
     var theme: THKMDTheme = THKMDTheme.Default
         set(value) {
+            if (field == value) return
             field = value
             setBackgroundColor(value.backgroundColor)
             renderNow(buffer.currentText)
@@ -72,6 +73,8 @@ class THKMDView @JvmOverloads constructor(
     // every in-flight image load regardless of which segment view kicked it off.
     private val imageLoadScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val activeImageSpans = mutableListOf<AsyncImageSpan>()
+    private var suspended = false
+    private var needsResumeRender = false
 
     private val buffer = StreamingMarkdownBuffer(debounceMs = streamingDebounceMs) { markdown ->
         renderNow(markdown)
@@ -88,6 +91,7 @@ class THKMDView @JvmOverloads constructor(
 
     fun appendMarkdownChunk(chunk: String) {
         buffer.append(chunk)
+        if (suspended) { buffer.cancelPending(); needsResumeRender = true }
     }
 
     // Safe to call from onViewRecycled: cancels any pending debounced render and any
@@ -109,8 +113,21 @@ class THKMDView @JvmOverloads constructor(
     }
 
     override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
+        suspended = true
+        needsResumeRender = needsResumeRender || activeImageSpans.isNotEmpty() || buffer.hasPendingRender
+        buffer.cancelPending()
         cancelActiveImageLoads()
+        super.onDetachedFromWindow()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (suspended) {
+            suspended = false
+            buffer.cancelPending()
+            if (needsResumeRender) renderNow(buffer.currentText)
+            needsResumeRender = false
+        }
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -131,6 +148,7 @@ class THKMDView @JvmOverloads constructor(
     }
 
     private fun renderNow(markdown: String) {
+        if (suspended) { needsResumeRender = true; return }
         cancelActiveImageLoads()
         val available = width - paddingLeft - paddingRight
         val maxImageWidthPx = (if (available > 0) min(dp(MAX_IMAGE_WIDTH_DP), available) else dp(MAX_IMAGE_WIDTH_DP))
@@ -275,6 +293,10 @@ class THKMDView @JvmOverloads constructor(
     private fun dp(value: Float): Int = (value * resources.displayMetrics.density).toInt()
 
     companion object {
+        /** Process-wide formula bitmap budget in bytes; default 8 MB, zero disables caching.
+         * Clears existing entries, without interrupting active renders. Main thread only. */
+        @JvmStatic fun configureMathCache(maxBytes: Int) = THKMathEngine.configureCache(maxBytes)
+        @JvmStatic fun clearMathCache() = THKMathEngine.clearCache()
         const val NO_MAX_WIDTH = -1
         private const val MAX_IMAGE_WIDTH_DP = 240f
         // Absolute cap only kicks in for unusually tall/narrow images - most images are
