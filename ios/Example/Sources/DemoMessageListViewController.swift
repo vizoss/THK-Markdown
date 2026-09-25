@@ -201,6 +201,11 @@ class DemoMessageListViewController: DemoPageViewController {
             scrollToLatestMessage()
         }
     }
+
+    func configureAssistantState(_ cell: AssistantMessageCell, message: Message) {
+        cell.markdownView.sseEnabled = false
+        cell.markdownView.onRetry = nil
+    }
 }
 
 extension DemoMessageListViewController: UITableViewDataSource {
@@ -227,6 +232,7 @@ extension DemoMessageListViewController: UITableViewDataSource {
             cell.markdownView.onLinkTap = { [weak self] url in self?.showInteractionNotice("链接：" + url.absoluteString); return false }
             cell.markdownView.onImageTap = { [weak self] url in self?.showInteractionNotice("图片：" + url.absoluteString); return false }
             cell.showContent(streamedContent[message.id] ?? message.content)
+            configureAssistantState(cell, message: message)
             return cell
         }
     }

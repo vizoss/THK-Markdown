@@ -18,6 +18,7 @@ interface MarkdownRenderer {
      * or a view resize.
      */
     fun render(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment>
+    fun renderFull(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment> = render(markdown, theme, imageBounds)
 }
 
 /** Default [MarkdownRenderer]: commonmark-java (+ GFM tables/strikethrough/task-lists). */
@@ -101,6 +102,13 @@ class DefaultMarkdownRenderer(
 
     internal fun clearIncrementalState() {
         previousSource = ""; sealedSource = ""; sealedLength = 0; sealedNodes.clear()
+    }
+
+    override fun renderFull(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment> {
+        clearIncrementalState()
+        val previous = incrementalParsingEnabled
+        incrementalParsingEnabled = false
+        return try { render(markdown, theme, imageBounds) } finally { incrementalParsingEnabled = previous }
     }
 
 }

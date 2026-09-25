@@ -8,6 +8,7 @@ android {
     namespace = "com.thk.mdview"
     compileSdk = 34
     sourceSets.getByName("test").resources.srcDir("../../ios/Fixtures/data")
+    sourceSets.getByName("test").resources.srcDir("../../examples/sse")
 
     defaultConfig {
         minSdk = 21

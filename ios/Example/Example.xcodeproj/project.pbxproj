@@ -26,6 +26,7 @@
 		C02EDF84A20BF80A83D36D37 /* SSEChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0AE268A8655BAE49964D4EF /* SSEChatViewController.swift */; };
 		C095645CDBDE8E7A5D352998 /* THKAsyncImageTextAttachmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561C65AB640858184D891DD1 /* THKAsyncImageTextAttachmentTests.swift */; };
 		C742EFCC8F808F794B838D5C /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98090EE07C844B24C7270C35 /* MessageInputBar.swift */; };
+		CC937BE915BAE612941EF92E /* replies.json in Resources */ = {isa = PBXBuildFile; fileRef = 9D73B26B885C808FC95ED5A8 /* replies.json */; };
 		D263F055CFF5B73FE754D13B /* WeeklyViewControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00365DFE2390ADCBC8B5838 /* WeeklyViewControllers.swift */; };
 		F36DEB6478A19B59F423D3D5 /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = 791E7F0648C9EBFCF97333FB /* MarkdownFixtures */; };
 		F8E77E67516E943D67D87576 /* RenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C50B007B4FCEDA023A28866 /* RenderTests.swift */; };
@@ -57,6 +58,7 @@
 		561C65AB640858184D891DD1 /* THKAsyncImageTextAttachmentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = THKAsyncImageTextAttachmentTests.swift; sourceTree = "<group>"; };
 		6804762C250FC21B501077B1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		98090EE07C844B24C7270C35 /* MessageInputBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageInputBar.swift; sourceTree = "<group>"; };
+		9D73B26B885C808FC95ED5A8 /* replies.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = replies.json; path = ../../examples/sse/replies.json; sourceTree = "<group>"; };
 		9EF13AFA0BD087DE2A0C2193 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMessageCell.swift; sourceTree = "<group>"; };
 		C3BC6B0A9CF4AB894DFEC46D /* ThemeSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeSettingsViewController.swift; sourceTree = "<group>"; };
@@ -107,6 +109,14 @@
 			name = WeeklyResources;
 			sourceTree = "<group>";
 		};
+		1BF1FA2518E2EBB77E693E35 /* SSEResources */ = {
+			isa = PBXGroup;
+			children = (
+				9D73B26B885C808FC95ED5A8 /* replies.json */,
+			);
+			name = SSEResources;
+			sourceTree = "<group>";
+		};
 		2E2FCDAB7F82C6FE29C62CA2 /* THKMDViewTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -134,6 +144,7 @@
 				C2438B55FDD14493DAF40050 /* ios */,
 				12B9A666C278AB8CB5B6FA33 /* Packages */,
 				E12E4C3B1048ABC79E056AAB /* Sources */,
+				1BF1FA2518E2EBB77E693E35 /* SSEResources */,
 				198E4F02FA7003470558B817 /* WeeklyResources */,
 				3031F8ABC084F8D43CC56342 /* Products */,
 			);
@@ -272,6 +283,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CC937BE915BAE612941EF92E /* replies.json in Resources */,
 				9446440CEC390CCDC825F460 /* weekly.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -114,6 +114,14 @@ func thkReserveQuoteCopyGutter(in text: NSMutableAttributedString) {
 public protocol MarkdownRendering: AnyObject {
     var theme: THKMDTheme { get set }
     func render(_ markdown: String) -> [THKRenderSegment]
+    /// Override to report recoverable parser errors. Swift traps/native crashes are not catchable here.
+    func renderSafely(_ markdown: String) throws -> [THKRenderSegment]
+    func renderFull(_ markdown: String) throws -> [THKRenderSegment]
+}
+
+public extension MarkdownRendering {
+    func renderSafely(_ markdown: String) throws -> [THKRenderSegment] { render(markdown) }
+    func renderFull(_ markdown: String) throws -> [THKRenderSegment] { try renderSafely(markdown) }
 }
 
 /// One block-level chunk of rendered output. As many consecutive non-table top-level blocks

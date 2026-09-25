@@ -53,6 +53,14 @@ public final class DefaultMarkdownRenderer: MarkdownRendering {
     internal func clearIncrementalState() {
         previousSource = ""; sealedSource = ""; sealedNodes.removeAll()
     }
+
+    public func renderFull(_ markdown: String) throws -> [THKRenderSegment] {
+        clearIncrementalState()
+        let previous = incrementalParsingEnabled
+        incrementalParsingEnabled = false
+        defer { incrementalParsingEnabled = previous }
+        return render(markdown)
+    }
 }
 
 /// Walks the swift-markdown AST and builds a sequence of `THKRenderSegment`s, mirroring

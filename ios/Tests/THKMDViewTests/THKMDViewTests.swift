@@ -12,6 +12,79 @@ private final class SpyRenderer: MarkdownRendering {
 }
 
 final class THKMDViewTests: XCTestCase {
+    func testSSEFlushesFinalChunkAndCustomUIIsSeparateFromBody() {
+        let view = THKMDView(frame: CGRect(x: 0, y: 0, width: 320, height: 300))
+        let custom = UILabel()
+        custom.text = "custom waiting"
+        view.sseIndicatorView = custom
+        view.sseEnabled = true
+        view.setSSEState(.waiting)
+        XCTAssertNotNil(custom.superview)
+        view.appendMarkdownChunk("**hello**")
+        XCTAssertEqual(view.sseState, .streaming)
+        view.setSSEState(.completed)
+        func descendants(_ parent: UIView) -> [UIView] { parent.subviews.flatMap { [$0] + descendants($0) } }
+        XCTAssertEqual(descendants(view).compactMap { ($0 as? UITextView)?.text }.joined(), "hello")
+        XCTAssertTrue(descendants(view).compactMap { $0 as? SSEFooter }.allSatisfy(\.isHidden))
+        view.reset()
+        XCTAssertEqual(view.sseState, .idle)
+    }
+
+    func testSSEFailurePreservesBodyAndRetryOnlyCallsBusiness() {
+        let view = THKMDView()
+        var retries = 0
+        view.onRetry = { retries += 1 }
+        view.sseEnabled = true
+        view.appendMarkdownChunk("received")
+        view.setSSEState(.failed, errorMessage: "Connection lost")
+        func descendants(_ parent: UIView) -> [UIView] { parent.subviews.flatMap { [$0] + descendants($0) } }
+        XCTAssertEqual(descendants(view).compactMap { ($0 as? UITextView)?.text }.joined(), "received")
+        let retry = descendants(view).compactMap { $0 as? UIButton }.first { $0.title(for: .normal) == "重试" }
+        XCTAssertNotNil(retry)
+        retry?.sendActions(for: .touchUpInside)
+        XCTAssertEqual(retries, 1)
+        XCTAssertEqual(view.sseState, .failed)
+        view.sseStatusUIEnabled = false
+        XCTAssertTrue(descendants(view).compactMap { $0 as? SSEFooter }.allSatisfy(\.isHidden))
+    }
+
+    func testRecoverableParserErrorsRetryFullThenUsePlainTextWithoutFailingSSE() {
+        final class ThrowingRenderer: MarkdownRendering {
+            var theme = THKMDTheme.default
+            var failIncremental = true
+            var failFull = false
+            func render(_ markdown: String) -> [THKRenderSegment] { [.text(NSAttributedString(string: "recovered"), copyableBlocks: [])] }
+            func renderSafely(_ markdown: String) throws -> [THKRenderSegment] {
+                if failIncremental { throw CocoaError(.coderReadCorrupt) }
+                return render(markdown)
+            }
+            func renderFull(_ markdown: String) throws -> [THKRenderSegment] {
+                if failFull { throw CocoaError(.coderReadCorrupt) }
+                return [.text(NSAttributedString(string: "full result"), copyableBlocks: [])]
+            }
+        }
+        let view = THKMDView()
+        let renderer = ThrowingRenderer()
+        view.renderer = renderer
+        var failures: [THKRenderFailureStage] = []
+        view.onRenderFailure = { failures.append($0.stage) }
+        view.sseEnabled = true; view.setSSEState(.streaming)
+        func texts(_ parent: UIView) -> String {
+            parent.subviews.map { ($0 as? UITextView)?.text ?? texts($0) }.joined()
+        }
+        view.setMarkdown("**raw**")
+        XCTAssertEqual(texts(view), "full result")
+        XCTAssertEqual(failures, [.incremental])
+        failures = []; renderer.failFull = true
+        view.setMarkdown("**raw**")
+        XCTAssertEqual(texts(view), "**raw**")
+        XCTAssertEqual(failures, [.incremental, .full])
+        XCTAssertEqual(view.sseState, .streaming)
+        renderer.failIncremental = false
+        view.setMarkdown("**raw** more")
+        XCTAssertEqual(texts(view), "recovered")
+    }
+
     func testOrdinaryParagraphUpdateLeavesCompletedPrefixUntouched() {
         final class Edits: NSObject, NSTextStorageDelegate {
             var locations: [Int] = []

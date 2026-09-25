@@ -35,6 +35,39 @@ class THKMDView @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : LinearLayout(context, attrs) {
 
+    private val sseFooter = SSEFooter(context)
+    var sseEnabled = false
+        set(value) { field = value; updateSSEFooter() }
+    var sseStatusUIEnabled = true
+        set(value) { field = value; updateSSEFooter() }
+    var sseIndicatorView: View? = null
+        set(value) { field = value; updateSSEFooter() }
+    var sseIndicatorStyle = THKSSEIndicatorStyle()
+        set(value) { field = value; updateSSEFooter() }
+    var onSSEIndicatorActivityChanged: ((View, Boolean) -> Unit)? = null
+        set(value) { field = value; sseFooter.onActivity = value }
+    var onSSEStateChanged: ((THKSSEState) -> Unit)? = null
+    var onRetry: (() -> Unit)? = null
+        set(value) { field = value; updateSSEFooter() }
+    var onRenderFailure: ((THKRenderFailure) -> Unit)? = null
+    var sseState = THKSSEState.IDLE
+        private set
+    private var sseError: String? = null
+
+    /** Main-thread API. Terminal states synchronously flush the last received chunk. */
+    fun setSSEState(state: THKSSEState, errorMessage: String? = null) {
+        val changed = state != sseState
+        sseState = state; sseError = errorMessage
+        if (state in listOf(THKSSEState.COMPLETED, THKSSEState.STOPPED, THKSSEState.FAILED)) buffer.setFull(buffer.currentText)
+        updateSSEFooter()
+        if (changed) onSSEStateChanged?.invoke(state)
+    }
+    private fun updateSSEFooter() {
+        sseFooter.configure(sseState, sseEnabled && sseStatusUIEnabled, sseIndicatorView, sseIndicatorStyle, theme, sseError, onRetry)
+        if (sseFooter.visibility != GONE && sseFooter.parent == null) addView(sseFooter, LayoutParams(-1, -2))
+        (sseFooter.layoutParams as? LayoutParams)?.topMargin = if (childCount > 1) dp(8f) else 0
+    }
+
     var streamingDebounceMs: Long = 32L
         set(value) {
             field = value
@@ -90,6 +123,7 @@ class THKMDView @JvmOverloads constructor(
     }
 
     fun appendMarkdownChunk(chunk: String) {
+        if (sseEnabled && sseState == THKSSEState.WAITING && chunk.isNotEmpty()) setSSEState(THKSSEState.STREAMING)
         buffer.append(chunk)
         if (suspended) { buffer.cancelPending(); needsResumeRender = true }
     }
@@ -99,6 +133,10 @@ class THKMDView @JvmOverloads constructor(
     // from a recycled-away message can ever land on the view that replaced it - and
     // clears the segment child views.
     fun reset() {
+        val stateChanged = sseState != THKSSEState.IDLE
+        sseState = THKSSEState.IDLE; sseError = null
+        updateSSEFooter()
+        if (stateChanged) onSSEStateChanged?.invoke(THKSSEState.IDLE)
         buffer.reset()
         (renderer as? DefaultMarkdownRenderer)?.clearIncrementalState()
         cancelActiveImageLoads()
@@ -155,8 +193,17 @@ class THKMDView @JvmOverloads constructor(
         val maxImageWidthPx = (if (available > 0) min(dp(MAX_IMAGE_WIDTH_DP), available) else dp(MAX_IMAGE_WIDTH_DP))
             .coerceAtLeast(dp(MIN_IMAGE_WIDTH_DP))
         val bounds = ImageBounds(maxImageWidthPx, dp(MAX_IMAGE_HEIGHT_DP))
-        val segments = renderer.render(markdown, theme, bounds)
+        val failures = mutableListOf<THKRenderFailure>()
+        val segments = try { renderer.render(markdown, theme, bounds) } catch (error: Exception) {
+            failures += THKRenderFailure(THKRenderFailureStage.INCREMENTAL, error)
+            try { renderer.renderFull(markdown, theme, bounds) } catch (fullError: Exception) {
+                failures += THKRenderFailure(THKRenderFailureStage.FULL, fullError)
+                listOf(RenderedSegment.TextSegment(markdown))
+            }
+        }
         applySegments(segments)
+        updateSSEFooter()
+        failures.forEach { onRenderFailure?.invoke(it) }
     }
 
     private fun applySegments(segments: List<RenderedSegment>) {
@@ -172,9 +219,9 @@ class THKMDView @JvmOverloads constructor(
                 if (index > 0 && (followsBlock || (child as? TextSegmentFrame)?.hasCopyGutter == true))
                     (theme.bodyFontSizeSp * resources.displayMetrics.scaledDensity).toInt() else 0
         }
-        while (childCount > segments.size) {
-            destroySegmentViewIfNeeded(getChildAt(childCount - 1))
-            removeViewAt(childCount - 1)
+        while (childCount - (if (sseFooter.parent === this) 1 else 0) > segments.size) {
+            destroySegmentViewIfNeeded(getChildAt(segments.size))
+            removeViewAt(segments.size)
         }
     }
 

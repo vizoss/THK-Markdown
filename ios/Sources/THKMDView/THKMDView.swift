@@ -6,6 +6,37 @@ import UIKit
 /// `THKTableView`. Pin/size it like any auto-sizing view (it grows with its content via
 /// `intrinsicContentSize`), and call `reset()` from `prepareForReuse`.
 public final class THKMDView: UIView {
+    private let sseFooter = SSEFooter()
+    public var sseEnabled = false { didSet { updateSSEFooter() } }
+    public var sseStatusUIEnabled = true { didSet { updateSSEFooter() } }
+    /// Supply intrinsic size or height constraints for a custom indicator. Nil restores dots.
+    public var sseIndicatorView: UIView? { didSet { updateSSEFooter() } }
+    public var sseIndicatorStyle = THKSSEIndicatorStyle() { didSet { updateSSEFooter() } }
+    public var onSSEIndicatorActivityChanged: ((UIView, Bool) -> Void)? {
+        didSet { sseFooter.onActivity = onSSEIndicatorActivityChanged }
+    }
+    public var onSSEStateChanged: ((THKSSEState) -> Void)?
+    public var onRetry: (() -> Void)? { didSet { updateSSEFooter() } }
+    public var onRenderFailure: ((THKRenderFailure) -> Void)?
+    public private(set) var sseState: THKSSEState = .idle
+    private var sseError: String?
+
+    /// Main-thread API. A terminal state flushes any last debounced text before hiding dots.
+    public func setSSEState(_ state: THKSSEState, errorMessage: String? = nil) {
+        let changed = state != sseState
+        sseState = state; sseError = errorMessage
+        if state == .completed || state == .stopped || state == .failed { buffer.setFull(buffer.text) }
+        updateSSEFooter()
+        if changed { onSSEStateChanged?(state) }
+    }
+    private func updateSSEFooter(notify: Bool = true) {
+        sseFooter.configure(state: sseState, enabled: sseEnabled && sseStatusUIEnabled,
+                            custom: sseIndicatorView, style: sseIndicatorStyle, theme: theme,
+                            error: sseError, onRetry: onRetry)
+        if !sseFooter.isHidden && sseFooter.superview == nil { stack.addArrangedSubview(sseFooter) }
+        invalidateIntrinsicContentSize(); setNeedsLayout()
+        if notify { onContentSizeChange?() }
+    }
     /// Process-wide formula bitmap budget in bytes (default 8 MB); zero disables caching.
     /// Clears existing entries, without interrupting current renders. Call on the main actor.
     @MainActor public static func configureMathCache(maxBytes: Int) {
@@ -128,6 +159,7 @@ public final class THKMDView: UIView {
     /// Appends to the internal streaming buffer and schedules a debounced re-render of the
     /// whole buffer. Multiple chunks inside one debounce window coalesce into one render.
     public func appendMarkdownChunk(_ chunk: String) {
+        if sseEnabled && sseState == .waiting && !chunk.isEmpty { setSSEState(.streaming) }
         buffer.append(chunk)
     }
 
@@ -136,6 +168,10 @@ public final class THKMDView: UIView {
     /// `prepareForReuse`/`onViewRecycled`, since none of that recycled-away work may ever land
     /// on the view after it's rebound to a new message.
     public func reset() {
+        let changed = sseState != .idle
+        sseState = .idle; sseError = nil
+        updateSSEFooter()
+        if changed { onSSEStateChanged?(.idle) }
         buffer.reset()
         (renderer as? DefaultMarkdownRenderer)?.clearIncrementalState()
         for segmentView in segmentViews {
@@ -157,14 +193,28 @@ public final class THKMDView: UIView {
     }
 
     private func applyRenderedText(_ markdown: String) {
-        let segments = renderer.render(markdown)
+        var failures: [THKRenderFailure] = []
+        let segments: [THKRenderSegment]
+        do { segments = try renderer.renderSafely(markdown) }
+        catch {
+            failures.append(THKRenderFailure(stage: .incremental, error: error))
+            do { segments = try renderer.renderFull(markdown) }
+            catch {
+                failures.append(THKRenderFailure(stage: .full, error: error))
+                segments = [.text(NSAttributedString(string: markdown, attributes: [
+                    .font: UIFont.systemFont(ofSize: theme.bodyFontSize), .foregroundColor: theme.bodyTextColor
+                ]), copyableBlocks: [])]
+            }
+        }
         rebuild(with: segments)
+        updateSSEFooter(notify: false)
         setNeedsLayout()
         invalidateIntrinsicContentSize()
         // A self-sizing table cell does not observe this invalidation. Notify its
         // host for synchronous replacements/theme changes as well as async images;
         // otherwise a larger font is clipped inside the previous row height.
         onContentSizeChange?()
+        failures.forEach { onRenderFailure?($0) }
     }
 
     private func rerenderCurrentBuffer() {

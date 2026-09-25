@@ -115,6 +115,10 @@ tested or visually accepted; fixture coverage is not a conformance claim.
 
 ### Rendering and resource lifetime
 
+Optional SSE status UI (default/custom animated dots, failure and retry callbacks),
+recoverable parser-error fallback, and the shared 30-reply chat demo are described in
+[SSE integration](docs/sse.md).
+
 Repeated assignment of an equal theme skips rendering. Fixed extension patterns are
 compiled once. Unchanged text-only tables reuse cells (formatting, alignment and theme
 are compared); image/formula cells and unsupported custom Android spans conservatively

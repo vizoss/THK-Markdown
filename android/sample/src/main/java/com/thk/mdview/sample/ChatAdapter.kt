@@ -7,6 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.thk.mdview.THKMDTheme
 import com.thk.mdview.THKMDView
+import com.thk.mdview.THKSSEState
 
 enum class Role { USER, ASSISTANT }
 data class ChatMessage(val id: Long, val role: Role, val content: String)
@@ -14,9 +15,11 @@ data class ChatMessage(val id: Long, val role: Role, val content: String)
 /** Message state survives cell recycling; playback belongs to the activity. */
 class ChatAdapter(
     private val onAssistantContentUpdated: () -> Unit = {},
+    private val onRetryMessage: ((Long) -> Unit)? = null,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val messages = mutableListOf<ChatMessage>()
     private val holders = mutableSetOf<AssistantViewHolder>()
+    private val sseStates = mutableMapOf<Long, Pair<THKSSEState, String?>>()
     private var currentTheme: THKMDTheme = THKMDTheme.Default
     val theme: THKMDTheme get() = currentTheme
 
@@ -35,6 +38,7 @@ class ChatAdapter(
     fun clearMessages() {
         holders.forEach { it.messageId = null; it.markdown.reset() }
         messages.clear()
+        sseStates.clear()
         notifyDataSetChanged()
     }
 
@@ -49,6 +53,21 @@ class ChatAdapter(
         messages[index] = messages[index].copy(content = messages[index].content + chunk)
         holders.filter { it.messageId == id }.forEach { it.markdown.appendMarkdownChunk(chunk) }
         onAssistantContentUpdated()
+    }
+
+    fun setSSEState(id: Long, state: THKSSEState, error: String? = null) {
+        sseStates[id] = state to error
+        holders.filter { it.messageId == id }.forEach { holder ->
+            holder.markdown.sseEnabled = true
+            holder.markdown.setSSEState(state, error)
+        }
+        onAssistantContentUpdated()
+    }
+    fun replaceContent(id: Long, content: String) {
+        val index = messages.indexOfFirst { it.id == id }
+        if (index < 0) return
+        messages[index] = messages[index].copy(content = content)
+        holders.filter { it.messageId == id }.forEach { it.markdown.setMarkdown(content) }
     }
 
     override fun getItemCount() = messages.size
@@ -88,6 +107,9 @@ class ChatAdapter(
                 holder.markdown.reset()
                 holder.markdown.theme = theme
                 holder.markdown.setMarkdown(message.content)
+                holder.markdown.sseEnabled = sseStates.containsKey(message.id)
+                holder.markdown.onRetry = onRetryMessage?.let { callback -> { holder.messageId?.let(callback) } }
+                sseStates[message.id]?.let { holder.markdown.setSSEState(it.first, it.second) }
                 holders += holder
             }
         }
@@ -97,6 +119,7 @@ class ChatAdapter(
         if (holder is AssistantViewHolder) {
             holder.messageId = null
             holder.markdown.reset()
+            holder.markdown.onRetry = null
             holders -= holder
         }
     }

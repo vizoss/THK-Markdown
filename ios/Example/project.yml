@@ -13,6 +13,9 @@ targets:
       - path: ../../examples/weekly/weekly.json
         buildPhase: resources
         group: WeeklyResources
+      - path: ../../examples/sse/replies.json
+        buildPhase: resources
+        group: SSEResources
     info:
       path: Generated/Info.plist
       properties:
