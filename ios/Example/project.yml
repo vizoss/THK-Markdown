@@ -10,6 +10,9 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+      - path: ../../examples/weekly/weekly.json
+        buildPhase: resources
+        group: WeeklyResources
     info:
       path: Generated/Info.plist
       properties:
@@ -21,6 +24,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.thk.mdview.example
+        DEVELOPMENT_TEAM: FRBL9GK76M
         SWIFT_VERSION: "5.0"
         TARGETED_DEVICE_FAMILY: "1,2"
         IPHONEOS_DEPLOYMENT_TARGET: "15.0"

@@ -19,6 +19,7 @@ class MainActivity : DemoPageActivity() {
         val entries = listOf(
             "ShowCase 格式显示" to ShowCaseActivity::class.java,
             "SSE Chat" to SSEChatActivity::class.java,
+            "科技周刊 · 50 篇" to WeeklyListActivity::class.java,
             "主题设置" to ThemeSettingsActivity::class.java
         )
         entries.forEach { (label, destination) ->

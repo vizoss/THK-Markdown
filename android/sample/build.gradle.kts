@@ -7,6 +7,7 @@ android {
     namespace = "com.thk.mdview.sample"
     compileSdk = 34
     sourceSets.getByName("main").assets.srcDir("../../ios/Fixtures/data")
+    sourceSets.getByName("main").assets.srcDir("../../examples/weekly")
 
     defaultConfig {
         applicationId = "com.thk.mdview.sample"

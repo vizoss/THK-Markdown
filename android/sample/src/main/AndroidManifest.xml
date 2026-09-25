@@ -13,6 +13,8 @@
         <activity android:name=".ShowCaseActivity" android:exported="false" />
         <activity android:name=".SSEChatActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".ThemeSettingsActivity" android:exported="false" />
+        <activity android:name=".WeeklyListActivity" android:exported="false" />
+        <activity android:name=".WeeklyDetailActivity" android:exported="false" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

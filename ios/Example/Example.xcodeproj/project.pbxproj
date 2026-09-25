@@ -21,10 +21,12 @@
 		69A579445766DA92E3C58B80 /* DemoPageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E0B9842B235FB2F97E0C2C /* DemoPageViewController.swift */; };
 		85832E9EB068A8B91FE8D8CF /* THKMDView in Frameworks */ = {isa = PBXBuildFile; productRef = 347D72E8CAB8BDA81A7758DA /* THKMDView */; };
 		858D834F24660EF64C253DEB /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325777869B578BB9E0D675CF /* Message.swift */; };
+		9446440CEC390CCDC825F460 /* weekly.json in Resources */ = {isa = PBXBuildFile; fileRef = 0CD3D5C4F172E4EA3AA17B05 /* weekly.json */; };
 		963BDD8862F41EEB934C2C3A /* THKMDView in Frameworks */ = {isa = PBXBuildFile; productRef = D78747CE6A1365742CA74446 /* THKMDView */; };
 		C02EDF84A20BF80A83D36D37 /* SSEChatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0AE268A8655BAE49964D4EF /* SSEChatViewController.swift */; };
 		C095645CDBDE8E7A5D352998 /* THKAsyncImageTextAttachmentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561C65AB640858184D891DD1 /* THKAsyncImageTextAttachmentTests.swift */; };
 		C742EFCC8F808F794B838D5C /* MessageInputBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98090EE07C844B24C7270C35 /* MessageInputBar.swift */; };
+		D263F055CFF5B73FE754D13B /* WeeklyViewControllers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D00365DFE2390ADCBC8B5838 /* WeeklyViewControllers.swift */; };
 		F36DEB6478A19B59F423D3D5 /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = 791E7F0648C9EBFCF97333FB /* MarkdownFixtures */; };
 		F8E77E67516E943D67D87576 /* RenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C50B007B4FCEDA023A28866 /* RenderTests.swift */; };
 		FAC8CAFF19DB843840F75BAC /* MarkdownFixtures in Frameworks */ = {isa = PBXBuildFile; productRef = ACCB23C3E222698B35DEB43B /* MarkdownFixtures */; };
@@ -42,6 +44,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0CD3D5C4F172E4EA3AA17B05 /* weekly.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = weekly.json; path = ../../examples/weekly/weekly.json; sourceTree = "<group>"; };
 		0E958AFC4DF22DECDCF05141 /* MockAssistantReply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAssistantReply.swift; sourceTree = "<group>"; };
 		13CC020BF068DC58C960EF9D /* ShowCaseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowCaseViewController.swift; sourceTree = "<group>"; };
 		241F189D9AF67907740253A6 /* UserMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserMessageCell.swift; sourceTree = "<group>"; };
@@ -57,12 +60,13 @@
 		9EF13AFA0BD087DE2A0C2193 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		BDEE6B59CB7BDC6A7AFF1F2F /* AssistantMessageCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMessageCell.swift; sourceTree = "<group>"; };
 		C3BC6B0A9CF4AB894DFEC46D /* ThemeSettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeSettingsViewController.swift; sourceTree = "<group>"; };
+		D00365DFE2390ADCBC8B5838 /* WeeklyViewControllers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyViewControllers.swift; sourceTree = "<group>"; };
 		DD18BE18642E78E97BBF4DD8 /* P0FixtureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P0FixtureTests.swift; sourceTree = "<group>"; };
 		E0AE268A8655BAE49964D4EF /* SSEChatViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSEChatViewController.swift; sourceTree = "<group>"; };
 		E403B8A612C9DBCB83A59B5B /* FakeScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeScheduler.swift; sourceTree = "<group>"; };
 		F1E0B9842B235FB2F97E0C2C /* DemoPageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoPageViewController.swift; sourceTree = "<group>"; };
 		F5E9E870F3EAF43674CA85BB /* DemoMessageListViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoMessageListViewController.swift; sourceTree = "<group>"; };
-		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F6FE7BF0248FC2FF22A10D63 /* Example.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +99,14 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		198E4F02FA7003470558B817 /* WeeklyResources */ = {
+			isa = PBXGroup;
+			children = (
+				0CD3D5C4F172E4EA3AA17B05 /* weekly.json */,
+			);
+			name = WeeklyResources;
+			sourceTree = "<group>";
+		};
 		2E2FCDAB7F82C6FE29C62CA2 /* THKMDViewTests */ = {
 			isa = PBXGroup;
 			children = (
@@ -122,6 +134,7 @@
 				C2438B55FDD14493DAF40050 /* ios */,
 				12B9A666C278AB8CB5B6FA33 /* Packages */,
 				E12E4C3B1048ABC79E056AAB /* Sources */,
+				198E4F02FA7003470558B817 /* WeeklyResources */,
 				3031F8ABC084F8D43CC56342 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -159,6 +172,7 @@
 				E0AE268A8655BAE49964D4EF /* SSEChatViewController.swift */,
 				C3BC6B0A9CF4AB894DFEC46D /* ThemeSettingsViewController.swift */,
 				241F189D9AF67907740253A6 /* UserMessageCell.swift */,
+				D00365DFE2390ADCBC8B5838 /* WeeklyViewControllers.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -200,6 +214,7 @@
 			buildConfigurationList = 2557384DB91FFBC8B78A3DC4 /* Build configuration list for PBXNativeTarget "Example" */;
 			buildPhases = (
 				111FF52307B445A964A77FE3 /* Sources */,
+				F6D7A45039F9699F86B7F544 /* Resources */,
 				6307F751410376D3AF6C5126 /* Frameworks */,
 			);
 			buildRules = (
@@ -223,6 +238,11 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					9878B5EABC7D83477291BAFC = {
+						DevelopmentTeam = FRBL9GK76M;
+					};
+				};
 			};
 			buildConfigurationList = 36FC72E69D906F48675C62BF /* Build configuration list for PBXProject "Example" */;
 			developmentRegion = en;
@@ -247,6 +267,17 @@
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		F6D7A45039F9699F86B7F544 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9446440CEC390CCDC825F460 /* weekly.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		111FF52307B445A964A77FE3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -264,6 +295,7 @@
 				FD82FC892B633FD4677B9C25 /* ShowCaseViewController.swift in Sources */,
 				48962FF91C2C5D3579493554 /* ThemeSettingsViewController.swift in Sources */,
 				57474C9194B9ECB1D78896D1 /* UserMessageCell.swift in Sources */,
+				D263F055CFF5B73FE754D13B /* WeeklyViewControllers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

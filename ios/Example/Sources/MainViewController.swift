@@ -17,6 +17,7 @@ final class MainViewController: DemoPageViewController {
         let entries: [(String, () -> UIViewController)] = [
             ("ShowCase 格式显示", { ShowCaseViewController() }),
             ("SSE Chat", { SSEChatViewController() }),
+            ("科技周刊 · 50 篇", { WeeklyListViewController() }),
             ("主题设置", { ThemeSettingsViewController() })
         ]
         for (title, destination) in entries {
