@@ -6,11 +6,12 @@ UIKit Markdown 库，最低 iOS 13；示例最低 iOS 15。
 
 ## 两种分发，一套解析器
 
-- **SPM**：编译源码，解析器为 swift-markdown。
+- **远程 SPM**：通过根目录 manifest 编译源码，解析器为 swift-markdown。
+- **本地开发 SPM**：使用 `ios/Package.swift` 编译源码及测试。
 - **CocoaPods**：集成预编译 XCFramework，内部静态链接同一套解析器依赖。
 - 不再提供 Maaku 线路；不要在同一个 target 同时依赖 SPM 和 pod 版本。
 
-[Package.swift](Package.swift) 位于本目录，不在仓库根目录。当前使用方式是克隆仓库后添加本地 `ios/` package，不能直接把仓库根 URL 当作远程 SPM 包。
+[根目录 Package.swift](../Package.swift) 是远程 SPM 接入入口，仅导出 THKMDView 库，复用 `ios/Sources/THKMDView`。本目录的 [Package.swift](Package.swift) 保留供示例和测试使用；解析器依赖和资源清单需与根目录 manifest 同步。现有 1.0.1 tag 没有根目录入口；当前修改推送后可按 main 分支或 commit 接入。解析器采用 revision 依赖，因此不能按语义版本依赖此包；仅创建新 tag 不能解除这个限制。
 
 业务 target 只链接 THKMDView product；MarkdownFixtures 仅供示例与测试使用。
 
@@ -61,7 +62,7 @@ xcodebuild test -project Example.xcodeproj -scheme Example \
 - `onLinkTap` / `onImageTap` 返回 **false** 表示拦截默认行为，与 Android 回调约定不同。
 - 图片真实尺寸到达后可能改变行高；建议注入业务图片服务统一管理缓存、认证和取消。
 - 默认主题不会自动适配深色模式或业务 Dynamic Type 策略；宿主调整主题并自行保存。
-- SPM 通过 Bundle.module 加载离线资源；二进制从框架 bundle 加载，不能遗漏 Mermaid / MathJax 文件。
+- SPM 通过 Bundle.module 加载离线资源；CocoaPods 二进制从框架 bundle 加载，不能遗漏 Mermaid / MathJax 文件。
 
 更多示例见 [基础使用](../README.zh-CN.md#基础使用与布局)、[主题配置](../README.zh-CN.md#主题配置)、[图片缓存](../README.zh-CN.md#图片加载与缓存)、[生命周期](../README.zh-CN.md#列表复用与生命周期)。
 

@@ -96,18 +96,21 @@ dependencies {
 
 #### R8 / ProGuard 混淆
 
-未开启混淆，或使用标准 `proguard-android-optimize.txt` 时，无需额外规则。否则，请在业务混淆配置中添加以下规则，保留 Mermaid 和数学公式回调：
-
-```proguard
--keepattributes RuntimeVisibleAnnotations
--keepclassmembers class com.thk.mdview.** {
-    @android.webkit.JavascriptInterface <methods>;
-}
-```
+库已内置 consumer rules，将随下一版本发布，业务无需手动添加。已发布的 **1.0.1** 开启混淆时，请使用标准 `proguard-android-optimize.txt`，其中已包含所需的 WebView 回调保留规则。
 
 ### iOS
 
-支持 iOS 13+。在 `Podfile` 中添加预编译库：
+支持 iOS 13+，以下方式任选其一。
+
+#### Swift Package Manager
+
+需要 Xcode 26+ / Swift 6.2+。在 Xcode 选择 **File → Add Package Dependencies**，输入 `https://github.com/vizoss/THK-Markdown.git`，选择 **Branch → main**，将 **THKMDView** product 添加到业务 target。SPM 编译库源码，不包含示例和测试。
+
+此修改推送后可用。解析器固定到 commit，目前请按分支或 commit 接入，不支持版本号规则；现有 **1.0.1** tag 没有 SPM 入口。
+
+#### CocoaPods
+
+在 `Podfile` 中添加预编译库：
 
 ```ruby
 platform :ios, '13.0'

@@ -13,7 +13,13 @@ THKMDView.framework。解析器通过 implementation-only import 隔离，调用
 Markdown 或 Maaku 模块。框架内包含 Mermaid、MathJax HTML/JS 资源和相应许可文件。
 
 不包含 Example、Fixtures、mock、主题设置界面、本地偏好保存或 Tests。
-源码使用方仍走 SPM；不要在同一个 App 中同时安装 THKMDView 的 SPM 和 pod 版本。
+源码使用方走 SPM；不要在同一个 App 中同时安装 THKMDView 的 SPM 和 pod 版本。
+
+## 二进制消费端兼容性待修复
+
+2026-09-26 使用 Xcode 自带 Swift 6.3.3 验证 1.0.1 XCFramework：下载和校验通过，但独立 SPM 消费端编译模拟器目标时，`.private.swiftinterface` 中 `THKMDView.THKMDTheme` 等模块限定名被解析为同名类的成员，导致导入失败。此前 CocoaPods lint 通过不能代替跨工具链 Swift 消费端验证。
+
+根目录 SPM 因此采用源码接入，不复用此二进制。后续二进制发布需修复模块接口同名冲突，并增加实际 Swift 消费端导入、链接验证；不要覆盖已发布 1.0.1 ZIP。
 
 ## 本地构建（维护者执行）
 

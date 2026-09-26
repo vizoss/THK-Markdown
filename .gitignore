@@ -16,3 +16,7 @@ Thumbsdb
 
 # Claude Code
 .claude/worktrees/
+
+# Swift Package Manager
+/.build/
+/.swiftpm/

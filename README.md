@@ -56,18 +56,21 @@ No credentials are required. Put the repository in `dependencyResolutionManageme
 
 #### R8 / ProGuard
 
-No extra rules are needed if shrinking is disabled or you use the standard `proguard-android-optimize.txt`. Otherwise, add these rules to your app's ProGuard configuration to preserve Mermaid and math callbacks:
-
-```proguard
--keepattributes RuntimeVisibleAnnotations
--keepclassmembers class com.thk.mdview.** {
-    @android.webkit.JavascriptInterface <methods>;
-}
-```
+Consumer rules are now bundled with the library and will take effect automatically in the next release. For the published **1.0.1**, use the standard `proguard-android-optimize.txt` when enabling shrinking; it already preserves the required WebView callbacks.
 
 ### iOS
 
-Requires iOS 13+. Add the precompiled library to your `Podfile`:
+Requires iOS 13+. Choose one integration method.
+
+#### Swift Package Manager
+
+Requires Xcode 26+ / Swift 6.2+. In Xcode, choose **File → Add Package Dependencies**, enter `https://github.com/vizoss/THK-Markdown.git`, select **Branch → main**, and add the **THKMDView** product to your app target. SPM builds the library from source; examples and tests are not included.
+
+Available after this change is pushed. Use a branch or commit requirement, not a version requirement; the parser is pinned to a commit. The existing **1.0.1** tag has no SPM entry point.
+
+#### CocoaPods
+
+Add the precompiled library to your `Podfile`:
 
 ```ruby
 platform :ios, '13.0'
