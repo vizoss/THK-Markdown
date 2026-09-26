@@ -58,17 +58,16 @@ Use Maven rather than copying an AAR alone: the POM supplies AndroidX, Kotlin co
 
 Requires iOS 13+ and UIKit. CocoaPods uses a precompiled XCFramework containing the swift-markdown parser and bundled rendering resources. Example screens and fixture data are not included.
 
-**Current binary: 1.0.1.** Device/simulator archives and CocoaPods integration lint have passed. Download `THKMDView-1.0.1-binary` from the [verified build's Artifacts section](https://github.com/vizoss/THK-Markdown/actions/runs/36222144486) (GitHub sign-in required for Actions downloads). This is a build artifact, not a published Release ZIP or CocoaPods trunk release. Remote pod installation is not available until the matching Release ZIP is published.
+**Current binary: 1.0.1.** The XCFramework is available from [GitHub Releases](https://github.com/vizoss/THK-Markdown/releases/tag/1.0.1). Device/simulator archives and CocoaPods integration lint have passed. Installation uses the public podspec below and requires no GitHub credentials; it does not require publication to CocoaPods trunk.
 
-For a version with a published release asset, add this to your Podfile:
+Add this to your Podfile:
 
 ```ruby
 platform :ios, '13.0'
 
 target 'YourApp' do
-  # Replace <version> with a version that has a published binary ZIP.
   pod 'THKMDView',
-      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/<version>/THKMDView.podspec'
+      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.1/THKMDView.podspec'
 end
 ```
 

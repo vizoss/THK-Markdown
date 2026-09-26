@@ -93,14 +93,13 @@ maven {
 
 CocoaPods 路线使用 **预编译 XCFramework**，不是通过 pod 编译 Git 仓库里的 Swift 源码。
 
-当前二进制版本为 **1.0.1**，已通过真机/模拟器归档和 CocoaPods 集成校验。可在 [已验证构建的 Artifacts 区域](https://github.com/vizoss/THK-Markdown/actions/runs/36222144486) 下载 `THKMDView-1.0.1-binary`（下载 Actions 附件需要登录 GitHub）。它是构建附件，不是已发布的 Release ZIP 或 CocoaPods trunk 版本；对应 Release ZIP 发布前，暂不能直接远端 pod 安装。
+当前二进制版本为 **1.0.1**，已通过真机/模拟器归档和 CocoaPods 集成校验，XCFramework 已发布到 [GitHub Releases](https://github.com/vizoss/THK-Markdown/releases/tag/1.0.1)。使用下面的公开 podspec 即可安装，无需 GitHub 账号或 Token，也不依赖 CocoaPods trunk 发布。
 
-对于已有正式二进制附件的版本，Podfile 配置如下：
+Podfile 配置如下：
 
 ```ruby
-# <版本> 为实际存在、已验证的发布版本，不能原样复制。
 pod 'THKMDView',
-    :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/<版本>/THKMDView.podspec'
+    :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.1/THKMDView.podspec'
 ```
 
 执行 `pod install` 后打开业务工程的 `.xcworkspace`。

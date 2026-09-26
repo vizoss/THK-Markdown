@@ -31,7 +31,7 @@ jobs:
           gem install cocoapods --no-document
       - name: Build and lint binary pod (no simulator launch)
         run: bash ios/scripts/build-xcframework.sh
-      - name: Keep candidate artifacts (no release publication)
+      - name: Upload verified binary artifacts (tag releases published by ios-release.yml)
         uses: actions/upload-artifact@v4
         with:
           name: THKMDView-${{ steps.version.outputs.version }}-binary

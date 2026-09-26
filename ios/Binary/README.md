@@ -47,12 +47,15 @@ pod 'THKMDView', :path => '/绝对路径/ios/Binary/build-XXXXXX/release'
 共享 P0/P1/P2/P3 数据仍供源码示例和测试使用；二进制宿主需要另外接入验收界面，不能将源码测试通过
 等同于二进制集成或 UI 验收通过。
 
-## 发布（需维护者明确执行）
+## Tag 自动发布
 
-推送 `x.y.z` tag（无 `v` 前缀）会自动构建并上传 `THKMDView-<版本>-binary` Actions 附件，不创建 Release、不推送 CocoaPods trunk。普通分支推送不再触发；手动运行可以选择分支验证候选包，通过后再创建版本 tag。Android VERSION_NAME 和 podspec 必须一致，tag 构建还会检查两者与 tag 一致。
-首个二进制版本发布前，维护者应选择未占用的版本号并更新根目录 podspec，完成构建和消费端验证。
-将生成的 ZIP 上传到对应 GitHub Release，地址必须与 podspec 的 `s.source` 一致。
-确认远端 ZIP 可下载后，才分发该版本 podspec 或提交到自己的 Specs 仓库。
+推送 `x.y.z` tag（无 `v` 前缀）会自动构建并上传 `THKMDView-<版本>-binary` Actions 附件。成功后，`ios-release.yml` 自动校验构建来源、tag 提交和 ZIP 校验和，再创建对应 GitHub Release，上传 ZIP、SHA256SUMS 和 podspec。不会发布到 CocoaPods trunk，也不会覆盖已有 Release。
+
+普通分支推送不触发构建；手动构建分支只生成候选包，不发布 Release。通过后再创建版本 tag。Android VERSION_NAME 和 podspec 必须一致，tag 构建还会检查两者与 tag 一致。
+
+如需补发历史成功的 tag 构建，可手动运行 `iOS – publish verified binary release`，填写该构建的 `build_run_id`。分支候选构建、失败构建、tag 已移动的构建都会被拒绝。发布脚本先创建 draft 并上传完整附件，再公开 Release；如果上传失败留下草稿，应由维护者核对后处理，不覆盖已发布文件。
+
+维护者应选择未占用的版本号。安装地址以根目录 podspec 的 `s.source` 为准；发布后需验证匿名下载和远端 pod 集成。
 
 ```ruby
 # 发布相应资产后才可使用；这里不是已可用版本的承诺。
