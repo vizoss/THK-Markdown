@@ -12,6 +12,7 @@
 
 - [能力与限制](#能力与限制)
 - [环境要求](#环境要求)
+- [效果图](#效果图)
 - [安装依赖](#安装依赖)
 - [基础使用与布局](#基础使用与布局)
 - [SSE 与状态展示](#sse-与状态展示)
@@ -62,6 +63,35 @@
 | 网络 | 纯文本、Mermaid 和公式无需运行时联网；远程图片、真实 SSE 和周刊正文需要网络 |
 
 这里是当前仓库的要求，不代表任意旧工具链都能消费新构建的 XCFramework。
+
+## 效果图
+
+以下为 iOS 示例 App 实际效果，点击图片可查看原图。
+
+<table>
+  <tr>
+    <td align="center"><strong>标题与行内格式</strong><br><a href="docs/screenshots/ios/typography.png"><img src="docs/screenshots/ios/typography.png" width="300" alt="标题与行内格式"></a></td>
+    <td align="center"><strong>有序列表与任务列表</strong><br><a href="docs/screenshots/ios/lists.png"><img src="docs/screenshots/ios/lists.png" width="300" alt="有序列表与任务列表"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>嵌套引用、代码与复制按钮</strong><br><a href="docs/screenshots/ios/quotes-code.png"><img src="docs/screenshots/ios/quotes-code.png" width="300" alt="嵌套引用、代码与复制按钮"></a></td>
+    <td align="center"><strong>GFM 表格与列对齐</strong><br><a href="docs/screenshots/ios/tables.png"><img src="docs/screenshots/ios/tables.png" width="300" alt="GFM 表格与列对齐"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Mermaid 流程图</strong><br><a href="docs/screenshots/ios/mermaid.png"><img src="docs/screenshots/ios/mermaid.png" width="300" alt="Mermaid 流程图"></a></td>
+    <td align="center"><strong>公式、提示块与脚注</strong><br><a href="docs/screenshots/ios/math-alerts-footnotes.png"><img src="docs/screenshots/ios/math-alerts-footnotes.png" width="300" alt="公式、提示块与脚注"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>图片、链接与长文阅读</strong><br><a href="docs/screenshots/ios/article-images.png"><img src="docs/screenshots/ios/article-images.png" width="300" alt="图片、链接与长文阅读"></a></td>
+    <td align="center"><strong>主题配置</strong><br><a href="docs/screenshots/ios/themes.png"><img src="docs/screenshots/ios/themes.png" width="300" alt="主题配置"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>SSE 流式输出与圆点指示</strong><br><a href="docs/screenshots/ios/sse-streaming.png"><img src="docs/screenshots/ios/sse-streaming.png" width="300" alt="SSE 流式输出与圆点指示"></a></td>
+    <td align="center"><strong>失败保留正文与重试</strong><br><a href="docs/screenshots/ios/sse-failure.png"><img src="docs/screenshots/ios/sse-failure.png" width="300" alt="失败保留正文与重试"></a></td>
+  </tr>
+</table>
+
+长文截图内容来自[阮一峰《科技爱好者周刊》](https://github.com/ruanyf/weekly)，内容版权与许可归原作者。
 
 ## 安装依赖
 

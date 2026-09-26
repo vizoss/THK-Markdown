@@ -10,6 +10,7 @@ THKMDView handles rendering—not networking. Your app owns SSE connections, aut
 
 ## Contents
 
+- [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Streaming and SSE](#streaming-and-sse)
@@ -22,6 +23,35 @@ THKMDView handles rendering—not networking. Your app owns SSE connections, aut
 - [Supported Markdown and limitations](#supported-markdown-and-limitations)
 - [Integration checklist](#integration-checklist)
 - [Examples and support](#examples-and-support)
+
+## Screenshots
+
+Captured from the iOS example app. Click an image to view it at full size.
+
+<table>
+  <tr>
+    <td align="center"><strong>Headings & inline formatting</strong><br><a href="docs/screenshots/ios/typography.png"><img src="docs/screenshots/ios/typography.png" width="300" alt="Headings & inline formatting"></a></td>
+    <td align="center"><strong>Ordered & task lists</strong><br><a href="docs/screenshots/ios/lists.png"><img src="docs/screenshots/ios/lists.png" width="300" alt="Ordered & task lists"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Nested quotes, code & copy buttons</strong><br><a href="docs/screenshots/ios/quotes-code.png"><img src="docs/screenshots/ios/quotes-code.png" width="300" alt="Nested quotes, code & copy buttons"></a></td>
+    <td align="center"><strong>GFM tables & column alignment</strong><br><a href="docs/screenshots/ios/tables.png"><img src="docs/screenshots/ios/tables.png" width="300" alt="GFM tables & column alignment"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Mermaid diagrams</strong><br><a href="docs/screenshots/ios/mermaid.png"><img src="docs/screenshots/ios/mermaid.png" width="300" alt="Mermaid diagrams"></a></td>
+    <td align="center"><strong>Math, alerts & footnotes</strong><br><a href="docs/screenshots/ios/math-alerts-footnotes.png"><img src="docs/screenshots/ios/math-alerts-footnotes.png" width="300" alt="Math, alerts & footnotes"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>Images, links & long articles</strong><br><a href="docs/screenshots/ios/article-images.png"><img src="docs/screenshots/ios/article-images.png" width="300" alt="Images, links & long articles"></a></td>
+    <td align="center"><strong>Theme configuration</strong><br><a href="docs/screenshots/ios/themes.png"><img src="docs/screenshots/ios/themes.png" width="300" alt="Theme configuration"></a></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>SSE streaming & typing indicator</strong><br><a href="docs/screenshots/ios/sse-streaming.png"><img src="docs/screenshots/ios/sse-streaming.png" width="300" alt="SSE streaming & typing indicator"></a></td>
+    <td align="center"><strong>Failure state & retry</strong><br><a href="docs/screenshots/ios/sse-failure.png"><img src="docs/screenshots/ios/sse-failure.png" width="300" alt="Failure state & retry"></a></td>
+  </tr>
+</table>
+
+Article content shown in the screenshot is from [Ruan Yifeng’s Weekly](https://github.com/ruanyf/weekly); it retains its original licensing.
 
 ## Installation
 
