@@ -2,7 +2,7 @@
 
 完整中文接入指南已统一维护在 [主 README](README.md)，避免两份文档版本不一致。
 
-- [安装依赖](README.md#安装依赖)：Android 模块 / Maven、iOS SPM / 二进制 CocoaPods。
+- [安装依赖](README.md#安装依赖)：Android Maven、iOS 二进制 CocoaPods。
 - [视图使用与布局](README.md#基础使用与布局)
 - [SSE 与状态展示](README.md#sse-与状态展示)
 - [主题配置](README.md#主题配置)

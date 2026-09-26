@@ -63,31 +63,12 @@
 
 ## 安装依赖
 
-### Android：本地模块
-
-将本仓库作为源码依赖放到项目旁边，在宿主 `settings.gradle.kts` 中接入：
-
-```kotlin
-include(":thkmdview")
-project(":thkmdview").projectDir = file("../thk-markdown/android/thkmdview")
-```
-
-在应用模块中：
-
-```kotlin
-dependencies {
-    implementation(project(":thkmdview"))
-}
-```
-
-宿主需要配置 `google()` 和 `mavenCentral()`，并提供兼容的 Android/Kotlin 插件配置。上述相对路径按你的目录调整。
-
 ### Android：Maven / AAR
 
-仓库配置的发布坐标是：
+当前已发布版本：**0.1.0-build19**（2026-09-26）。[构建与发布记录](https://github.com/vizoss/THK-Markdown/actions/runs/36220481828)。
 
 ```kotlin
-implementation("com.thk.mdview:thkmdview:<已发布版本>")
+implementation("com.thk.mdview:thkmdview:0.1.0-build19")
 ```
 
 发布仓库为 GitHub Packages，不是 Maven Central：
@@ -107,44 +88,17 @@ maven {
 
 使用有包读取权限的凭据，存放在用户级 `~/.gradle/gradle.properties` 或 CI secrets，**不要提交令牌**。是否还需组织授权取决于你的 GitHub 账号与组织设置。
 
-CI 按 `<VERSION_NAME>-build<run_number>` 生成版本；请从实际发布记录选择版本。仓库中的 `VERSION_NAME=0.1.0` 不等于已经发布了名为 `0.1.0` 的可下载包，本 README 不承诺某个远端版本当前可用。
+CI 按 `<VERSION_NAME>-build<run_number>` 生成版本；上述版本已通过单元测试并发布到 GitHub Packages。后续升级请从成功的发布记录选择完整版本号，不要省略 `-build19` 后缀改用 `0.1.0`。
 
-推荐通过带 POM 的 Maven 包或源码模块集成。单独复制 AAR 不会自动带入 Maven 传递依赖，需要自行补齐：AndroidX Core/AppCompat、协程 Android、commonmark-java 及 GFM 表格、删除线、任务列表扩展。精确版本以 [库构建配置](android/thkmdview/build.gradle.kts) 为准；不要遗漏 AAR 内的 HTML/JS assets。
-
-### iOS：SPM 源码
-
-**当前 Package.swift 位于 `ios/`，不在仓库根目录。** 克隆仓库后，在 Xcode 中添加本地 package，选择该 `ios/` 目录，并将 **THKMDView** product 链接到业务 target。
-
-从另一个本地 Swift package 引用：
-
-```swift
-// Package.swift 相关片段；路径按宿主位置调整
-dependencies: [
-    .package(path: "../thk-markdown/ios")
-]
-// 宿主 target 的 dependencies：
-.product(name: "THKMDView", package: "ios")
-```
-
-不要直接将仓库根 URL 当作远程 SPM 包地址；当前目录布局不支持这种安装方式。只有当分发仓库/版本在根目录提供 Package.swift 时，才能按标准远程 SPM 方式安装。
-
-业务只需依赖 `THKMDView`，不要依赖例子使用的 `MarkdownFixtures`。源码接入时解析器依赖和资源由 SPM 管理。
+推荐通过带 POM 的 Maven 包集成。单独复制 AAR 不会自动带入 Maven 传递依赖，需要自行补齐：AndroidX Core/AppCompat、协程 Android、commonmark-java 及 GFM 表格、删除线、任务列表扩展。精确版本以 [库构建配置](android/thkmdview/build.gradle.kts) 为准；不要遗漏 AAR 内的 HTML/JS assets。
 
 ### iOS：CocoaPods 二进制
 
 CocoaPods 路线使用 **预编译 XCFramework**，不是通过 pod 编译 Git 仓库里的 Swift 源码。
 
-已有本地二进制产物时：
+当前 podspec 声明版本为 **0.1.0**，不是已验证的远端安装版本。[2026-09-26 构建 #20](https://github.com/vizoss/THK-Markdown/actions/runs/36220522216) 失败，未生成二进制候选附件；本次不能提供新的可安装 iOS 版本。
 
-```ruby
-platform :ios, '13.0'
-
-target 'YourApp' do
-  pod 'THKMDView', :path => '/path/to/THKMDView-release'
-end
-```
-
-产物目录需要同时包含 podspec 与 `THKMDView.xcframework`。维护者发布了匹配版本的 ZIP 和 podspec 后，才可使用远端 podspec：
+维护者发布匹配版本的 ZIP 和 podspec 后，可使用远端 podspec：
 
 ```ruby
 # <版本> 为实际存在、已验证的发布版本，不能原样复制。
