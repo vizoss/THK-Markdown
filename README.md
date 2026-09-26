@@ -25,7 +25,7 @@ THKMDView handles rendering—not networking. Your app owns SSE connections, aut
 
 ## Installation
 
-Current version: **1.0.1**.
+Release version: **1.0.2**. Maven and CocoaPods artifacts are available after the release workflows complete.
 
 ### Android
 
@@ -48,7 +48,7 @@ Add the dependency to your module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.thk.mdview:thkmdview:1.0.1")
+    implementation("com.thk.mdview:thkmdview:1.0.2")
 }
 ```
 
@@ -56,7 +56,7 @@ No credentials are required. Put the repository in `dependencyResolutionManageme
 
 #### R8 / ProGuard
 
-Consumer rules are now bundled with the library and will take effect automatically in the next release. For the published **1.0.1**, use the standard `proguard-android-optimize.txt` when enabling shrinking; it already preserves the required WebView callbacks.
+Consumer rules are bundled with the library from **1.0.2**; no manual THKMDView rules are required.
 
 ### iOS
 
@@ -66,7 +66,7 @@ Requires iOS 13+. Choose one integration method.
 
 Requires Xcode 26+ / Swift 6.2+. In Xcode, choose **File → Add Package Dependencies**, enter `https://github.com/vizoss/THK-Markdown.git`, select **Branch → main**, and add the **THKMDView** product to your app target. SPM builds the library from source; examples and tests are not included.
 
-Available after this change is pushed. Use a branch or commit requirement, not a version requirement; the parser is pinned to a commit. The existing **1.0.1** tag has no SPM entry point.
+Use a branch or commit requirement, not a version requirement; the parser is pinned to a commit.
 
 #### CocoaPods
 
@@ -77,7 +77,7 @@ platform :ios, '13.0'
 
 target 'YourApp' do
   pod 'THKMDView',
-      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.1/THKMDView.podspec'
+      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.2/THKMDView.podspec'
 end
 ```
 

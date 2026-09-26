@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'THKMDView'
-  s.version = '1.0.1'
+  s.version = '1.0.2'
   s.summary = 'A streaming-Markdown UIView for LLM chat bubbles.'
   s.description = 'Precompiled UIKit renderer using swift-markdown, identical to the SPM implementation.'
   s.homepage = 'https://github.com/vizoss/THK-Markdown'
