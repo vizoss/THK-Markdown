@@ -25,9 +25,11 @@ THKMDView handles rendering—not networking. Your app owns SSE connections, aut
 
 ## Installation
 
+Current version: **1.0.1**.
+
 ### Android
 
-Requires Android API 21+. In your app's settings.gradle.kts:
+Requires Android API 21+. Add the repository to `settings.gradle.kts`:
 
 ```kotlin
 dependencyResolutionManagement {
@@ -42,7 +44,7 @@ dependencyResolutionManagement {
 }
 ```
 
-Add the dependency to your app module:
+Add the dependency to your module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
@@ -50,17 +52,22 @@ dependencies {
 }
 ```
 
-The public Maven repository requires **no username or token**. Remove the old GitHub Packages repository and its credentials. Keep google() and mavenCentral() for transitive dependencies.
+No credentials are required. Put the repository in `dependencyResolutionManagement.repositories`, not `buildscript.repositories`.
 
-Use Maven rather than copying an AAR alone: the POM supplies AndroidX, Kotlin coroutines, commonmark-java, and its GFM extensions. Remote images require the INTERNET permission and an appropriate HTTPS policy.
+#### R8 / ProGuard
+
+No extra rules are needed if shrinking is disabled or you use the standard `proguard-android-optimize.txt`. Otherwise, add these rules to your app's ProGuard configuration to preserve Mermaid and math callbacks:
+
+```proguard
+-keepattributes RuntimeVisibleAnnotations
+-keepclassmembers class com.thk.mdview.** {
+    @android.webkit.JavascriptInterface <methods>;
+}
+```
 
 ### iOS
 
-Requires iOS 13+ and UIKit. CocoaPods uses a precompiled XCFramework containing the swift-markdown parser and bundled rendering resources. Example screens and fixture data are not included.
-
-**Current binary: 1.0.1.** The XCFramework is available from [GitHub Releases](https://github.com/vizoss/THK-Markdown/releases/tag/1.0.1). Device/simulator archives and CocoaPods integration lint have passed. Installation uses the public podspec below and requires no GitHub credentials; it does not require publication to CocoaPods trunk.
-
-Add this to your Podfile:
+Requires iOS 13+. Add the precompiled library to your `Podfile`:
 
 ```ruby
 platform :ios, '13.0'
@@ -71,9 +78,7 @@ target 'YourApp' do
 end
 ```
 
-Run pod install and open your app's .xcworkspace. Do not add both SPM and CocoaPods distributions to the same target.
-
-The repository root is not a remote Swift package entry point. Source development and toolchain requirements are documented in the [iOS developer guide](ios/README.md); binary packaging details are in the [binary guide](ios/Binary/README.md).
+Run `pod install` and open the `.xcworkspace`. Do not install both the SPM and CocoaPods versions in the same target.
 
 ## Quick start
 

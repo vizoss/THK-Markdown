@@ -65,48 +65,60 @@
 
 ## 安装依赖
 
-### Android：Maven / AAR
+当前版本：**1.0.1**。
 
-当前版本：**1.0.1**。Android 使用公开的静态 Maven 仓库，业务下载无需 GitHub 账号或 Token。
+### Android
 
-```kotlin
-implementation("com.thk.mdview:thkmdview:1.0.1")
-```
-
-在 `settings.gradle.kts` 的 `dependencyResolutionManagement.repositories` 中添加：
+支持 Android API 21+。在 `settings.gradle.kts` 中添加仓库：
 
 ```kotlin
-// 宿主 settings.gradle.kts 的 dependencyResolutionManagement.repositories
-maven {
-    url = uri("https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/")
-    content { includeGroup("com.thk.mdview") }
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/")
+            content { includeGroup("com.thk.mdview") }
+        }
+    }
 }
 ```
 
-保留 `google()` 和 `mavenCentral()`，用于解析 AndroidX、协程、commonmark 等传递依赖。此地址指向公开的 `maven-repo` 分支，不是 GitHub Packages；无需 `credentials`、`gpr.user` 或 `gpr.token`。请移除旧的 `maven.pkg.github.com/vizoss/THK-Markdown` 仓库配置，避免继续请求需要认证的旧源。
+在业务模块的 `build.gradle.kts` 中添加依赖：
 
-请使用已发布的完整版本号，不依赖未发布的源码版本。
-
-推荐通过带 POM 的 Maven 包集成。单独复制 AAR 不会自动带入 Maven 传递依赖，需要自行补齐：AndroidX Core/AppCompat、协程 Android、commonmark-java 及 GFM 表格、删除线、任务列表扩展。精确版本以 [库构建配置](android/thkmdview/build.gradle.kts) 为准；不要遗漏 AAR 内的 HTML/JS assets。
-
-### iOS：CocoaPods 二进制
-
-CocoaPods 路线使用 **预编译 XCFramework**，不是通过 pod 编译 Git 仓库里的 Swift 源码。
-
-当前二进制版本为 **1.0.1**，已通过真机/模拟器归档和 CocoaPods 集成校验，XCFramework 已发布到 [GitHub Releases](https://github.com/vizoss/THK-Markdown/releases/tag/1.0.1)。使用下面的公开 podspec 即可安装，无需 GitHub 账号或 Token，也不依赖 CocoaPods trunk 发布。
-
-Podfile 配置如下：
-
-```ruby
-pod 'THKMDView',
-    :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.1/THKMDView.podspec'
+```kotlin
+dependencies {
+    implementation("com.thk.mdview:thkmdview:1.0.1")
+}
 ```
 
-执行 `pod install` 后打开业务工程的 `.xcworkspace`。
+无需账号或 Token。仓库应放在 `dependencyResolutionManagement.repositories`，不要放在 `buildscript.repositories`。
 
-- 同一个业务 target 不要同时安装 THKMDView 的 SPM 和 pod 版本。
-- 二进制内包含解析器与渲染资源，不包含 Example、Fixtures、30 组模拟回复、周刊目录或主题设置页面。
-- 二进制构建、资源检查、许可证和发布步骤见 [iOS Binary](ios/Binary/README.md)。
+#### R8 / ProGuard 混淆
+
+未开启混淆，或使用标准 `proguard-android-optimize.txt` 时，无需额外规则。否则，请在业务混淆配置中添加以下规则，保留 Mermaid 和数学公式回调：
+
+```proguard
+-keepattributes RuntimeVisibleAnnotations
+-keepclassmembers class com.thk.mdview.** {
+    @android.webkit.JavascriptInterface <methods>;
+}
+```
+
+### iOS
+
+支持 iOS 13+。在 `Podfile` 中添加预编译库：
+
+```ruby
+platform :ios, '13.0'
+
+target 'YourApp' do
+  pod 'THKMDView',
+      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.1/THKMDView.podspec'
+end
+```
+
+执行 `pod install` 后打开 `.xcworkspace`。同一 target 不要同时接入 SPM 和 CocoaPods 版本。
 
 ## 基础使用与布局
 
