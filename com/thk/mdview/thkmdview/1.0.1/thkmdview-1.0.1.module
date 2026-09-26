@@ -1,0 +1,145 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.thk.mdview",
+    "module": "thkmdview",
+    "version": "1.0.1",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.9"
+    }
+  },
+  "variants": [
+    {
+      "name": "releaseVariantReleaseApiPublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "1.9.24"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "thkmdview-1.0.1.aar",
+          "url": "thkmdview-1.0.1.aar",
+          "size": 1858886,
+          "sha512": "f1007f26b3401e7b21ef1075095aa7b84d3ace8c372322ee8278bffd7429e4c06c1a062820d3dc1b05efa6ad8415a898463419e9bc86722a15a450345abb9356",
+          "sha256": "39c9d2f0f976700876ee4d1ee44a6912573e631fa2b8287d4585be473ccdc826",
+          "sha1": "486ace25eabe2bf69aae71aa3295cc21af682a2f",
+          "md5": "f8a057289710179e3b3dceeb01b35540"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseRuntimePublication",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.libraryelements": "aar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "androidx.core",
+          "module": "core-ktx",
+          "version": {
+            "requires": "1.13.1"
+          }
+        },
+        {
+          "group": "androidx.appcompat",
+          "module": "appcompat",
+          "version": {
+            "requires": "1.7.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlinx",
+          "module": "kotlinx-coroutines-android",
+          "version": {
+            "requires": "1.8.1"
+          }
+        },
+        {
+          "group": "org.commonmark",
+          "module": "commonmark",
+          "version": {
+            "requires": "0.22.0"
+          }
+        },
+        {
+          "group": "org.commonmark",
+          "module": "commonmark-ext-gfm-tables",
+          "version": {
+            "requires": "0.22.0"
+          }
+        },
+        {
+          "group": "org.commonmark",
+          "module": "commonmark-ext-gfm-strikethrough",
+          "version": {
+            "requires": "0.22.0"
+          }
+        },
+        {
+          "group": "org.commonmark",
+          "module": "commonmark-ext-task-list-items",
+          "version": {
+            "requires": "0.22.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "1.9.24"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "thkmdview-1.0.1.aar",
+          "url": "thkmdview-1.0.1.aar",
+          "size": 1858886,
+          "sha512": "f1007f26b3401e7b21ef1075095aa7b84d3ace8c372322ee8278bffd7429e4c06c1a062820d3dc1b05efa6ad8415a898463419e9bc86722a15a450345abb9356",
+          "sha256": "39c9d2f0f976700876ee4d1ee44a6912573e631fa2b8287d4585be473ccdc826",
+          "sha1": "486ace25eabe2bf69aae71aa3295cc21af682a2f",
+          "md5": "f8a057289710179e3b3dceeb01b35540"
+        }
+      ]
+    },
+    {
+      "name": "releaseVariantReleaseSourcePublication",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "thkmdview-1.0.1-sources.jar",
+          "url": "thkmdview-1.0.1-sources.jar",
+          "size": 46490,
+          "sha512": "71bb2ce8d0a24602b362a7abbfbf45b5a35440947646534b31f44bfe6af7e5bc55b502a2c084f1567850af11dcbb8e0167249c8bd96eed48b897757a2414b2de",
+          "sha256": "237f9ce1d34ec558fc6f394c9d6c2d0ae64202fad467325a91b1d97a825ff16d",
+          "sha1": "f3fd8390823c5477ca097eee866f3dc28d842154",
+          "md5": "48cd1fcb2cdebf70964cbd84ac909d86"
+        }
+      ]
+    }
+  ]
+}
