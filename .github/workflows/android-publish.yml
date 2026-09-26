@@ -1,62 +1,105 @@
-name: Android – publish AAR to GitHub Packages
+name: Android – publish public Maven repository
 
 on:
   push:
     tags: ['[0-9]*.[0-9]*.[0-9]*']
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing version tag to publish (for example 1.0.0)'
+        required: true
+        type: string
 
 permissions:
-  contents: read
-  packages: write
+  contents: write
+
+concurrency:
+  group: public-maven-publication
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-24.04
-    defaults:
-      run:
-        working-directory: android
     steps:
       - uses: actions/checkout@v5
-      - name: Validate release tag and version
-        id: version
+        with:
+          persist-credentials: false
+      - name: Select release tag
+        id: release
+        env:
+          REQUESTED_TAG: ${{ inputs.release_tag }}
         run: |
-          VERSION=$(bash ../scripts/release-version.sh)
-          echo "publish_version=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
+          TAG="${REQUESTED_TAG:-$GITHUB_REF_NAME}"
+          [[ "$TAG" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || exit 1
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v5
+        with:
+          ref: refs/tags/${{ steps.release.outputs.tag }}
+          path: release-source
+          persist-credentials: false
+      - name: Validate source versions
+        working-directory: release-source
+        env:
+          GITHUB_REF_TYPE: tag
+          GITHUB_REF_NAME: ${{ steps.release.outputs.tag }}
+        run: bash scripts/release-version.sh
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "17"
-
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v4
+          java-version: '17'
+      - uses: ruby/setup-ruby@v1
         with:
-          # Keep the existing SDK command-line tools while migrating the action to Node 24.
+          ruby-version: '3.3'
+      - name: Test repository merge and immutability
+        run: ruby scripts/test-maven-repository.rb
+      - uses: android-actions/setup-android@v4
+        with:
           cmdline-tools-version: '12266719'
-
-      - name: Cache Gradle
-        uses: actions/cache@v5
+      - uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          key: gradle-${{ runner.os }}-${{ hashFiles('release-source/android/**/*.gradle*', 'release-source/android/gradle/wrapper/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-
-
-      - name: Run unit tests
-        run: ./gradlew :thkmdview:testDebugUnitTest --stacktrace
-
-      # Published Maven versions are immutable; use a new tag for a new release.
-      - name: Publish :thkmdview to GitHub Packages
+      - name: Test and stage Maven artifacts from tag
+        working-directory: release-source/android
         env:
-          GITHUB_ACTOR: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_VERSION: ${{ steps.release.outputs.tag }}
         run: |
-          ./gradlew :thkmdview:publish \
-            -PVERSION_NAME=${{ steps.version.outputs.publish_version }}
-
+          ./gradlew :thkmdview:testDebugUnitTest :thkmdview:publishReleasePublicationToStaticMavenRepository \
+            -I "$GITHUB_WORKSPACE/scripts/static-maven.init.gradle" \
+            -PVERSION_NAME="$RELEASE_VERSION" -PstaticMavenDir="$RUNNER_TEMP/maven-staging"
+      - uses: actions/checkout@v5
+        with:
+          path: public-repository
+          fetch-depth: 1
+      - name: Update public repository branch
+        working-directory: public-repository
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.tag }}
+        run: |
+          if git ls-remote --exit-code --heads origin maven-repo; then
+            git fetch origin maven-repo
+            git checkout -B maven-repo FETCH_HEAD
+          else
+            result=$?
+            # Exit 2 means no matching ref; auth/network failures must not create a new branch.
+            [ "$result" -eq 2 ] || exit "$result"
+            git switch --orphan maven-repo
+          fi
+          ruby "$GITHUB_WORKSPACE/scripts/merge-maven-repository.rb" \
+            "$RUNNER_TEMP/maven-staging" "$PWD" "$RELEASE_VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add com/thk/mdview/thkmdview
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish THKMDView $RELEASE_VERSION"
+            git push origin HEAD:refs/heads/maven-repo
+          fi
       - name: Summary
+        env:
+          RELEASE_VERSION: ${{ steps.release.outputs.tag }}
         run: |
-          echo "### Published \`com.thk.mdview:thkmdview:${{ steps.version.outputs.publish_version }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "to https://github.com/vizoss/THK-Markdown/packages" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Published com.thk.mdview:thkmdview:$RELEASE_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public Maven URL: https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/" >> "$GITHUB_STEP_SUMMARY"

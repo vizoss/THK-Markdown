@@ -65,30 +65,25 @@
 
 ### Android：Maven / AAR
 
-当前已发布版本：**0.1.0-build19**（2026-09-26）。[构建与发布记录](https://github.com/vizoss/THK-Markdown/actions/runs/36220481828)。
+当前版本：**1.0.0**。Android 使用公开的静态 Maven 仓库，业务下载无需 GitHub 账号或 Token。
 
 ```kotlin
-implementation("com.thk.mdview:thkmdview:0.1.0-build19")
+implementation("com.thk.mdview:thkmdview:1.0.0")
 ```
 
-发布仓库为 GitHub Packages，不是 Maven Central：
+在 `settings.gradle.kts` 的 `dependencyResolutionManagement.repositories` 中添加：
 
 ```kotlin
 // 宿主 settings.gradle.kts 的 dependencyResolutionManagement.repositories
 maven {
-    url = uri("https://maven.pkg.github.com/vizoss/THK-Markdown")
-    credentials {
-        username = providers.gradleProperty("gpr.user").orNull
-            ?: System.getenv("GITHUB_ACTOR")
-        password = providers.gradleProperty("gpr.token").orNull
-            ?: System.getenv("GITHUB_TOKEN")
-    }
+    url = uri("https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/")
+    content { includeGroup("com.thk.mdview") }
 }
 ```
 
-使用有包读取权限的凭据，存放在用户级 `~/.gradle/gradle.properties` 或 CI secrets，**不要提交令牌**。是否还需组织授权取决于你的 GitHub 账号与组织设置。
+保留 `google()` 和 `mavenCentral()`，用于解析 AndroidX、协程、commonmark 等传递依赖。此地址指向公开的 `maven-repo` 分支，不是 GitHub Packages；无需 `credentials`、`gpr.user` 或 `gpr.token`。请移除旧的 `maven.pkg.github.com/vizoss/THK-Markdown` 仓库配置，避免继续请求需要认证的旧源。
 
-新版本从 `1.0.0` 起按版本 tag 发布，不再使用 build 后缀。推送 `1.0.0` 后会自动运行测试并发布同名 Maven 版本；构建成功前，上面保留上一版已验证坐标。
+新版本从 `1.0.0` 起按版本 tag 发布，不再使用 build 后缀。推送版本 tag 后会自动运行测试并发布同名 Maven 版本。
 
 推荐通过带 POM 的 Maven 包集成。单独复制 AAR 不会自动带入 Maven 传递依赖，需要自行补齐：AndroidX Core/AppCompat、协程 Android、commonmark-java 及 GFM 表格、删除线、任务列表扩展。精确版本以 [库构建配置](android/thkmdview/build.gradle.kts) 为准；不要遗漏 AAR 内的 HTML/JS assets。
 
@@ -97,6 +92,8 @@ maven {
 CocoaPods 路线使用 **预编译 XCFramework**，不是通过 pod 编译 Git 仓库里的 Swift 源码。
 
 当前 podspec 声明版本为 **1.0.0**。版本 tag 会自动构建、校验并上传 `THKMDView-1.0.0-binary` Actions 附件；附件不等于已发布的 GitHub Release 或 CocoaPods trunk 版本。
+
+`1.0.0` 的 [iOS 构建](https://github.com/vizoss/THK-Markdown/actions/runs/36221207405) 在归档后的架构检查失败，未生成可安装附件；请勿将此版本视为已发布的 iOS 二进制。
 
 维护者发布匹配版本的 ZIP 和 podspec 后，可使用远端 podspec：
 
@@ -561,9 +558,9 @@ iOS XCTest 需要选择可用模拟器目标；UIKit 项目不能用普通 macOS
 
 推送 `1.0.0` 这样的 `x.y.z` tag（无 `v` 前缀）会同时触发 Android 和 iOS 工作流；普通分支推送不再触发发布。两端版本配置必须与 tag 完全相同，否则构建提前失败。
 
-- Android：单元测试通过后，将同名版本发布至 GitHub Packages。
+- Android：单元测试通过后，将同名版本发布至公开的 `maven-repo` 分支，包含 AAR、POM、Gradle 元数据和源码包；消费者无需认证。
 - iOS：真机/模拟器归档、依赖和资源检查、pod lint 后上传版本化 Actions 附件；不自动创建 Release 或发布 trunk。
-- 手动运行工作流也必须选择已有版本 tag。已发布的 Maven 版本不能重复覆盖；修复已发布版本请使用新 tag，不强制移动旧 tag。
+- Android 手动运行工作流时填写已有 `release_tag`，可将历史 tag 补发到新仓库，无需移动 tag；iOS 手动运行仍需选择版本 tag。已发布的 Maven 版本不能重复覆盖；修复已发布版本请使用新 tag，不强制移动旧 tag。
 
 ## 贡献与许可证
 

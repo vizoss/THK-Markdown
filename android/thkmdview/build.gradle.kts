@@ -57,9 +57,9 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
 }
 
-// Publishes the "release" AAR to GitHub Packages: https://maven.pkg.github.com/vizoss/THK-Markdown
+// Stages a standard Maven repository; CI publishes it to the public maven-repo branch.
 // CI validates VERSION_NAME against the release tag before publishing.
-// GitHub Packages rejects republishing an already-existing version.
+// Published version directories are immutable.
 afterEvaluate {
     publishing {
         publications {
@@ -72,14 +72,8 @@ afterEvaluate {
         }
         repositories {
             maven {
-                name = "GitHubPackages"
-                url = uri("https://maven.pkg.github.com/vizoss/THK-Markdown")
-                credentials {
-                    username = System.getenv("GITHUB_ACTOR")
-                        ?: (findProperty("gpr.user") as String?)
-                    password = System.getenv("GITHUB_TOKEN")
-                        ?: (findProperty("gpr.token") as String?)
-                }
+                name = "StaticMaven"
+                url = uri(findProperty("staticMavenDir") ?: layout.buildDirectory.dir("maven-repository").get().asFile)
             }
         }
     }

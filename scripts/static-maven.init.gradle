@@ -1,0 +1,7 @@
+// Allow existing immutable tags to be staged without editing their source/build files.
+gradle.projectsEvaluated {
+    def library = gradle.rootProject.project(':thkmdview')
+    def repositories = library.extensions.getByName('publishing').repositories
+    def repository = repositories.findByName('StaticMaven') ?: repositories.maven { name = 'StaticMaven' }
+    repository.url = library.uri(library.findProperty('staticMavenDir'))
+}

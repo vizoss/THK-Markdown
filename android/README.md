@@ -56,9 +56,9 @@ SSE Chat 不是在线 AI 服务；输入 1～30 选题，10/20/30 演示失败�
 
 ## 发布
 
-推送 `x.y.z` tag（无 `v` 前缀）后自动测试并发布到 GitHub Packages，坐标为 `com.thk.mdview:thkmdview:<tag>`。tag 必须与 Android 和 iOS 版本配置一致；普通分支推送不发布，手动构建也必须选择版本 tag。以成功的发布记录为准，已发布版本不能覆盖。
+推送 `x.y.z` tag（无 `v` 前缀）后自动测试并发布到公开的 `maven-repo` 分支，坐标为 `com.thk.mdview:thkmdview:<tag>`。tag 必须与 Android 和 iOS 版本配置一致；普通分支推送不发布。手动构建填写已有 `release_tag`，可补发历史版本。已发布版本目录不可覆盖，后续版本保留历史产物及完整 Maven 元数据。
 
-依赖仓库与凭据配置见 [安装依赖](../README.md#安装依赖)；维护者流水线见 [android-publish.yml](../.github/workflows/android-publish.yml)。不要将读取或发布令牌写进仓库。
+依赖地址为 `https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/`，下载无需账号或 Token。配置见 [安装依赖](../README.md#安装依赖)；维护者流水线见 [android-publish.yml](../.github/workflows/android-publish.yml)。只有 CI 推送分支使用自动提供的 GITHUB_TOKEN，不需要用户创建个人 Token。
 
 ## 专题
 
