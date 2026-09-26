@@ -1,383 +1,80 @@
-# THKMDView (iOS)
+# THKMDView · iOS
 
-P3 提示块、基础脚注与离线公式已接入，36 个共享用例及主题配置见 [P3 文档](../docs/P3.zh-CN.md)。SPM/XCFramework 均需携带 MathJax JS、HTML 模板和许可证；示例不进入二进制。尚待双端编译、渲染和视觉验收。
+UIKit Markdown 库，最低 iOS 13；示例最低 iOS 15。
 
-A UIKit Swift Package that renders streaming Markdown inside a chat bubble — the kind of
-view you drop into a `UITableView`/`UICollectionView` cell to show an LLM reply as it
-arrives over SSE. See [`../docs/RESEARCH.md`](../docs/RESEARCH.md) for the full
-architecture rationale.
+业务安装、公开 API、主题、点击事件、图片缓存和生命周期以 [主 README](../README.md) 为准。本页只维护 iOS 构建与开发说明。
 
-`THKMDView` ships via two independent distributions that share every file except the
-Markdown parser itself — see "Two distributions, one parser swapped" below.
+## 两种分发，一套解析器
 
-## Requirements
+- **SPM**：编译源码，解析器为 swift-markdown。
+- **CocoaPods**：集成预编译 XCFramework，内部静态链接同一套解析器依赖。
+- 不再提供 Maaku 线路；不要在同一个 target 同时依赖 SPM 和 pod 版本。
 
-The example now uses the shared 18-case P0 catalog through the `MarkdownFixtures` product, with case selection, full text, play, pause and single-step controls. See [P0 acceptance guide](../docs/P0.zh-CN.md) for the current workflow; this replaces the previous rotating mock replies.
+[Package.swift](Package.swift) 位于本目录，不在仓库根目录。当前使用方式是克隆仓库后添加本地 `ios/` package，不能直接把仓库根 URL 当作远程 SPM 包。
 
-- Xcode 26+ / Swift 6.2+ for source builds (required by the pinned parser manifest).
-- iOS 13+
-- [swift-markdown](https://github.com/swiftlang/swift-markdown), pinned to the same revision for source and binary builds. The current pin requires Swift 6.2+ (Xcode 26+).
-- CocoaPods distributes a precompiled XCFramework using this same parser; see [binary packaging](Binary/README.md).
+业务 target 只链接 THKMDView product；MarkdownFixtures 仅供示例与测试使用。
 
-## Architecture in one paragraph
+当前固定的 swift-markdown revision 要求 **Xcode 26+ / Swift 6.2+**。库的 iOS 部署下限与构建工具链要求不是同一件事。
 
-`THKMDView` is a `UIView` owning a vertical `UIStackView` of **segments** (see
-`docs/RESEARCH.md` §9). Markdown text is parsed by `swift-markdown` into an AST, then walked to produce an ordered `[THKRenderSegment]`: as many
-consecutive non-table top-level blocks as possible (paragraphs, headings, lists, block
-quotes, code blocks, thematic breaks) merge into one `.text` segment — a single
-non-scrolling, non-editable `UITextView` with one `NSAttributedString` — the same "one
-attributed string, custom spans for block constructs" model as v0 (bold/italic become
-font traits, links become `.link` attributes, lists become paragraph-style indent + a
-literal marker glyph; inline code background, code block background, and block quote bar
-have no built-in `NSAttributedString` representation, so they're tagged with custom
-attribute keys and painted by `THKBackgroundLayoutManager`, a custom `NSLayoutManager`
-subclass overriding `drawBackground(forGlyphRange:at:)`). Each GFM `Table` block instead
-becomes its own `.table` segment — a `THKTableView`, a real column-aligned, horizontally
-scrollable grid, since a table needs independent touch handling a text view's custom
-spans can't provide. Images stay inline in the text flow as a custom `NSTextAttachment`
-(`THKAsyncImageTextAttachment`) that starts as a placeholder and swaps in the real bitmap
-once `THKImageLoading` resolves it, without re-laying-out the surrounding text. Colors and
-sizes for all of this come from a `THKMDTheme` value threaded into the renderer and into
-`THKBackgroundLayoutManager`/`THKTableView`. This mirrors Markwon's approach on Android for
-the common (no-table) case: one text view, one attributed string, custom spans/drawing for
-block constructs — with a composite-view escape hatch for tables and images, per §9.
+## 构建示例
 
-## Two distributions, one parser
-
-SPM compiles source; CocoaPods downloads a precompiled XCFramework. Both use
-`Sources/THKMDView/SPM/SwiftMarkdownRenderer.swift`. Maaku and its adapter are removed.
-The binary framework statically links parser dependencies and does not expose their
-modules to consuming applications. See [packaging and migration](Binary/README.md).
-
-### Nested block quotes, task-list checkboxes, and quote spacing
-
-A nested `> > quote`'s bar is drawn offset to the right by `(depth - 1) *
-THKBlockQuoteMetrics.indentPerLevel` (`THKBackgroundLayoutManager.drawBlockQuoteBar`), so
-each nesting level reads as its own parallel rounded-pill stripe instead of drawing
-underneath/identical-to its parent's bar at the same x-position — matching Android's
-`ThemedQuoteSpan` stacking (there it falls out of `LeadingMarginSpan` margin accumulation;
-here it's applied explicitly, since iOS paints bars at the layout-manager level, not a
-per-line margin level). A block quote's own children (a wrapped paragraph, a following
-paragraph, a nested quote) are joined with a single `"\n"`
-(`joinBlocksTightly`/`visitBlockQuote`), not a blank `"\n\n"` paragraph — otherwise a
-paragraph/nested-quote boundary would pick up a whole extra blank line on top of
-`THKBlockQuoteMetrics.interiorLineSpacing`, reading as a noticeably bigger gap than an
-ordinary wrapped line, unlike Android's uniform flat +2pt rhythm. Task-list checkboxes are
-an `NSTextAttachment`-wrapped SF Symbol image (`checkmark.square.fill`/`square`, same
-family so both share an identical bounding box) rather than literal
-`\u{2611}`/`\u{2610}` ballot-box characters, which don't reliably render at matching
-visual weight across fonts.
-
-## Building the package
-
-```sh
-cd ios
-xcodebuild build -scheme THKMDView -destination 'generic/platform=iOS Simulator'
-```
-
-The first build resolves the `swift-markdown` SPM dependency (network required); after
-that it's cached. `swift build`/`swift test` will **not** work here — this package links
-UIKit, which isn't available to a plain macOS SPM toolchain run; you must build/test
-against an iOS Simulator destination via `xcodebuild`, as below.
-
-## Running tests
-
-```sh
-cd ios
-xcrun simctl list devices available   # find a simulator name/id on your machine
-xcodebuild test -project Example/Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,name=iPhone 17'
-```
-
-If you have more than one simulator with the same name (e.g. two "iPhone 17 Pro"
-entries from different Xcode versions), disambiguate with `id=<UDID>` instead of `name=`:
-
-```sh
-xcodebuild test -project Example/Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,id=<UDID>'
-```
-
-The Example scheme includes the SDK and shared P0 tests. Regenerate the project with
-`xcodegen generate --spec Example/project.yml` after changing test target configuration.
-See [P0 acceptance](../docs/P0-acceptance-2026-09-23.md) for current results and scope.
-The original test groups include:
-
-- **`Tests/THKMDViewTests/RenderTests.swift`** — feeds Markdown fixtures through
-  `DefaultMarkdownRenderer` and asserts, per segment, plain-text extraction plus the
-  presence of the right attribute at the right range: bold/italic font traits (including
-  combined `***bold italic***`), inline code (monospace font +
-  `.thkInlineCodeBackground`), all six heading levels (bold, strictly decreasing size),
-  a code block's and an outermost block quote's `THKCopyableBlock` entry (and that a
-  nested, non-outermost quote does not produce one), and a ` ```mermaid ` fenced block
-  producing a `.diagram` segment carrying the right source string instead of a normal
-  code-block text segment,
-  a link's `.link` URL (inline, autolink, and reference-style), a block quote's
-  `.thkBlockQuoteBar` + indent (including nesting two levels deep), a code block's
-  monospace font + `.thkCodeBlockBackground` + left/right padding (fenced with/without a
-  language tag, and indented), strikethrough, ordered/unordered/task lists (including a
-  non-1 start index and nesting), escaped characters, raw HTML rendering as inert literal
-  text, a real `THKTableModel` table segment (including column alignment and inline
-  Markdown inside a cell), an image becoming a `THKAsyncImageTextAttachment` with its alt
-  text as the accessibility label, and theme colors/sizes flowing through to body/heading/
-  code text. Also covers two "mid-arrival" cases directly (an unterminated code fence, an
-  unterminated `**`) to confirm they don't crash and degrade sensibly.
-- **`Tests/THKMDViewTests/StreamingMarkdownBufferTests.swift`** — the streaming/chunk-fuzz
-  and debounce tests, all driven by `FakeScheduler` (in
-  `Tests/THKMDViewTests/FakeScheduler.swift`), a controllable stand-in for
-  `DispatchQueueScheduler` so nothing here sleeps or waits on real timers:
-  - Splits a multi-construct fixture (headings, bold/italic, inline code, a link, a
-    block quote, lists, a code block, a table, strikethrough) at fixed-size, one-char,
-    and seeded-random chunk boundaries (`SeededGenerator`, a small reproducible
-    SplitMix64 PRNG), feeds each through `StreamingMarkdownBuffer.append`, and asserts
-    the reassembled buffer text — and the final rendered plain text — exactly matches a
-    single-shot render of the whole fixture.
-  - Asserts 25 rapid `append` calls inside one debounce window schedule 25 work items
-    (each cancelling the last) but produce exactly **one** render.
-  - Asserts `reset()` cancels pending work so a stale debounced render can never overwrite
-    content set after it (the direct analog of `prepareForReuse` → rebind).
-- **`Tests/THKMDViewTests/THKMDViewTests.swift`** — the same reuse-safety guarantee
-  exercised through the public `THKMDView` API with a spy `MarkdownRendering` and a real
-  (short) debounce interval, plus `onLinkTap` interception behavior (including the
-  "no handler installed → default to opening" case).
-
-## CocoaPods
-
-CocoaPods now consumes the precompiled XCFramework. The old source-pod/Maaku route
-is retired. See [binary packaging, local integration and release steps](Binary/README.md).
-No binary asset has been published by this migration; remote installation requires
-publishing the matching versioned ZIP first.
-
-## Running the Example app
-
-The UIKit example starts at `MainViewController` with **ShowCase 格式显示**, **SSE Chat**,
-and **主题设置**. `ShowCaseViewController` keeps fixture playback without chat input.
-`SSEChatViewController` owns input and local simulated streaming (one shared fixture
-chunk per 500 ms; not a network SSE endpoint).
-
-`ThemeSettingsViewController` is pushed as a full page with color controls, sliders
-and Default/Vibrant presets. Changes save immediately; both demos reload settings on
-return and offer a Theme shortcut. The example still requires iOS 15 and is not part
-of the SDK binary. See the root [example UI guide](../README.md#example-ui).
-
-See the root [theme configuration reference](../README.md#theme-configuration) for
-all properties, units, and examples. The sample page does not expose every new field;
-heading scales, image placeholder color, and copy feedback styling are configurable
-through the API.
-
-It's generated with [XcodeGen](https://github.com/yonaskolb/XcodeGen) from
-`Example/project.yml`, and both `project.yml` and the generated `Example.xcodeproj` are
-committed, so you can open `Example/Example.xcodeproj` directly in Xcode without
-installing XcodeGen. If you change `project.yml`, regenerate with:
+示例工程由 [XcodeGen 配置](Example/project.yml) 生成。以下从仓库根目录执行：
 
 ```sh
 cd ios/Example
 xcodegen generate
+xcodebuild build -project Example.xcodeproj -scheme Example \
+  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
 ```
 
-To build from the command line:
+也可直接在 Xcode 打开已有的 `ios/Example/Example.xcodeproj`。修改 project.yml 后需重新生成。首次构建需要下载 Swift 包依赖；真机运行需配置自己的签名团队。
+
+## 测试
+
+Example scheme 包含库测试和共享用例。先查询可用设备，再用实际 UDID 替换占位符：
 
 ```sh
-cd ios/Example
-xcodebuild build -project Example.xcodeproj -scheme Example -destination 'generic/platform=iOS Simulator'
+xcrun simctl list devices available
+# 以下在 ios/Example 下执行
+xcodebuild test -project Example.xcodeproj -scheme Example \
+  -destination 'platform=iOS Simulator,id=<UDID>'
 ```
 
-To run it: open `Example/Example.xcodeproj` in Xcode, pick any iOS Simulator, and hit Run
-— or install/launch it manually:
+本项目依赖 UIKit，普通 macOS `swift test` 不能替代 iOS Simulator 测试。测试目录见 [Tests](Tests/)；测试通过不等于 WebKit 绘制、长列表性能或双端视觉效果已经验收。
 
-```sh
-xcrun simctl boot "iPhone 17 Pro"   # skip if a simulator is already booted
-xcodebuild build -project Example.xcodeproj -scheme Example -destination 'platform=iOS Simulator,name=iPhone 17 Pro'
-APP_PATH=$(find ~/Library/Developer/Xcode/DerivedData -iname "Example.app" -path "*iphonesimulator*" | head -1)
-xcrun simctl install booted "$APP_PATH"
-xcrun simctl launch booted com.thk.mdview.example
-```
+## 示例入口
 
-### `MessageCell.prepareForReuse` — the reuse-safety reference
+首页提供 ShowCase 格式显示、SSE Chat、科技周刊、主题设置四个入口。
 
-`Example/Sources/MessageCell.swift` is the reference implementation of correct cell
-reuse:
+- ShowCase：P0～P3 共享用例与分片播放。
+- SSE Chat：30 组本地模拟回复；输入 1～30 选题，10/20/30 演示失败与重试，输入 `/停止` 中止。
+- 科技周刊：50 篇周刊目录，联网读取 Markdown 正文。
+- 主题设置：完整页面编辑并本地保存，返回内容页面后应用。
 
-```swift
-override func prepareForReuse() {
-    super.prepareForReuse()
-    streamTask?.cancel()
-    streamTask = nil
-    markdownView.reset()
-}
-```
+示例业务代码位于 [Example/Sources](Example/Sources/)，不进入 XCFramework。库本身不保存主题、不连接 AI 服务、不持有业务聊天记录。
 
-Cancel whatever is feeding chunks into the view *and* call `reset()` — in that order —
-before the cell is rebound to a different row. `reset()` clears the internal buffer and
-cancels any pending debounced render, so a render that was scheduled for the
-recycled-away message can never land on the cell after it starts showing a new one. This
-exact scenario (append a chunk → reset mid-flight → set new content → let the stale timer
-try to fire) is what
-`StreamingMarkdownBufferTests.testResetCancelsPendingRenderSoItNeverOverwritesNewContent`
-and `THKMDViewTests.testReuseSafetyAcrossCellRebind` assert.
+## 集成注意
 
-One thing the example app has to do that isn't part of the SDK itself:
-`UITableView.automaticDimension` only re-measures a row's height during its own layout
-passes — it does not observe a child view's `invalidateIntrinsicContentSize()` while a
-cell is on screen. So while a row is actively streaming, `DemoMessageListViewController`
-nudges the table with a periodic `tableView.beginUpdates(); tableView.endUpdates()` (see
-`startHeightRefreshTimer()`). If you integrate `THKMDView` into your own streaming list,
-you'll want an equivalent nudge — a batch update on each debounced render, throttled to
-match your own render cadence, or driven by whatever "content changed" signal your chat
-layer already has.
+- 给 THKMDView 确定宽度，用固有高度或宿主自适应布局；整篇纵向滚动由宿主负责。
+- 视图更新在主线程；`onContentSizeChange` 用于异步内容完成后的行高刷新，应合并更新，避免递归布局。
+- 控制器回调使用弱引用；复用时 reset，并取消业务网络任务、重新绑定消息状态。
+- `onLinkTap` / `onImageTap` 返回 **false** 表示拦截默认行为，与 Android 回调约定不同。
+- 图片真实尺寸到达后可能改变行高；建议注入业务图片服务统一管理缓存、认证和取消。
+- 默认主题不会自动适配深色模式或业务 Dynamic Type 策略；宿主调整主题并自行保存。
+- SPM 通过 Bundle.module 加载离线资源；二进制从框架 bundle 加载，不能遗漏 Mermaid / MathJax 文件。
 
-## Public API
+更多示例见 [基础使用](../README.md#基础使用与布局)、[主题配置](../README.md#主题配置)、[图片缓存](../README.md#图片加载与缓存)、[生命周期](../README.md#列表复用与生命周期)。
 
-```swift
-public final class THKMDView: UIView {
-    public var streamingDebounceInterval: TimeInterval = 0.032
-    public var onLinkTap: ((URL) -> Bool)?
-    public var onImageTap: ((URL) -> Bool)?
-    public var renderer: MarkdownRendering = DefaultMarkdownRenderer()
-    public var imageLoader: THKImageLoading = DefaultTHKImageLoader()
-    public var theme: THKMDTheme = .default
+## 二进制与 CocoaPods
 
-    public func setMarkdown(_ markdown: String)      // full replace, renders immediately
-    public func appendMarkdownChunk(_ chunk: String)  // buffers + schedules a debounced render
-    public func reset()                                // clears buffer, cancels all pending work
-}
+构建、检查资源、消费端 lint、本地 pod 与发布步骤见 [Binary 指南](Binary/README.md)。
 
-public protocol MarkdownRendering: AnyObject {
-    var theme: THKMDTheme { get set }
-    func render(_ markdown: String) -> [THKRenderSegment]
-}
+源码仓库里的 podspec 不是已发布二进制的证明。必须有匹配版本的 XCFramework ZIP 和 podspec，远端安装才成立。示例、Fixtures、模拟回复、周刊目录和测试不随库打包。
 
-public enum THKRenderSegment {
-    case text(NSAttributedString, copyableBlocks: [THKCopyableBlock])
-    case table(THKTableModel)
-    case diagram(mermaidSource: String)
-}
+## 专题
 
-public struct THKCopyableBlock {
-    public let range: NSRange
-    public let text: String
-}
+- [SSE 接入](../docs/sse.md)
+- [P0](../docs/P0.zh-CN.md) / [P1](../docs/P1.zh-CN.md) / [P2](../docs/P2.zh-CN.md) / [P3](../docs/P3.zh-CN.md)
+- [性能与增量解析](../docs/performance-review.md)
 
-public enum THKTableColumnAlignment { case leading, center, trailing }
-
-public struct THKTableModel {
-    public let alignments: [THKTableColumnAlignment]
-    public let headerCells: [NSAttributedString]
-    public let rows: [[NSAttributedString]]
-}
-
-public protocol THKImageLoading {
-    func load(url: URL) async -> UIImage?
-}
-
-public final class DefaultTHKImageLoader: THKImageLoading { /* URLSession + NSCache + on-disk cache */ }
-```
-
-- `setMarkdown` bypasses the debounce entirely — use it for a complete, already-final
-  message.
-- `appendMarkdownChunk` is the SSE path: each call appends to an internal buffer and
-  (re)schedules a single debounced full re-parse/re-render (`streamingDebounceInterval`,
-  default 32ms). Multiple chunks inside one window coalesce into one render — the parser
-  sees the whole buffer each time, so a truncated construct (open fence, open `**`, a
-  link missing its closing `)`) is just handled the way any CommonMark parser handles a
-  truncated document: as literal/unterminated text until the closing syntax arrives.
-- `reset()` must be called from `prepareForReuse`/`onViewRecycled` (see above). It clears
-  the streaming buffer, cancels any pending debounced render, **and** cancels every
-  in-flight image load in every current segment — a recycled-away view's image fetch can
-  never paint onto its replacement, mirroring the existing streamed-text reuse guarantee.
-- `renderer` is swappable — implement `MarkdownRendering` yourself (e.g. to add syntax
-  highlighting) and assign it before calling `setMarkdown`/`appendMarkdownChunk`. It now
-  returns `[THKRenderSegment]` instead of a single `NSAttributedString`: as many
-  consecutive non-table blocks as possible still merge into one `.text` segment (now
-  carrying its `[THKCopyableBlock]` list alongside the attributed string — see "Copy
-  buttons" below); each GFM table becomes its own `.table` segment carrying a
-  `THKTableModel` (column alignments, header cells, row cells — each cell itself an
-  `NSAttributedString` built through the same inline-Markdown helper used everywhere
-  else); a fenced code block tagged ` ```mermaid ` becomes its own `.diagram` segment
-  instead (see "Mermaid diagrams" below).
-- `theme: THKMDTheme` is settable and **re-renders the current content in place** when
-  changed — no need to call `setMarkdown` again. It carries body/heading/link/code
-  colors, the code block background + corner radius, the block quote bar/text colors,
-  the table border/header colors, and body/code font sizes. Both `MarkdownRendering`
-  backends read it (via the protocol's `theme` property) instead of hardcoding colors.
-- `imageLoader: THKImageLoading` is settable, so a host app that already uses
-  Kingfisher/SDWebImage/etc. can supply an adapter instead of `DefaultTHKImageLoader`
-  (dependency-free: `URLSession` + an in-memory `NSCache` + an on-disk cache under the
-  caches directory, keyed by a SHA-256 hash of the URL via `CryptoKit`). Images stay
-  inline in the text flow via `THKAsyncImageTextAttachment` — a placeholder box, then the
-  real bitmap scaled to fit within it once loaded, redrawn via
-  `NSTextStorage.edited(.editedAttributes, range:, changeInLength: 0)` without
-  relayouting the surrounding text. Tap-to-open routes through the dedicated
-  `onImageTap: ((URL) -> Bool)?` (separate from `onLinkTap`, since an image attachment
-  isn't a `.link` range).
-
-### `THKTableView`
-
-`Sources/THKMDView/THKTableView.swift` is a shared (not parser-specific) `UIScrollView`
-subclass that renders a `THKTableModel` as a real grid: per-column width from each
-column's widest cell (capped at a max width so one huge cell can't blow out the table),
-per-column text alignment, a themed header row, hairline cell borders, and horizontal
-scrolling whenever the natural content width exceeds the view's own width. It overrides
-`intrinsicContentSize` to report its actual rendered height so it sizes correctly as an
-arranged subview of `THKMDView`'s internal vertical `UIStackView`.
-
-### Copy buttons
-
-Fenced/indented code blocks and outermost block quotes (only the outermost level of a
-nested `> > quote` — the same rule the rounded background fill already uses) get a small
-tappable copy-to-clipboard button in their top-right corner, a `UIButton` positioned by
-`THKMDView` as a direct subview of the internal `UITextView` that owns the segment. The
-button's icon is drawn programmatically (`THKMDView.makeCopyIconImage()`, `UIBezierPath` +
-`UIGraphicsImageRenderer`, cached after the first build) to match Lucide's "copy" icon —
-the same icon Android's copy button uses — rather than the SF Symbol `doc.on.doc`, whose
-different visual design didn't match across platforms. Each renderer backend tags a
-copyable range's full extent with a custom
-`NSAttributedString` key (`.thkCopyableCodeBlock`/`.thkCopyableBlockQuote` in
-`MarkdownRenderer.swift`) and collects them into that segment's `[THKCopyableBlock]` list;
-`THKMDView` places one button per entry using `NSLayoutManager.lineFragmentRect(forGlyphAt:
-effectiveRange:)` for the range's first line, repositioning on every layout pass (the text
-view's real width isn't settled the moment a segment is rebuilt) and rebuilding the button
-set whenever the segment's content changes. Tapping a button sets
-`UIPasteboard.general.string` to that block's plain display text and shows a brief
-self-dismissing "Copied" label. Tables never get a copy button.
-
-### Mermaid diagrams
-
-A fenced code block tagged ` ```mermaid ` renders as an actual flowchart instead of literal
-monospaced code text — a deliberate, scoped exception to this package's general "no
-WebView" stance (`docs/RESEARCH.md` §2 kept WebView as a documented escape hatch for
-exactly this kind of node type). Detection happens in both renderer backends' top-level
-block loop (`renderSegments`), the same place a `Table` block is pulled out into its own
-segment: a fenced block whose language/info tag is `mermaid` (case-insensitive) becomes a
-`.diagram(mermaidSource:)` segment instead of a normal code block; nested inside a list or
-block quote, it isn't detected (falls through to a normal code block), the same known gap
-tables already have.
-
-`THKMermaidView.swift` (shared, not parser-specific — `THKMDView.swift` binds it to
-`.diagram` segments the same way it binds `THKTableView` to `.table` ones) is a `WKWebView`
-loading a bundled `mermaid_template.html` that runs a vendored **mermaid.js v11.17.2**
-(MIT-licensed; browser-ready UMD/IIFE build, fetched from
-`https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.min.js` — see the license/
-provenance comment at the top of `Sources/THKMDView/mermaid.min.js`) against the given
-source. The template posts the rendered SVG's real bounding box back to Swift through a
-`WKScriptMessageHandler` bridge (proxied through a weak-referencing `NSObject` so
-`WKUserContentController`'s strong reference to its handler can't keep the view alive after
-`stop()`/teardown), and `THKMermaidView` resizes/invalidates its `intrinsicContentSize` to
-that real size (capped to the available width), mirroring the "real dimensions, not a fixed
-guess" pattern `THKAsyncImageTextAttachment` already uses for images. Invalid Mermaid
-syntax (or a JS error caught via the same message bridge) falls back to the raw ` ```mermaid `
-source rendered as plain monospaced text with a short "diagram failed to render" note,
-rather than a blank/broken WebView. `THKMDView.reset()`/segment teardown calls
-`THKMermaidView.stop()`, which stops any in-flight load and removes the script message
-handler — the same reuse-safety guarantee image loads and streaming text already get.
-
-Both distributions ship `mermaid_template.html` and `mermaid.min.js`: SPM loads
-`Bundle.module`, while the XCFramework loads its own framework bundle. The packaging
-script verifies both files are embedded in each slice.
-
-### Known gaps
-
-- No syntax highlighting in code blocks (monospace + themed background/padding only).
-- No incremental block-level re-parsing — every debounced render re-parses the whole
-  buffer, which is fine at typical chat-message lengths.
-- A `Table` nested inside a block quote or list item (rather than top-level) is not
-  rendered — only top-level tables become table segments; this is a rare construct in
-  LLM output. A ` ```mermaid ` fence nested the same way has the identical gap — it renders
-  as a normal (non-diagram) code block instead.
+历史 Maaku、源码 pod 或旧验收记录仅描述旧版本，不作为当前二进制可用性的依据。

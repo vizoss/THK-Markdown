@@ -17,10 +17,11 @@ private struct WeeklyArticle: Decodable {
 
 private final class WeeklyCell: UITableViewCell {
     let label = UILabel()
+    private let card = UIView()
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         backgroundColor = .clear
-        let card = UIView()
+        selectionStyle = .none
         card.backgroundColor = DemoUI.soft; card.layer.cornerRadius = 8
         card.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(card)
@@ -29,8 +30,8 @@ private final class WeeklyCell: UITableViewCell {
         card.addSubview(label)
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor),
-            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -12),
             card.heightAnchor.constraint(greaterThanOrEqualToConstant: 76),
             label.topAnchor.constraint(equalTo: card.topAnchor, constant: 16),
@@ -40,6 +41,35 @@ private final class WeeklyCell: UITableViewCell {
         ])
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func setHighlighted(_ highlighted: Bool, animated: Bool) {
+        super.setHighlighted(highlighted, animated: animated)
+        updateFeedback(animated: animated)
+    }
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+        updateFeedback(animated: animated)
+    }
+    private func updateFeedback(animated: Bool) {
+        let active = isHighlighted || isSelected
+        let changes = {
+            self.card.backgroundColor = active
+                ? UIColor(red: 226 / 255.0, green: 236 / 255.0, blue: 250 / 255.0, alpha: 1)
+                : DemoUI.soft
+            self.card.transform = active && !UIAccessibility.isReduceMotionEnabled
+                ? CGAffineTransform(scaleX: 0.985, y: 0.985) : .identity
+        }
+        if animated && !UIAccessibility.isReduceMotionEnabled {
+            UIView.animate(withDuration: active ? 0.10 : 0.16, delay: 0,
+                           options: [.beginFromCurrentState, .allowUserInteraction], animations: changes)
+        } else { changes() }
+    }
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        card.layer.removeAllAnimations()
+        setHighlighted(false, animated: false)
+        setSelected(false, animated: false)
+    }
 }
 
 final class WeeklyListViewController: DemoPageViewController, UITableViewDataSource, UITableViewDelegate {
@@ -55,19 +85,28 @@ final class WeeklyListViewController: DemoPageViewController, UITableViewDataSou
         table.rowHeight = UITableView.automaticDimension
         table.estimatedRowHeight = 76
         table.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 16, right: 0)
-        let header = UILabel(frame: CGRect(x: 0, y: 0, width: 300, height: 72))
+        let headerContainer = UIView(frame: CGRect(x: 0, y: 0, width: 300, height: 72))
+        let header = UILabel()
+        header.translatesAutoresizingMaskIntoConstraints = false
+        headerContainer.addSubview(header)
+        NSLayoutConstraint.activate([
+            header.leadingAnchor.constraint(equalTo: headerContainer.leadingAnchor, constant: 16),
+            header.trailingAnchor.constraint(equalTo: headerContainer.trailingAnchor, constant: -16),
+            header.topAnchor.constraint(equalTo: headerContainer.topAnchor),
+            header.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor)
+        ])
         header.numberOfLines = 0; header.font = .systemFont(ofSize: 13)
         header.textColor = .secondaryLabel
         do {
             articles = try WeeklyArticle.load()
             header.text = "阮一峰 · 科技爱好者周刊\n50 篇 · 第 364–413 期 · 在线阅读"
         } catch { header.text = "文章目录读取失败" }
-        table.tableHeaderView = header
+        table.tableHeaderView = headerContainer
         view.addSubview(table)
         NSLayoutConstraint.activate([
             table.topAnchor.constraint(equalTo: demoHeader.bottomAnchor),
-            table.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 16),
-            table.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            table.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            table.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             table.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }

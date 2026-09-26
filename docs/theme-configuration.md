@@ -1,6 +1,6 @@
 # Markdown 主题配置验证记录
 
-完整配置项、单位、使用示例和配置边界统一维护在 [中文 README](../README.zh-CN.md#主题配置) 和 [English README](../README.md#theme-configuration)。本文仅保留此次改造的验证记录。
+完整配置项、单位、使用示例和配置边界统一维护在 [主 README 的主题配置](../README.md#主题配置)。本文仅保留此次改造的验证记录。
 
 ## 验证记录
 

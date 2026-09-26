@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-迁移配置已建立，尚未执行归档、pod lint 或发布。本目录不是已经发布的二进制。
+本目录维护二进制构建配置，不是可直接安装的已发布产物。是否完成归档、pod lint 和发布，请以对应版本的构建记录与实际附件为准。
 Maaku 适配器和专属测试已移除；SPM 与 XCFramework 都编译同一份
 `Sources/THKMDView/SPM/SwiftMarkdownRenderer.swift`，使用 swift-markdown。
 
@@ -10,7 +10,7 @@ Maaku 适配器和专属测试已移除；SPM 与 XCFramework 都编译同一份
 
 仅编译 `ios/Sources/THKMDView`，静态链接 swift-markdown / swift-cmark 到动态
 THKMDView.framework。解析器通过 implementation-only import 隔离，调用方不需要安装
-Markdown 或 Maaku 模块。框架内包含 Mermaid HTML/JS 资源。
+Markdown 或 Maaku 模块。框架内包含 Mermaid、MathJax HTML/JS 资源和相应许可文件。
 
 不包含 Example、Fixtures、mock、主题设置界面、本地偏好保存或 Tests。
 源码使用方仍走 SPM；不要在同一个 App 中同时安装 THKMDView 的 SPM 和 pod 版本。
@@ -27,7 +27,7 @@ bash ios/scripts/build-xcframework.sh
 
 1. 检查二进制项目的解析器 revision 与 `ios/Package.resolved` 一致。
 2. 生成临时 Xcode 工程，分别归档真机 arm64 与模拟器 arm64/x86_64。
-3. 检查框架没有外部 Markdown/cmark 动态依赖、公开接口没有泄露解析器模块、Mermaid 资源齐全。
+3. 检查框架没有外部 Markdown/cmark 动态依赖、公开接口没有泄露解析器模块、Mermaid / MathJax 资源齐全。
 4. 创建 XCFramework，携带 SDK 和第三方许可证。
 5. 在本地产物目录执行 CocoaPods 集成 lint（不启动示例 App）。
 6. 生成 `ios/Binary/build-*/THKMDView-<版本>.zip`、SHA256SUMS 和 podspec。
@@ -44,7 +44,7 @@ pod 'THKMDView', :path => '/绝对路径/ios/Binary/build-XXXXXX/release'
 ```
 
 该目录必须同时存在 podspec 与 XCFramework。原先指向 Git 源码的 pod 接入方式不再构建 SDK。
-共享 P0/P1/P2 数据仍供源码示例和测试使用；二进制宿主需要另外接入验收界面，不能将源码测试通过
+共享 P0/P1/P2/P3 数据仍供源码示例和测试使用；二进制宿主需要另外接入验收界面，不能将源码测试通过
 等同于二进制集成或 UI 验收通过。
 
 ## 发布（需维护者明确执行）

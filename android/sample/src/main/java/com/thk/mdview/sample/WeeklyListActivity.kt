@@ -27,13 +27,16 @@ class WeeklyListActivity : DemoPageActivity() {
         val articles = WeeklyArticle.load(this)
         val list = ListView(this).apply {
             divider = null
+            // Feedback belongs to the rounded card, not the full-width row/gutters.
+            selector = android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT)
             val p = (16 * resources.displayMetrics.density).toInt()
-            setPadding(p, 0, p, p)
+            setPadding(0, 0, 0, p)
+            scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
             clipToPadding = false
             addHeaderView(TextView(context).apply {
                 text = "阮一峰 · 科技爱好者周刊\n50 篇 · 第 364–413 期 · 在线阅读"
                 setTextColor(0xff64748b.toInt()); textSize = 13f
-                setPadding(0, p, 0, p)
+                setPadding(p, p, p, p)
             }, null, false)
         }
         list.adapter = object : BaseAdapter() {
@@ -41,19 +44,35 @@ class WeeklyListActivity : DemoPageActivity() {
             override fun getItem(position: Int) = articles[position]
             override fun getItemId(position: Int) = articles[position].number.toLong()
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val row = convertView as? FrameLayout ?: FrameLayout(this@WeeklyListActivity).apply {
+                val row = convertView as? FrameLayout ?: object : FrameLayout(this@WeeklyListActivity) {
+                    override fun setPressed(pressed: Boolean) {
+                        super.setPressed(pressed)
+                        val card = getChildAt(0) ?: return
+                        card.animate().cancel()
+                        card.animate().scaleX(if (pressed) 0.985f else 1f)
+                            .scaleY(if (pressed) 0.985f else 1f)
+                            .setDuration(if (pressed) 100 else 160).start()
+                    }
+                    override fun onDetachedFromWindow() {
+                        getChildAt(0)?.let { it.animate().cancel(); it.scaleX = 1f; it.scaleY = 1f }
+                        super.onDetachedFromWindow()
+                    }
+                }.apply {
                     val gap = (12 * resources.displayMetrics.density).toInt()
-                    setPadding(0, 0, 0, gap)
+                    val gutter = (16 * resources.displayMetrics.density).toInt()
+                    setPadding(gutter, 0, gutter, gap)
                     addView(TextView(context).apply {
                         textSize = 16f; setTextColor(0xff1e293b.toInt())
                         val p = (16 * resources.displayMetrics.density).toInt()
                         setPadding(p, p, p, p)
                         minHeight = (76 * resources.displayMetrics.density).toInt()
                         gravity = android.view.Gravity.CENTER_VERTICAL
-                        setBackgroundResource(R.drawable.demo_control)
+                        isDuplicateParentStateEnabled = true
+                        setBackgroundResource(R.drawable.weekly_card)
                     }, FrameLayout.LayoutParams(-1, -2))
                 }
                 val label = row.getChildAt(0) as TextView
+                row.isPressed = false
                 val item = getItem(position)
                 label.text = "第 ${item.number} 期  ›\n${item.title}"
                 return row

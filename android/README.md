@@ -1,324 +1,69 @@
-# THKMDView (Android)
+# THKMDView · Android
 
-P3 提示块、基础脚注、离线公式以及 36 个共享用例见 [P3 文档](../docs/P3.zh-CN.md)。MathJax JS/模板/许可证随 AAR assets 打包；新增主题字段在示例设置中可修改并保存。尚待双端编译、渲染和视觉验收。
+Android 原生 Markdown 库，包名 `com.thk.mdview`，最低 API 21。
 
-A `com.android.library` module that renders streaming Markdown inside an LLM chat
-bubble. See [`../docs/RESEARCH.md`](../docs/RESEARCH.md) for the full architecture
-rationale (§9 covers the v1 segmented-rendering/table/image/theme design); this file
-only covers building, testing, running, and the public API surface.
+业务安装、公开 API、主题、点击事件、图片缓存和生命周期以 [主 README](../README.md) 为准。本页只维护 Android 构建与开发说明。
 
-## Modules
+## 工程
 
-- `thkmdview/` — the library (AAR). All public API lives in `com.thk.mdview`.
-- `sample/` — a runnable example app: a `RecyclerView` of chat bubbles, each one
-  streamed in via simulated SSE chunks, with a table+image showcase reply, a Mermaid
-  flowchart reply, and a **Theme** button opening a live-editable theme settings page.
+- [thkmdview](thkmdview/)：发布为 AAR 的库，包含 Mermaid / MathJax assets。
+- [sample](sample/)：示例应用，不随库发布。
+- [库构建配置](thkmdview/build.gradle.kts)：插件、依赖和 Maven 发布配置。
+- [共享用例](../ios/Fixtures/data/)：双端使用同一份 P0～P3 数据。
+- [模拟回复](../examples/sse/replies.json)：双端 SSE Chat 的 30 组回复。
 
-## Build
+使用 JDK 17 和仓库 Gradle Wrapper。当前 AGP 8.5.2、Kotlin 1.9.24、compileSdk 34。首次构建需要下载依赖。
 
-```sh
-./gradlew :thkmdview:assembleDebug
-```
+## 构建与测试
 
-## Test
+以下命令从仓库根目录开始：
 
 ```sh
+cd android
+./gradlew :thkmdview:assembleRelease
 ./gradlew :thkmdview:testDebugUnitTest
+./gradlew :sample:assembleDebug
 ```
 
-Runs as fast JVM unit tests via Robolectric (no emulator needed):
+AAR 位于 `thkmdview/build/outputs/aar/`；示例 APK 位于 `sample/build/outputs/apk/debug/`。运行示例可用 Android Studio 打开本目录，选择 sample 和设备。
 
-- `DefaultMarkdownRendererTest` — known Markdown fixtures in, expected plain text and
-  span types out: bold/italic/bold+italic, strikethrough, inline code, fenced code
-  blocks (with/without a language tag), indented code blocks, headings h1–h6 (each a
-  distinct size), soft vs. hard line breaks, links (inline/autolink/reference-style) +
-  click callback, escaped characters, block quotes (including nested `> >`), un/ordered
-  lists (including a non-1 start number and nested lists), task lists, images (become
-  `AsyncImageSpan`s carrying the URL/alt text), inert-text rendering of raw HTML
-  blocks/inline HTML (e.g. a `<script>` tag never gets parsed as markup), real GFM
-  tables (including a column-alignment fixture and inline Markdown inside a cell), and
-  the text/table segment-splitting behavior itself.
-- `StreamingMarkdownBufferTest` — a chunk-fuzz test that splits a multi-construct
-  fixture at several different boundary strategies (fixed size, seeded-random size,
-  one character at a time) and asserts the final streamed render is character-identical
-  to a single `setMarkdown` call on the whole fixture; plus a debounce-coalescing test
-  and a `reset()` test.
-- `THKMDViewReuseTest` — simulates `RecyclerView` reuse: starts a render mid-stream,
-  calls `reset()`, binds a different message, and asserts the pre-reset pending render
-  never lands on top of it; also covers segment view reuse/replacement by type, a
-  `theme` change re-rendering already-set content with new colors with no fresh
-  `setMarkdown` call, and — mirroring the streaming-render reuse guarantee — that an
-  in-flight image load from a `reset()`-away view never paints onto its replacement.
-- `DefaultTHKImageLoaderTest` — memory-cache hit avoids re-fetching, on-disk cache
-  survives a fresh loader instance (no in-memory cache) without re-fetching, distinct
-  URLs cache independently, a failed fetch returns null without caching, and cancelling
-  the calling coroutine actually stops the load instead of letting it resolve.
-- `THKTableViewTest` — column alignment maps to the correct cell `Gravity`, a missing
-  alignment defaults to start, the header row is visually distinct from body rows, an
-  extremely long single cell is capped rather than blowing out the table width, and row/
-  column contents match the supplied data.
+单元测试使用 Robolectric，无需启动模拟器；覆盖解析、分片、复用、主题、图片、表格、公式请求及 SSE 状态等。真实 WebView 绘制、滚动性能和视觉效果仍需要设备验收。测试目录见 [src/test](thkmdview/src/test/)。
 
-`DefaultMarkdownRendererTest` also covers the copy-button and Mermaid plumbing: a code
-block and an outermost block quote each produce a `CopyableBlock` with the right plain
-text, a nested (non-outermost) quote does not get one, and a ` ```mermaid ` fenced block
-(language tag matched case-insensitively) becomes a `RenderedSegment.DiagramSegment`
-carrying the diagram source rather than a normal code block. `THKMDViewReuseTest` covers
-that a diagram segment gets its own `THKMermaidView` child and that `reset()` tears it
-down. Actual Mermaid/SVG rendering inside the `WebView` isn't unit-tested (Robolectric
-has no real rendering engine) — see "Visual verification" below for that.
+## 示例入口
 
-## Run the sample
+`MainActivity` 提供四个入口：
 
-The sample now reads the shared `ios/Fixtures/data/p0.json` catalog (18 P0 cases) and offers case selection, full text, play, pause and single-step controls. See [P0 acceptance guide](../docs/P0.zh-CN.md) for the current workflow and explicit fallback contracts; this replaces the previous rotating mock replies described below.
+| 页面 | 职责 |
+| --- | --- |
+| ShowCaseActivity | P0～P3 用例、全文/播放/暂停/单步、验收要求 |
+| SSEChatActivity | 30 组本地模拟回复、等待/输出/失败/重试 |
+| WeeklyListActivity | 50 篇周刊列表与 Markdown 详情 |
+| ThemeSettingsActivity | 默认/鲜明预设、颜色与字号编辑、本地保存 |
 
-```sh
-./gradlew :sample:installDebug
-```
+SSE Chat 不是在线 AI 服务；输入 1～30 选题，10/20/30 演示失败与重试，输入 `/停止` 中止。主题持久化和消息模型属于示例业务，不属于库。
 
-Launch `com.thk.mdview.sample/.MainActivity` for **ShowCase 格式显示**, **SSE Chat**,
-and **主题设置**. `ShowCaseActivity` retains fixture playback without a chat input.
-`SSEChatActivity` owns input and local simulated streaming (one shared fixture chunk
-per 500 ms; not a network SSE endpoint).
+## 集成注意
 
-### Theme settings page
+- THKMDView 是 LinearLayout，不是 TextView；使用 wrap_content 高度，字体/颜色通过主题设置。
+- 所有视图操作在主线程；流式传入新增文本，而不是重复累计全文。
+- reset 清理渲染任务，不替业务取消网络请求；复用前重新绑定业务状态与回调。
+- 链接回调返回 true 表示业务处理，但 false 不会自动打开浏览器。
+- 图片完成后可能改变高度；生产环境建议注入共享的业务图片加载器。
+- 宿主负责 INTERNET 权限、HTTPS 策略、URL 校验与账号缓存隔离。
+- 独立复制 AAR 不会自动安装传递依赖，优先使用模块或带 POM 的 Maven 包。
 
-`ThemeSettingsActivity` is a full-page editor with color controls, size sliders and
-Default/Vibrant presets. Changes save immediately through `DemoThemeStore`; both demos
-reload settings on return and offer a Theme shortcut. Color selection still uses a
-small picker dialog. See the root [example UI guide](../README.md#example-ui).
+完整示例与双端差异见 [业务指南](../README.md#业务接入检查清单)。
 
-## Public API
+## 发布
 
-```kotlin
-package com.thk.mdview
+仓库配置发布到 GitHub Packages，坐标 `com.thk.mdview:thkmdview`。工作流使用 `<VERSION_NAME>-build<run_number>`；以实际发布记录为准，不将源码版本号当作包已存在的证明。
 
-class THKMDView(context: Context, attrs: AttributeSet? = null) : LinearLayout(context, attrs) {
-    var streamingDebounceMs: Long = 32L
-    var onLinkClick: ((String) -> Boolean)? = null
-    var onImageClick: ((String) -> Boolean)? = null   // falls back to onLinkClick(imageUrl) if unset
-    var theme: THKMDTheme = THKMDTheme.Default          // re-renders current content on assignment
-    var imageLoader: THKImageLoader                     // defaults to DefaultTHKImageLoader(context)
-    var maxContentWidthPx: Int = NO_MAX_WIDTH            // TextView.maxWidth equivalent; <= 0 = unconstrained
+依赖仓库与凭据配置见 [安装依赖](../README.md#安装依赖)；维护者流水线见 [android-publish.yml](../.github/workflows/android-publish.yml)。不要将读取或发布令牌写进仓库。
 
-    fun setMarkdown(markdown: String)             // full replace, renders immediately (no debounce)
-    fun appendMarkdownChunk(chunk: String)         // appends to the internal buffer, schedules a debounced re-render
-    fun reset()                                    // clears the buffer, cancels pending render + in-flight image loads
-    fun setMarkdownRenderer(renderer: MarkdownRenderer)
-}
+## 专题
 
-interface MarkdownRenderer {
-    fun render(markdown: String, theme: THKMDTheme, imageBounds: ImageBounds): List<RenderedSegment>
-}
+- [SSE 接入](../docs/sse.md)
+- [P0](../docs/P0.zh-CN.md) / [P1](../docs/P1.zh-CN.md) / [P2](../docs/P2.zh-CN.md) / [P3](../docs/P3.zh-CN.md)
+- [性能与增量解析](../docs/performance-review.md)
 
-sealed interface RenderedSegment {
-    data class TextSegment(val spanned: CharSequence, val copyableBlocks: List<CopyableBlock> = emptyList()) : RenderedSegment
-    data class TableSegment(val table: THKTableData) : RenderedSegment
-    data class DiagramSegment(val mermaidSource: String) : RenderedSegment   // ```mermaid fenced block
-}
-
-data class CopyableBlock(val range: IntRange, val text: String)   // a code block, or an outermost block quote
-
-class THKMermaidView(context: Context, attrs: AttributeSet? = null) : FrameLayout(context, attrs) {
-    fun render(source: String, theme: THKMDTheme)
-    fun destroy()   // called by THKMDView.reset() - tears down the WebView
-}
-
-interface THKImageLoader {
-    suspend fun load(url: String): Bitmap?         // null on failure/cancellation
-}
-
-class THKTableView(context: Context, attrs: AttributeSet? = null) : HorizontalScrollView(context, attrs)
-
-data class THKMDTheme(
-    val bodyTextColor: Int, val headingTextColor: Int, val linkColor: Int,
-    val codeTextColor: Int, val codeBackgroundColor: Int, val codeBlockCornerRadiusDp: Float,
-    val blockQuoteBarColor: Int, val blockQuoteTextColor: Int,
-    val tableBorderColor: Int, val tableHeaderBackgroundColor: Int,
-    val bodyFontSizeSp: Float, val codeFontSizeSp: Float,
-    val backgroundColor: Int = Color.TRANSPARENT
-) {
-    companion object { val Default: THKMDTheme }
-}
-```
-
-### `THKMDView` is a `ViewGroup`, not a `TextView` (breaking change from v0)
-
-As of v1, `THKMDView` is a `LinearLayout` that manages an ordered list of internal
-**segments**, rebuilt on every debounced render pass (RESEARCH.md §9):
-
-- **Text segments** — as many consecutive non-table blocks as possible (paragraphs,
-  headings, lists, block quotes, code blocks, thematic breaks) still merge into one
-  `Spanned` rendered by one internal `TextView`, exactly like v0. Most messages (no
-  table) still render as exactly one segment.
-- **Table segments** — a `THKTableView` per top-level GFM table: real per-column
-  widths, GFM alignment markers (`:--`/`:-:`/`--:`) mapped to per-column text alignment,
-  a themed header row, and independent horizontal scrolling (via an internal
-  `HorizontalScrollView`) when the table is wider than the bubble.
-
-Segments are matched/reused by `(index, type)` across rebuilds — a segment that's still
-a text segment after a rebuild gets its text updated in place rather than the view being
-torn down and recreated; a segment whose type changed (e.g. text → table) gets its child
-view replaced.
-
-Because `THKMDView` is no longer a `TextView`, XML attributes that only apply to
-`TextView` (`android:textSize`, `android:textColor`, `android:textIsSelectable`,
-`android:maxWidth`, …) no longer have any effect when set on
-`<com.thk.mdview.THKMDView>` in a layout file. Text styling now comes from `theme`;
-width-capping (e.g. so a chat bubble doesn't stretch edge-to-edge) is available via the
-`maxContentWidthPx` property instead of `android:maxWidth`.
-
-### Images
-
-`![alt](url)` images render inline in the text flow (not as their own segment) via a
-custom `ReplacementSpan` (`AsyncImageSpan`) that reserves a fixed placeholder box (240dp
-× 180dp by default, shrunk to fit a narrower view) so the surrounding text never
-relayouts, kicks off `imageLoader.load(url)` on a `CoroutineScope` owned by the
-`THKMDView`, and redraws just that image once the bitmap arrives, scaled to fit the
-reserved box. Tapping an image invokes `onImageClick` (falling back to `onLinkClick`
-with the image URL if `onImageClick` is unset). `reset()` cancels every in-flight image
-load the same way it cancels a pending debounced render — a recycled-away view's image
-load can never paint onto the view that replaced it.
-
-`DefaultTHKImageLoader` is dependency-free: `HttpURLConnection` on `Dispatchers.IO`, an
-in-memory `LruCache` (sized to ~1/8 of `Runtime.getRuntime().maxMemory()`), and an
-on-disk cache under `context.cacheDir` keyed by the SHA-256 of the URL. A host app that
-already uses Coil/Glide/Kingfisher-equivalent can supply its own `THKImageLoader`
-instead via `THKMDView.imageLoader`.
-
-### Copy button on code blocks and block quotes
-
-Every code block (fenced or indented) and every *outermost* block quote (nested `> >`
-quotes don't get their own extra button — only the enclosing one does, matching the
-"only the outermost quote gets the rounded background" rule) shows a small copy-to-
-clipboard button in its top-right corner. A `Span` only paints into its host `TextView`'s
-own canvas and isn't independently hit-testable at a specific corner, so — the same
-reasoning that gave tables their own `THKTableView` — each text segment's `TextView` is
-now wrapped in an internal `FrameLayout` (`TextSegmentFrame`), and copy buttons are real
-`ImageButton` overlay children positioned (after layout, via `Layout.getLineTop`) at each
-copyable block's top-right corner. Tapping one copies that block's plain text via
-`ClipboardManager` and shows a short, themed "Copied" label beneath that button,
-matching iOS (no app Toast). The icon is Lucide's "copy" icon
-(ISC license) as a `VectorDrawable` (`res/drawable/ic_copy.xml`), tinted at runtime from
-`theme.codeTextColor` so it follows the active `THKMDTheme`.
-
-### Mermaid flowchart diagrams
-
-A fenced code block tagged ` ```mermaid ` (language tag matched case-insensitively)
-renders as an actual diagram instead of literal monospaced text, via `THKMermaidView` —
-a small embedded `WebView` loading a bundled copy of `mermaid.js` and the diagram source.
-This is a deliberate, scoped exception to this SDK's general "no `WebView`" stance
-(RESEARCH.md §2): `WebView` was kept as a documented escape hatch for exactly this kind
-of specific node type, not adopted as the general renderer — everything else still
-renders through the `Spanned`/span pipeline.
-
-`assets/mermaid.min.js` is a vendored, unmodified copy of **mermaid v11.17.2**'s browser
-UMD bundle (MIT license; see `assets/mermaid.min.js.NOTICE`), loaded from a local asset
-rather than a CDN so rendering works offline and never requires the host app to reach an
-external network at runtime. `assets/mermaid_template.html` is the minimal page that
-loads it; Android hands it the diagram source via `WebView.evaluateJavascript`, with the
-source safely JSON-string-escaped (`org.json.JSONObject.quote`) so arbitrary Mermaid text
-can't break out of the JS string literal.
-
-Since the diagram's rendered size isn't known upfront, the `WebView` starts at a fixed
-placeholder height; once mermaid.js renders the SVG, a small JS→Kotlin bridge
-(`WebView.addJavascriptInterface`) reports the real rendered width/height back, the CSS
-(`max-width: 100%`) has already capped the SVG to the `WebView`'s own width (itself capped
-to the message bubble's width, same as a table), and the `WebView` is resized to the
-real height and `requestLayout()`'d — mirroring how `AsyncImageSpan` swaps in an image's
-real dimensions once known. Invalid Mermaid syntax is caught on the JS side and falls
-back to the raw ` ```mermaid ` source shown as plain monospaced text with a "diagram
-failed to render" note, rather than a blank/broken `WebView`. `THKMDView.reset()` calls
-`THKMermaidView.destroy()` on any active diagram view the same way it cancels image
-loads — a `WebView` is relatively heavy and must never leak across `RecyclerView`
-recycling.
-
-### Theming
-
-`THKMDView.theme` is a settable `THKMDTheme`; assigning a new value re-renders whatever
-content is currently displayed with the new colors/sizes — no fresh `setMarkdown` call
-needed. `THKMDTheme.Default` matches the v0 look.
-
-See the root [theme configuration reference](../README.md#theme-configuration) for
-all properties, units, and examples. The sample page does not expose every new field;
-heading scales and image placeholder color can be configured through the API.
-
-### `reset()` and RecyclerView reuse
-
-`THKMDView.reset()` clears the streaming buffer, cancels any pending debounced render,
-cancels every in-flight image load, and removes all segment child views. It **must** be
-called both from `onViewRecycled` (so a message that's scrolled away stops streaming/
-loading images) and again from `onBindViewHolder` before a cell starts showing a
-different message (so nothing stale from the old message can land on top of the new
-one's content). `sample/src/main/java/com/thk/mdview/sample/ChatAdapter.kt` is the
-reference implementation: it keeps one coroutine `Job` per view holder, cancels it and
-calls `reset()` in both `onBindViewHolder` (before launching the new streaming job) and
-`onViewRecycled`.
-
-## Consuming as a remote dependency (GitHub Packages)
-
-Every push to `main` that touches `android/` runs
-[`.github/workflows/android-publish.yml`](../.github/workflows/android-publish.yml),
-which tests, builds, and publishes `:thkmdview`'s release AAR to this repo's
-[GitHub Packages Maven registry](https://github.com/vizoss/THK-Markdown/packages) as
-`com.thk.mdview:thkmdview:<VERSION_NAME>-build<run_number>` (e.g. `0.1.0-build42`) — the
-build-number suffix is required because GitHub Packages refuses to let you republish an
-already-existing version, so a fixed version number can't be reused across pushes. To
-cut an intentional, human-chosen version instead of a build-numbered one, bump
-`VERSION_NAME` in [`gradle.properties`](gradle.properties) before merging.
-
-To depend on a published version from another project:
-
-```kotlin
-// settings.gradle.kts (or the relevant build.gradle.kts repositories block)
-dependencyResolutionManagement {
-    repositories {
-        maven {
-            url = uri("https://maven.pkg.github.com/vizoss/THK-Markdown")
-            credentials {
-                username = "<your-github-username>"
-                password = "<a GitHub PAT with read:packages scope>" // see note below
-            }
-        }
-    }
-}
-```
-
-```kotlin
-// module build.gradle.kts
-dependencies {
-    implementation("com.thk.mdview:thkmdview:0.1.0-build42")
-}
-```
-
-**Note:** GitHub's Maven package registry requires authentication for *reads* too, even
-on a public repo — an anonymous `implementation(...)` resolve will 401 without the
-credentials block above. Use a [Personal Access Token](https://github.com/settings/tokens)
-with the `read:packages` scope as the password (never commit it — read it from an env
-var or `~/.gradle/gradle.properties` instead of hardcoding it as shown here).
-
-## Requirements
-
-- JDK 17
-- Android SDK with `platform-34` and `build-tools;34.0.0` installed, referenced from
-  `local.properties` (gitignored — create your own pointing `sdk.dir` at your SDK).
-- No global Gradle install needed — use the committed `./gradlew`.
-
-## Known limitations (v1, see RESEARCH.md §8–9 for the full roadmap)
-
-- No syntax highlighting in code blocks (monospace + themed background/corner radius
-  only).
-- Code blocks wrap instead of horizontally scrolling.
-- A ```` ```mermaid ```` block that's still mid-stream (fence opened, content not yet
-  complete/valid) will attempt to render on every debounced pass like any other block,
-  which usually means repeatedly hitting and clearing the "diagram failed to render"
-  fallback until the fence closes with valid syntax — there's no "wait until the fence
-  closes" special case.
-- A table or a Mermaid diagram nested inside a block quote or list item isn't rendered
-  as a real table/diagram (same known gap tables already had — see RESEARCH.md §8).
-- Per-image accessibility is a pragmatic stand-in: a `TextView` can't expose distinct
-  accessibility nodes per inline span without a custom `AccessibilityDelegate`, so a
-  text segment's `contentDescription` becomes the joined alt text of every image it
-  contains, rather than each image getting its own node.
-- No incremental block-level re-parsing — `appendMarkdownChunk` still re-parses the
-  whole accumulated buffer on each debounced render (fine at typical chat-message
-  lengths; see RESEARCH.md §4/§8 if that ever needs to change).
+历史验收文档只描述对应提交的结果，不代表当前版本已完成全部设备验收。
