@@ -40,9 +40,8 @@ jobs:
       - name: Validate source versions
         working-directory: release-source
         env:
-          GITHUB_REF_TYPE: tag
-          GITHUB_REF_NAME: ${{ steps.release.outputs.tag }}
-        run: bash scripts/release-version.sh
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$RELEASE_TAG" bash scripts/release-version.sh
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
