@@ -1,6 +1,7 @@
 #!/bin/bash
 # Build only when explicitly invoked; never launches an app or publishes artifacts.
 set -euo pipefail
+trap 'echo "Binary packaging failed at line $LINENO: $BASH_COMMAND" >&2' ERR
 project_root="$(cd "$(dirname "$0")/../.." && pwd)"
 command -v xcodegen >/dev/null || { echo "Install XcodeGen first."; exit 1; }
 command -v pod >/dev/null || { echo "Install CocoaPods first (for binary integration lint)."; exit 1; }
@@ -41,8 +42,8 @@ for framework in "$device" "$simulator"; do
     echo "Parser leaked into public interface"; exit 1
   fi
 done
-xcrun lipo -verify_arch arm64 "$device/THKMDView"
-xcrun lipo -verify_arch arm64 x86_64 "$simulator/THKMDView"
+xcrun lipo "$device/THKMDView" -verify_arch arm64
+xcrun lipo "$simulator/THKMDView" -verify_arch arm64 x86_64
 release="$build_dir/release"
 mkdir -p "$release/THIRD_PARTY_LICENSES"
 xcodebuild -create-xcframework -framework "$device" -framework "$simulator" -output "$release/THKMDView.xcframework"

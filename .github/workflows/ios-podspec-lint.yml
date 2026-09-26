@@ -13,7 +13,13 @@ jobs:
       - name: Validate release tag and version
         id: version
         run: |
-          VERSION=$(bash scripts/release-version.sh)
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            VERSION=$(bash scripts/release-version.sh)
+          else
+            # Manual branch runs validate a candidate without creating/moving a release tag.
+            VERSION=$(sed -n 's/^VERSION_NAME=//p' android/gradle.properties)
+            VERSION=$(GITHUB_REF_TYPE=tag GITHUB_REF_NAME="$VERSION" bash scripts/release-version.sh)
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Test binary dependency guard
         run: bash ios/scripts/test-parser-dependencies.sh
