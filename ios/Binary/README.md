@@ -15,11 +15,13 @@ Markdown 或 Maaku 模块。框架内包含 Mermaid、MathJax HTML/JS 资源和�
 不包含 Example、Fixtures、mock、主题设置界面、本地偏好保存或 Tests。
 源码使用方走 SPM；不要在同一个 App 中同时安装 THKMDView 的 SPM 和 pod 版本。
 
-## 二进制消费端兼容性待修复
+## 二进制消费端兼容性检查
 
 2026-09-26 使用 Xcode 自带 Swift 6.3.3 验证 1.0.1 XCFramework：下载和校验通过，但独立 SPM 消费端编译模拟器目标时，`.private.swiftinterface` 中 `THKMDView.THKMDTheme` 等模块限定名被解析为同名类的成员，导致导入失败。此前 CocoaPods lint 通过不能代替跨工具链 Swift 消费端验证。
 
-根目录 SPM 因此采用源码接入，不复用此二进制。后续二进制发布需修复模块接口同名冲突，并增加实际 Swift 消费端导入、链接验证；不要覆盖已发布 1.0.1 ZIP。
+当前构建脚本保留源码类型写法，并修正编译器生成的同名模块限定前缀（仅处理已声明的顶层类型，不改类名、ABI、字符串或注释）。打包前强制检查每个架构的 public/private 文本接口，并编译、链接独立 Swift 消费端，避免同版本编译器的 `.swiftmodule` 缓存掩盖错误。
+
+根目录 SPM 仍采用源码接入。此修复需要通过新版本二进制发布生效，不要覆盖已发布 ZIP 或移动已有 1.0.1 / 1.0.2 tag。
 
 ## 本地构建（维护者执行）
 
@@ -33,7 +35,7 @@ bash ios/scripts/build-xcframework.sh
 
 1. 检查二进制项目的解析器 revision 与 `ios/Package.resolved` 一致。
 2. 生成临时 Xcode 工程，分别归档真机 arm64 与模拟器 arm64/x86_64。
-3. 检查框架没有外部 Markdown/cmark 动态依赖、公开接口没有泄露解析器模块、Mermaid / MathJax 资源齐全。
+3. 检查框架没有外部 Markdown/cmark 动态依赖、公开接口没有泄露解析器模块、Mermaid / MathJax 资源齐全；强制验证三种架构的文本接口和 Swift 消费端链接。
 4. 创建 XCFramework，携带 SDK 和第三方许可证。
 5. 在本地产物目录执行 CocoaPods 集成 lint（不启动示例 App）。
 6. 生成 `ios/Binary/build-*/THKMDView-<版本>.zip`、SHA256SUMS 和 podspec。

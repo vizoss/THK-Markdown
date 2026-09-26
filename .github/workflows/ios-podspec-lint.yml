@@ -22,7 +22,9 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Test binary dependency guard
-        run: bash ios/scripts/test-parser-dependencies.sh
+        run: |
+          bash ios/scripts/test-parser-dependencies.sh
+          ruby ios/scripts/test-swift-interfaces.rb
       - name: Toolchain
         run: |
           xcodebuild -version

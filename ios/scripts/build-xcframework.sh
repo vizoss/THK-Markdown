@@ -32,6 +32,9 @@ device="$build_dir/device.xcarchive/Products/Library/Frameworks/THKMDView.framew
 simulator="$build_dir/simulator.xcarchive/Products/Library/Frameworks/THKMDView.framework"
 # Fail on accidental runtime dependencies or parser imports exposed to consumers.
 for framework in "$device" "$simulator"; do
+  # The compiler flag preserves written types, but synthesized conformances and
+  # inferred properties can still carry the ambiguous self-module prefix.
+  ruby "$project_root/ios/scripts/normalize-swift-interfaces.rb" "$framework/Modules/THKMDView.swiftmodule"
   test -f "$framework/mermaid_template.html"
   test -f "$framework/mermaid.min.js"
   test -f "$framework/math_template.html"
@@ -44,6 +47,11 @@ for framework in "$device" "$simulator"; do
 done
 xcrun lipo "$device/THKMDView" -verify_arch arm64
 xcrun lipo "$simulator/THKMDView" -verify_arch arm64 x86_64
+# Exercise both public/private textual interfaces and a real Swift consumer;
+# pod lint alone can miss interfaces hidden by compiler-specific module files.
+bash "$project_root/ios/scripts/check-binary-consumer.sh" "$device" iphoneos arm64-apple-ios13.0
+bash "$project_root/ios/scripts/check-binary-consumer.sh" "$simulator" iphonesimulator \
+  arm64-apple-ios13.0-simulator x86_64-apple-ios13.0-simulator
 release="$build_dir/release"
 mkdir -p "$release/THIRD_PARTY_LICENSES"
 xcodebuild -create-xcframework -framework "$device" -framework "$simulator" -output "$release/THKMDView.xcframework"

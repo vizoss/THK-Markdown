@@ -65,7 +65,7 @@
 
 ## 安装依赖
 
-发布版本：**1.0.2**。Maven 和 CocoaPods 产物需等待发布流水线完成后使用。
+发布版本：**1.0.3**。Maven 和 CocoaPods 产物需等待发布流水线完成后使用。
 
 ### Android
 
@@ -88,7 +88,7 @@ dependencyResolutionManagement {
 
 ```kotlin
 dependencies {
-    implementation("com.thk.mdview:thkmdview:1.0.2")
+    implementation("com.thk.mdview:thkmdview:1.0.3")
 }
 ```
 
@@ -117,7 +117,7 @@ platform :ios, '13.0'
 
 target 'YourApp' do
   pod 'THKMDView',
-      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.2/THKMDView.podspec'
+      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.3/THKMDView.podspec'
 end
 ```
 

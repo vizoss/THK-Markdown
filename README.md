@@ -25,7 +25,7 @@ THKMDView handles rendering—not networking. Your app owns SSE connections, aut
 
 ## Installation
 
-Release version: **1.0.2**. Maven and CocoaPods artifacts are available after the release workflows complete.
+Release version: **1.0.3**. Maven and CocoaPods artifacts are available after the release workflows complete.
 
 ### Android
 
@@ -48,7 +48,7 @@ Add the dependency to your module's `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("com.thk.mdview:thkmdview:1.0.2")
+    implementation("com.thk.mdview:thkmdview:1.0.3")
 }
 ```
 
@@ -77,7 +77,7 @@ platform :ios, '13.0'
 
 target 'YourApp' do
   pod 'THKMDView',
-      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.2/THKMDView.podspec'
+      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/1.0.3/THKMDView.podspec'
 end
 ```
 
