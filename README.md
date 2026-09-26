@@ -1,115 +1,82 @@
 # THKMDView
 
-面向 AI 聊天、流式回复和文章阅读的 Android / iOS Markdown 视图组件。
+[English](README.md) · [简体中文](README.zh-CN.md)
 
-正文使用原生文本视图排版；表格独立横向滚动。Mermaid 与数学公式使用随库打包的离线 WebView / WebKit 资源，不把整篇文章放进网页。支持整篇设置、增量追加、主题切换、图片加载器注入，以及可选的 SSE 状态 UI。
+A native Markdown view for Android and iOS, designed for AI responses, streaming chat, and article reading.
 
-> **接入边界**：THKMDView 是渲染组件，不是聊天 SDK 或 SSE 网络客户端。连接、事件解析、消息存储、重试策略、鉴权和业务路由由宿主应用管理。
+Text uses native layout. Tables scroll horizontally. Mermaid diagrams and math use bundled, offline WebView/WebKit resources rather than rendering the entire document as a web page.
 
-## 目录
+THKMDView handles rendering—not networking. Your app owns SSE connections, authentication, message storage, navigation, and retry policy.
 
-- [能力与限制](#能力与限制)
-- [环境要求](#环境要求)
-- [安装依赖](#安装依赖)
-- [基础使用与布局](#基础使用与布局)
-- [SSE 与状态展示](#sse-与状态展示)
-- [主题配置](#主题配置)
-- [链接图片点击与复制](#链接图片点击与复制)
-- [图片加载与缓存](#图片加载与缓存)
-- [公式缓存](#公式缓存)
-- [列表复用与生命周期](#列表复用与生命周期)
-- [自定义解析器与异常处理](#自定义解析器与异常处理)
-- [业务接入检查清单](#业务接入检查清单)
-- [示例工程与开发](#示例工程与开发)
-- [贡献与许可证](#贡献与许可证)
+## Contents
 
-## 能力与限制
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Streaming and SSE](#streaming-and-sse)
+- [Themes](#themes)
+- [Links, images, and copy actions](#links-images-and-copy-actions)
+- [Image loading and caching](#image-loading-and-caching)
+- [Math cache](#math-cache)
+- [Reuse and lifecycle](#reuse-and-lifecycle)
+- [Error handling](#error-handling)
+- [Supported Markdown and limitations](#supported-markdown-and-limitations)
+- [Integration checklist](#integration-checklist)
+- [Examples and support](#examples-and-support)
 
-| 能力 | 当前行为 |
-| --- | --- |
-| 基础 Markdown | 标题、粗体、斜体、删除线、链接、引用、分隔线、有序/无序列表、代码 |
-| GFM 表格 | 顶层表格、列对齐、单元格行内格式，宽表格独立横向滚动 |
-| 任务列表 | 显示勾选状态；不是可编辑表单，不提供勾选写回 |
-| 图片 | 行内异步加载、占位、点击回调；加载完成可能改变布局高度 |
-| 复制 | 代码块和最外层引用的复制按钮、可配置成功提示；不是整条消息操作栏 |
-| Mermaid | 顶层 `mermaid` 代码围栏渲染为图表；嵌套围栏按代码显示 |
-| 提示块 | NOTE、TIP、IMPORTANT、WARNING、CAUTION |
-| 脚注 | 基础编号与文末定义；不提供跳转/回跳、递归脚注或跨消息引用 |
-| 数学公式 | 行内/块级 TeX，MathJax base/AMS 子集；不是完整 LaTeX 文档引擎 |
-| 流式渲染 | 分片合并刷新、通用块级增量解析，必要时全文回退 |
-| SSE 状态 | 等待、输出、完成、停止、失败；默认三个点，可替换为外部视图 |
-| 代码高亮 | **暂不支持**；当前为等宽字体和主题背景 |
-| 原始 HTML | 按文本安全降级，不当作可执行网页 |
-| 嵌套表格 | 引用/列表中的表格按文本降级，不保证与顶层表格相同的交互 |
+## Installation
 
-两端分别使用 **commonmark-java** 和 **swift-markdown**。iOS 的 SPM 与 CocoaPods 共用 swift-markdown，不再使用 Maaku。
+### Android
 
-平台字体、字形和换行系统不同，不承诺逐像素完全一致，也不默认做左右两端对齐。扩展语法、公式限制与示例见 [P3 文档](docs/P3.zh-CN.md)。
-
-增量解析复用稳定的顶层块，重新解析可能变化的尾部；链接定义、脚注、历史内容修改等场景会回退全文解析。全文预处理与富文本生成仍有成本，单个长容器也可能整体重解析，不能将“增量”理解为任意长度文本都只处理新增字符。详见 [性能说明](docs/performance-review.md)。
-
-## 环境要求
-
-| 项目 | 要求 |
-| --- | --- |
-| Android 运行环境 | API 21+ |
-| Android 仓库构建 | JDK 17；仓库使用 AGP 8.5.2、Kotlin 1.9.24、compileSdk 34，使用随仓库提供的 Gradle Wrapper |
-| iOS 库运行环境 | iOS 13+，UIKit |
-| iOS 源码/二进制构建 | Xcode 26+ / Swift 6.2+；当前固定的 swift-markdown 依赖要求该工具链 |
-| iOS 示例 | iOS 15+；重新生成工程需要 XcodeGen |
-| 网络 | 纯文本、Mermaid 和公式无需运行时联网；远程图片、真实 SSE 和周刊正文需要网络 |
-
-这里是当前仓库的要求，不代表任意旧工具链都能消费新构建的 XCFramework。
-
-## 安装依赖
-
-### Android：Maven / AAR
-
-当前版本：**1.0.0**。Android 使用公开的静态 Maven 仓库，业务下载无需 GitHub 账号或 Token。
+Requires Android API 21+. In your app's settings.gradle.kts:
 
 ```kotlin
-implementation("com.thk.mdview:thkmdview:1.0.0")
-```
-
-在 `settings.gradle.kts` 的 `dependencyResolutionManagement.repositories` 中添加：
-
-```kotlin
-// 宿主 settings.gradle.kts 的 dependencyResolutionManagement.repositories
-maven {
-    url = uri("https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/")
-    content { includeGroup("com.thk.mdview") }
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            url = uri("https://raw.githubusercontent.com/vizoss/THK-Markdown/maven-repo/")
+            content { includeGroup("com.thk.mdview") }
+        }
+    }
 }
 ```
 
-保留 `google()` 和 `mavenCentral()`，用于解析 AndroidX、协程、commonmark 等传递依赖。此地址指向公开的 `maven-repo` 分支，不是 GitHub Packages；无需 `credentials`、`gpr.user` 或 `gpr.token`。请移除旧的 `maven.pkg.github.com/vizoss/THK-Markdown` 仓库配置，避免继续请求需要认证的旧源。
+Add the dependency to your app module:
 
-新版本从 `1.0.0` 起按版本 tag 发布，不再使用 build 后缀。推送版本 tag 后会自动运行测试并发布同名 Maven 版本。
-
-推荐通过带 POM 的 Maven 包集成。单独复制 AAR 不会自动带入 Maven 传递依赖，需要自行补齐：AndroidX Core/AppCompat、协程 Android、commonmark-java 及 GFM 表格、删除线、任务列表扩展。精确版本以 [库构建配置](android/thkmdview/build.gradle.kts) 为准；不要遗漏 AAR 内的 HTML/JS assets。
-
-### iOS：CocoaPods 二进制
-
-CocoaPods 路线使用 **预编译 XCFramework**，不是通过 pod 编译 Git 仓库里的 Swift 源码。
-
-当前 podspec 声明版本为 **1.0.0**。版本 tag 会自动构建、校验并上传 `THKMDView-1.0.0-binary` Actions 附件；附件不等于已发布的 GitHub Release 或 CocoaPods trunk 版本。
-
-`1.0.0` 的 [iOS 构建](https://github.com/vizoss/THK-Markdown/actions/runs/36221207405) 在归档后的架构检查失败，未生成可安装附件；请勿将此版本视为已发布的 iOS 二进制。
-
-维护者发布匹配版本的 ZIP 和 podspec 后，可使用远端 podspec：
-
-```ruby
-# <版本> 为实际存在、已验证的发布版本，不能原样复制。
-pod 'THKMDView',
-    :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/<版本>/THKMDView.podspec'
+```kotlin
+dependencies {
+    implementation("com.thk.mdview:thkmdview:1.0.1")
+}
 ```
 
-根目录 podspec 中的版本号不是“已上传 Release / 已发布到 CocoaPods trunk”的证明。现有二进制工作流生成候选附件，不自动发布 Release 或 trunk。
+The public Maven repository requires **no username or token**. Remove the old GitHub Packages repository and its credentials. Keep google() and mavenCentral() for transitive dependencies.
 
-- 同一个业务 target 不要同时安装 THKMDView 的 SPM 和 pod 版本。
-- 二进制内包含解析器与渲染资源，不包含 Example、Fixtures、30 组模拟回复、周刊目录或主题设置页面。
-- 二进制构建、资源检查、许可证和发布步骤见 [iOS Binary](ios/Binary/README.md)。
+Use Maven rather than copying an AAR alone: the POM supplies AndroidX, Kotlin coroutines, commonmark-java, and its GFM extensions. Remote images require the INTERNET permission and an appropriate HTTPS policy.
 
-## 基础使用与布局
+### iOS
+
+Requires iOS 13+ and UIKit. CocoaPods uses a precompiled XCFramework containing the swift-markdown parser and bundled rendering resources. Example screens and fixture data are not included.
+
+**Current binary: 1.0.1.** Device/simulator archives and CocoaPods integration lint have passed. Download `THKMDView-1.0.1-binary` from the [verified build's Artifacts section](https://github.com/vizoss/THK-Markdown/actions/runs/36222144486) (GitHub sign-in required for Actions downloads). This is a build artifact, not a published Release ZIP or CocoaPods trunk release. Remote pod installation is not available until the matching Release ZIP is published.
+
+For a version with a published release asset, add this to your Podfile:
+
+```ruby
+platform :ios, '13.0'
+
+target 'YourApp' do
+  # Replace <version> with a version that has a published binary ZIP.
+  pod 'THKMDView',
+      :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/<version>/THKMDView.podspec'
+end
+```
+
+Run pod install and open your app's .xcworkspace. Do not add both SPM and CocoaPods distributions to the same target.
+
+The repository root is not a remote Swift package entry point. Source development and toolchain requirements are documented in the [iOS developer guide](ios/README.md); binary packaging details are in the [binary guide](ios/Binary/README.md).
+
+## Quick start
 
 ### Android
 
@@ -121,12 +88,12 @@ val markdownView = THKMDView(context).apply {
         android.view.ViewGroup.LayoutParams.MATCH_PARENT,
         android.view.ViewGroup.LayoutParams.WRAP_CONTENT
     )
-    setMarkdown("# 你好\n\n这是一段 **Markdown**。")
+    setMarkdown("# Hello\n\nThis is **Markdown**.")
 }
-container.addView(markdownView) // container 为宿主的 LinearLayout
+container.addView(markdownView) // Your LinearLayout
 ```
 
-也可以使用 XML：
+Or declare the view in XML:
 
 ```xml
 <com.thk.mdview.THKMDView
@@ -135,7 +102,7 @@ container.addView(markdownView) // container 为宿主的 LinearLayout
     android:layout_height="wrap_content" />
 ```
 
-THKMDView 是 **LinearLayout，不是 TextView**。不要用 `android:textSize`、`android:textColor`、`android:maxWidth` 等 TextView 专属属性配置它。样式使用 `theme`；宽度上限使用 `maxContentWidthPx`（px，非正数表示不限制）。
+THKMDView is a LinearLayout, **not a TextView**. Configure fonts and colors through theme, not TextView XML attributes. Use maxContentWidthPx for a width cap; its unit is pixels, and a nonpositive value disables the cap.
 
 ### iOS
 
@@ -152,38 +119,34 @@ NSLayoutConstraint.activate([
     markdownView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16),
     markdownView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16)
 ])
-markdownView.setMarkdown("# 你好\n\n这是一段 **Markdown**。")
+markdownView.setMarkdown("# Hello\n\nThis is **Markdown**.")
 ```
 
-以上仅演示短内容的尺寸约束。长文章请把它放进 UIScrollView，并约束到 contentLayoutGuide，同时将内容宽度固定到 frameLayoutGuide；不要将长文章固定在一个不足以容纳正文的高度里。
+This is a short-content example. For long content, use a UIScrollView and constrain the Markdown view to its contentLayoutGuide with a width matching its frameLayoutGuide.
 
-### 通用约定
+### Layout and updates
 
-| API | 作用 |
+| API | Purpose |
 | --- | --- |
-| `setMarkdown` | 完整替换正文，立即渲染 |
-| `appendMarkdownChunk` | 追加增量文本，防抖后刷新；传的是新增内容，不是每次累计全文 |
-| `reset` | 清空正文、待渲染任务、附件任务和旧分段，SSE 状态回到 idle |
-| `theme` | 重新渲染现有内容；赋相同主题不重复渲染 |
-| `imageLoader` | 注入业务图片加载/缓存服务，建议在设置正文之前完成 |
+| setMarkdown | Replace the complete content and render immediately |
+| appendMarkdownChunk | Append only newly received text; updates are debounced |
+| reset | Clear content, pending work, attachments, and SSE state |
+| theme | Apply styling and rerender existing content |
+| imageLoader | Inject an image service before setting content |
 
-视图不提供整篇正文的独立垂直滚动，交给 UIScrollView、UITableView、RecyclerView 等宿主。不要手动添加业务子视图到组件内部，其子视图由渲染器管理。
+Call all view APIs on the **main thread**. The component does not provide document-level vertical scrolling; use your app's scroll view or message list.
 
-**所有视图 API 在主线程调用。** 网络线程收到消息后先切回主线程；不要每到一个 token 就 reset 或 setMarkdown。
+Images, diagrams, math, and theme changes can change content height. On iOS, use onContentSizeChange to coalesce list row-height updates. Avoid recursively setting Markdown inside this callback. Your app controls scroll-following and preserves the reader's position.
 
-图片、图表、公式异步完成，以及主题变化，都可能改变高度。iOS 自适应列表可通过 `onContentSizeChange` 合并刷新行高，避免在回调中递归 setMarkdown；Android 正常使用 wrap_content 和布局更新。滚动跟随、保持阅读位置由业务负责。
+## Streaming and SSE
 
-## SSE 与状态展示
-
-### 最小接入
+Enable the optional status UI and send decoded text deltas—not raw SSE data lines, JSON, or the accumulated response:
 
 ```swift
 markdownView.sseEnabled = true
 markdownView.setSSEState(.waiting)
-// 业务从 SSE 事件中提取出的正文增量：
-markdownView.appendMarkdownChunk("首先，我们可以")
-markdownView.appendMarkdownChunk("把问题拆成三步。")
-// 收到业务协议的完成事件：
+markdownView.appendMarkdownChunk("Let's break this down")
+markdownView.appendMarkdownChunk(" into three steps.")
 markdownView.setSSEState(.completed)
 ```
 
@@ -192,54 +155,51 @@ import com.thk.mdview.THKSSEState
 
 markdownView.sseEnabled = true
 markdownView.setSSEState(THKSSEState.WAITING)
-markdownView.appendMarkdownChunk("首先，我们可以")
-markdownView.appendMarkdownChunk("把问题拆成三步。")
+markdownView.appendMarkdownChunk("Let's break this down")
+markdownView.appendMarkdownChunk(" into three steps.")
 markdownView.setSSEState(THKSSEState.COMPLETED)
 ```
 
-| 状态（iOS / Android） | 默认 UI |
+| iOS / Android state | Default presentation |
 | --- | --- |
-| idle / IDLE | 不展示状态 |
-| waiting / WAITING | 三个点；正文为空时单独显示，有正文时在正文下方显示 |
-| streaming / STREAMING | 正文下方左对齐三个点，持续闪烁 |
-| completed / COMPLETED | 刷新尾部缓冲、隐藏圆点、保留正文 |
-| stopped / STOPPED | 刷新尾部缓冲、隐藏圆点、保留正文 |
-| failed / FAILED | 刷新尾部缓冲、保留正文，显示错误文字及可选重试按钮 |
+| idle / IDLE | Hidden |
+| waiting / WAITING | Three pulsing dots |
+| streaming / STREAMING | Three pulsing dots below the content |
+| completed / COMPLETED | Flush pending text; hide dots; keep content |
+| stopped / STOPPED | Flush pending text; hide dots; keep content |
+| failed / FAILED | Flush pending text; keep content; show an error and optional retry button |
 
-等待状态收到非空分片会自动变为输出中；完成、停止、失败由业务通知，不能从“暂时没有分片”猜测结束。`setSSEState` 不会替业务取消网络请求。
-
-`onRetry` 只通知业务，不自动重连或清空文本：
+A nonempty delta transitions waiting to streaming. Your app must explicitly report completion, cancellation, or failure. A state change does not cancel your network connection.
 
 ```swift
 markdownView.onRetry = { [weak self] in self?.retryCurrentMessage() }
-markdownView.setSSEState(.failed, errorMessage: "连接中断，已保留收到的内容")
+markdownView.setSSEState(.failed, errorMessage: "Connection interrupted. Your partial response is preserved.")
 ```
 
 ```kotlin
 markdownView.onRetry = { retryCurrentMessage() }
-markdownView.setSSEState(THKSSEState.FAILED, "连接中断，已保留收到的内容")
+markdownView.setSSEState(THKSSEState.FAILED, "Connection interrupted. Your partial response is preserved.")
 ```
 
-这里的 `retryCurrentMessage` 是宿主方法。业务决定续传还是重新生成，并用消息 ID / 尝试 ID 拦截晚到的旧回调。
+retryCurrentMessage is an app-defined method. Decide whether retry resumes or starts over; use message/request IDs to discard callbacks from previous attempts.
 
-### 自定义三个点或替换 UI
+### Customize the indicator
 
-- `sseEnabled` 默认 false，不影响普通 Markdown。
-- `sseStatusUIEnabled = false` 关闭整个内建状态层，包括失败提示。
-- `sseIndicatorView` 接收业务 UIView / View，替换等待和输出中的圆点；nil / null 恢复默认。
-- `onSSEIndicatorActivityChanged` 通知自定义动画启停；`onSSEStateChanged` 通知消息状态变化。
-- 自定义视图不能同时属于另一个父容器；iOS 需提供固有高度或高度约束，Android 使用自身测量高度。
-- 先设置动画回调，再开启状态。移出窗口、替换、reset 会停止动画；仍挂在窗口内但被宿主裁剪的离屏视图，由宿主控制显示。
-- `sseIndicatorStyle` 可设颜色、直径、间距和周期；默认 6pt/dp、间距 5、周期 0.9 秒，颜色跟随正文主题。
+- sseEnabled defaults to false.
+- sseStatusUIEnabled = false hides the entire built-in status area, including errors.
+- sseIndicatorView accepts your UIView/View; nil/null restores the three dots.
+- onSSEIndicatorActivityChanged reports animation start/stop; onSSEStateChanged reports state changes.
+- Install callbacks before enabling a busy state. Custom views need a measurable height and must not already belong to another parent.
+- Stop custom work when inactive. For views still attached but clipped offscreen, let your host control visibility.
 
 ```swift
 markdownView.sseIndicatorStyle = THKSSEIndicatorStyle(
     color: .systemBlue, diameter: 6, gap: 5, cycleDuration: 0.9
 )
-markdownView.sseIndicatorView = customIndicator
 markdownView.onSSEIndicatorActivityChanged = { [weak customIndicator] _, active in
-    customIndicator?.setAnimating(active) // 业务自定义方法
+    customIndicator?.setAnimating(active) // Your custom view's method
 }
+markdownView.sseIndicatorView = customIndicator
 ```
 
 ```kotlin
@@ -248,19 +208,19 @@ import com.thk.mdview.THKSSEIndicatorStyle
 markdownView.sseIndicatorStyle = THKSSEIndicatorStyle(
     color = android.graphics.Color.BLUE, diameterDp = 6f, gapDp = 5f, cycleMs = 900
 )
-markdownView.sseIndicatorView = customIndicator
 markdownView.onSSEIndicatorActivityChanged = { _, active ->
-    customIndicator.setAnimating(active) // 业务自定义方法
+    customIndicator.setAnimating(active) // Your custom view's method
 }
+markdownView.sseIndicatorView = customIndicator
 ```
 
-默认刷新防抖为 **32ms**：iOS `streamingDebounceInterval` 单位秒（0.032），Android `streamingDebounceMs` 单位毫秒（32）。连续到来的分片会合并刷新，业务必须发送终态以立即提交最后一段。**流式追加不等于匀速逐字打字机**；要逐字展示一个大分片，应由业务另行调度。
+Default debounce: 32 ms (streamingDebounceInterval = 0.032 on iOS; streamingDebounceMs = 32 on Android). Continuous input can postpone a debounced refresh; always send a terminal state to flush the final text. Appending deltas is not a fixed-speed typewriter—schedule characters in your app if needed.
 
-完整契约与错误边界见 [SSE 接入说明](docs/sse.md)。
+See the [SSE contract](docs/sse.md) for detailed behavior.
 
-## 主题配置
+## Themes
 
-从默认主题复制后修改，不必从零填写全部字段：
+Copy the default theme and change only what your app needs:
 
 ```swift
 var theme = THKMDTheme.default
@@ -282,53 +242,46 @@ markdownView.theme = THKMDTheme.Default.copy(
 )
 ```
 
-### 字段速查
+Names are shared unless listed as Android / iOS. Colors are ARGB Int / UIColor.
 
-字段双端同名，除非表中分别列出。Android 颜色是 ARGB Int，iOS 为 UIColor。
-
-| 字段 | 用途 / 默认值 |
+| Property | Purpose / default |
 | --- | --- |
-| `bodyTextColor` | 正文、列表、表格正文 |
-| `headingTextColor` | 标题、表头 |
-| `linkColor` | 链接、脚注序号、默认 SSE 重试按钮 |
-| `backgroundColor` | 整个组件背景，默认透明 |
-| `bodyFontSizeSp` / `bodyFontSize` | Android sp / iOS pt，默认 15 |
-| `codeFontSizeSp` / `codeFontSize` | Android sp / iOS pt，默认 13 |
-| `heading1Scale`～`heading6Scale` | 正文字号倍率：1.6、1.4、1.25、1.15、1.05、1.0 |
-| `codeTextColor` / `codeBackgroundColor` | 行内代码、代码块文字与背景；复制图标复用代码文字色 |
-| `codeBlockCornerRadiusDp` / `codeBlockCornerRadius` | 代码和引用背景圆角，dp / pt，默认 8 |
-| `blockQuoteBarColor` | 引用竖线与分隔线 |
-| `blockQuoteTextColor` | 引用正文，保留独立的链接和代码颜色 |
-| `blockQuoteBackgroundColor` | 最外层引用背景 |
-| `tableBorderColor` / `tableHeaderBackgroundColor` | 表格边框与表头背景 |
-| `imagePlaceholderColor` | 图片加载中和失败的占位背景 |
-| `alertNoteColor` / `alertTipColor` / `alertImportantColor` / `alertWarningColor` / `alertCautionColor` | 提示块标题和竖线；正文与背景使用引用主题 |
-| `footnoteScale` | 脚注序号倍率，默认 0.75 |
-| `mathScale` | 公式字号倍率，默认 1；文字色使用 bodyTextColor |
-| `listBulletScale` | **仅 Android**，圆点直径与正文字号之比，默认 0.20；iOS 使用字体圆点字形 |
-| `copyFeedbackTextColor` / `copyFeedbackBackgroundColor` | 复制成功提示的文字/背景，默认白字、黑色 75% 不透明度 |
-| `copyFeedbackFontSizeSp` / `copyFeedbackFontSize` | 复制成功提示字号，sp / pt，默认 12 |
+| bodyTextColor | Body text, lists, table body |
+| headingTextColor | Headings and table headers |
+| linkColor | Links, footnote numbers, default retry button |
+| backgroundColor | Component background; transparent |
+| bodyFontSizeSp / bodyFontSize | Body font; 15 sp / pt |
+| codeFontSizeSp / codeFontSize | Code font; 13 sp / pt |
+| heading1Scale … heading6Scale | Body-size multipliers: 1.6, 1.4, 1.25, 1.15, 1.05, 1.0 |
+| codeTextColor / codeBackgroundColor | Inline/block code; copy icons use code text color |
+| codeBlockCornerRadiusDp / codeBlockCornerRadius | Code and quote background radius; 8 dp / pt |
+| blockQuoteBarColor | Quote bars and thematic breaks |
+| blockQuoteTextColor | Quote text, preserving link/code colors |
+| blockQuoteBackgroundColor | Outermost quote background |
+| tableBorderColor / tableHeaderBackgroundColor | Table borders and header fill |
+| imagePlaceholderColor | Loading/failed image placeholder |
+| alertNoteColor / alertTipColor / alertImportantColor / alertWarningColor / alertCautionColor | Alert heading and bar; body/background use quote colors |
+| footnoteScale / mathScale | Footnote marker / math size multipliers; 0.75 / 1 |
+| listBulletScale | Android only: bullet diameter/body font ratio; 0.20 |
+| copyFeedbackTextColor / copyFeedbackBackgroundColor | Copy confirmation; white on 75%-opaque black |
+| copyFeedbackFontSizeSp / copyFeedbackFontSize | Copy confirmation font; 12 sp / pt |
 
-Mermaid 复用正文、代码、表格、引用的主题颜色。SSE 圆点的独立配置使用 `sseIndicatorStyle`，不在 THKMDTheme 中。
+Mermaid reuses the text, code, table, and quote colors. SSE indicator styling is configured separately through sseIndicatorStyle.
 
-默认主题不是自动深色模式。宿主应在外观变化时赋予匹配的主题；iOS 的主题字号是显式 pt 值，需要宿主根据 Dynamic Type 策略调整，不能假定所有正文会自动缩放。SDK 不持久化主题，示例的 UserDefaults / SharedPreferences 保存逻辑只是业务参考。
+The default theme does not automatically switch to dark mode. Assign an appropriate theme when your app's appearance changes. Android sp follows system font scaling; iOS point sizes require your app's Dynamic Type policy. Theme persistence belongs to your app; the example demonstrates local storage.
 
-主题只控制 Markdown 与其状态展示，不控制导航栏、输入框、消息气泡或系统剪贴板提示。完整定义：[Android](android/thkmdview/src/main/java/com/thk/mdview/THKMDTheme.kt) / [iOS](ios/Sources/THKMDView/THKMDTheme.swift)。
+## Links, images, and copy actions
 
-## 链接图片点击与复制
+**Callback return values differ between platforms.**
 
-### 点击回调：返回值不要写反
-
-| 平台 | 业务已处理点击时 | 不处理时 |
-| --- | --- | --- |
-| iOS `onLinkTap` / `onImageTap` | 返回 **false**，拦截默认交互 | true / 未设置允许系统默认交互，行为依内容位置而异 |
-| Android `onLinkClick` / `onImageClick` | 返回 **true** 表示业务处理 | 当前组件不负责默认打开浏览器；不要指望 false 自动跳转 |
-
-建议两个平台都显式设置链接和图片回调，由业务统一路由：
+| Platform | When your app handles the tap |
+| --- | --- |
+| iOS onLinkTap / onImageTap | Return false to suppress default interaction |
+| Android onLinkClick / onImageClick | Return true; false does not automatically open a browser |
 
 ```swift
 markdownView.onLinkTap = { [weak self] url in
-    self?.routeAllowedURL(url) // 校验 scheme / 域名后再处理
+    self?.routeAllowedURL(url)
     return false
 }
 markdownView.onImageTap = { [weak self] url in
@@ -338,39 +291,30 @@ markdownView.onImageTap = { [weak self] url in
 ```
 
 ```kotlin
-markdownView.onLinkClick = { url ->
-    routeAllowedURL(url)
-    true
-}
-markdownView.onImageClick = { url ->
-    presentImage(url)
-    true
-}
+markdownView.onLinkClick = { url -> routeAllowedURL(url); true }
+markdownView.onImageClick = { url -> presentImage(url); true }
 ```
 
-`routeAllowedURL` / `presentImage` 是业务函数，不是库 API。Android 图片未设回调时回退到链接回调；iOS 正文图片与表格图片的默认回退不完全一致，因此**不要依赖默认行为实现跨端路由**。库不提供统一的文章 baseURL 参数，相对链接/图片需要业务在输入或加载器中解析。
+These routing functions belong to your app. Validate schemes and destinations before opening URLs. Set both callbacks explicitly: Android images fall back to the link handler; iOS text and table images have different default behavior. There is no shared baseURL property; resolve relative links/images before rendering or in your loader.
 
-复制按钮会复制对应块的可见文本；其中的公式按 TeX 源码还原。成功提示显示在按钮附近，可通过主题设置颜色与字号；Android 系统可能另外显示系统剪贴板提示。库没有公开“复制成功事件”回调，也不自动提供整篇复制按钮。
+Code blocks and outermost quotes have copy buttons. Copy feedback appears near the button and uses the theme properties above. Formulas are copied as TeX. There is no public copy-success callback or built-in whole-message action bar. Android may also show its system clipboard notification.
 
-## 图片加载与缓存
+## Image loading and caching
 
-### 默认实现
+### Default loaders
 
-| 项目 | Android | iOS |
+| Behavior | Android | iOS |
 | --- | --- | --- |
-| 默认加载器 | `DefaultTHKImageLoader` | `DefaultTHKImageLoader` |
-| 网络 | HttpURLConnection | URLSession |
-| 内存缓存 | 按 Bitmap 字节数计费的 LruCache；默认约 JVM 最大堆的 1/8 | NSCache；未设置公开的固定容量上限 |
-| 磁盘缓存 | `cacheDir/thkmdview_image_cache` | caches 目录下 `THKMDView/ImageCache` |
-| 缓存键 | URL 字符串 SHA-256 | URL 字符串 SHA-256 |
-| 默认构造配置 | memoryCacheBytes、diskCacheDir、fetcher | URLSession |
-| 图片缓存公共管理 API | 没有统一的 THKMDView 图片容量/清理 API | 同左 |
+| Implementation | DefaultTHKImageLoader | DefaultTHKImageLoader |
+| Network | HttpURLConnection | URLSession |
+| Memory | LruCache, default approximately 1/8 of JVM max heap | NSCache, no public fixed capacity setting |
+| Disk | cacheDir/thkmdview_image_cache | Caches/THKMDView/ImageCache |
+| Cache key | SHA-256 of URL string | SHA-256 of URL string |
+| Constructor options | memoryCacheBytes, diskCacheDir, fetcher | URLSession |
 
-默认磁盘缓存**没有库级 TTL 或容量淘汰策略**，也没有账号隔离协议。URL 相同而内容变化时可能返回旧图；带鉴权的私有图片不应未经设计就写入共享持久缓存。
+The default disk caches have **no library-managed capacity eviction or TTL**. They do not isolate accounts. Identical URLs may return stale images. For production, inject your existing image service to manage memory, disk limits, authentication, account isolation, and clearing.
 
-**生产业务推荐注入已有图片服务**，统一管理容量、缓存键、认证、账号隔离、清理和请求取消。可以共享一个加载器实例，避免每个消息视图各持有一套独立内存缓存。
-
-### Android：配置默认加载器
+### Configure the Android default loader
 
 ```kotlin
 import com.thk.mdview.DefaultTHKImageLoader
@@ -383,11 +327,9 @@ val sharedLoader = DefaultTHKImageLoader(
 markdownView.imageLoader = sharedLoader
 ```
 
-`memoryCacheBytes` 必须为正数；不要用 0 表示禁用图片缓存。如果要完全无缓存，提供自己的加载器。
+memoryCacheBytes must be positive. To disable image caching entirely, supply your own loader. Sharing one loader avoids one memory cache per message view.
 
-### 双端：注入业务图片服务
-
-以下为可复用的适配器定义，`fetch` 闭包由业务连接自己的图片框架：
+### Connect your image service
 
 ```kotlin
 import android.graphics.Bitmap
@@ -419,22 +361,19 @@ struct AppImageLoader: THKImageLoading {
 }
 ```
 
-将适配器实例赋给 `markdownView.imageLoader`，再设置正文。无需为此修改库或新增图片缓存容量 API。
+Connect fetch to your image framework and assign the adapter to imageLoader before setting content.
 
-业务加载器需要注意：
+- Return nil/null on failure; honor cancellation and cancel underlying work.
+- Keep network, disk, and heavy decoding off the UI thread; bound concurrency, response sizes, and decoded dimensions.
+- Include account/authorization context in cache keys where required. Clear private caches on sign-out.
+- Changing iOS URLSession.URLCache does not disable the loader's separate disk cache.
+- Swapping loaders does not clear existing caches. Reset/rebind content when you need a fresh request.
+- Completed images can change layout height. Math output does not use your imageLoader.
+- Animated images, SVG, and other specialized formats need app-level adaptation and testing.
 
-- 失败返回 nil / null；响应任务取消，并取消底层网络或解码工作，避免只丢弃结果却继续下载。
-- 异步接口不等于无限并发许可：耗时磁盘、网络、解码不要阻塞 UI，限制并发与响应大小。
-- 凭据、请求头、签名 URL 更新由加载器负责；缓存键不能忽略账号与授权上下文。
-- 使用 HTTPS、验证 MIME / 尺寸，对不可信 URL 做协议和域名限制。默认加载器不是完整的安全下载沙箱。
-- 图片真实尺寸到达后可能重新排版，不要在聊天宿主中假定气泡高度固定。
-- 修改 iOS URLSession 的 URLCache 不会关闭默认加载器自身的磁盘图片缓存；需要完全控制缓存时替换加载器。
-- 切换加载器不会自动清空原加载器缓存；建议绑定正文前注入。若需让当前内容重新请求，可用 setMarkdown 重新设置业务保存的正文。
-- 内部公式图片不走业务图片加载器。GIF/动画、SVG、复杂格式的支持不要按专用图片浏览器推断，应由业务适配并验证。
+## Math cache
 
-## 公式缓存
-
-公式缓存与图片缓存是两回事，属于**进程级共享**缓存。默认预算 8 MiB，主线程配置：
+Math results use a separate process-wide cache, default 8 MiB. Configure it on the main thread:
 
 ```swift
 THKMDView.configureMathCache(maxBytes: 16 * 1024 * 1024)
@@ -446,30 +385,23 @@ THKMDView.configureMathCache(maxBytes = 16 * 1024 * 1024)
 THKMDView.clearMathCache()
 ```
 
-设为 0 禁用公式结果缓存；负数非法。改变预算会清空已有缓存，清理缓存不会销毁引擎或停止在途任务。iOS NSCache 容量是建议性限制，**不是整个渲染器的内存硬上限**。相同公式请求可合并，取消一个订阅不取消其他订阅。
+Zero disables result caching; negative budgets are invalid. Changing the budget clears cached results. Clearing does not stop in-flight rendering or destroy the engine. NSCache limits on iOS are advisory, not a total-memory guarantee. Identical formula requests may be coalesced.
 
-## 列表复用与生命周期
+## Reuse and lifecycle
 
-消息正文、状态和尝试 ID 必须保存在业务模型中，而不是只存进一个 cell。滚动复用时从模型恢复。
-
-**Android：**
+Keep message content and status in your data model, not only in a reusable view.
 
 ```kotlin
-// 绑定另一条消息前
+// Before binding another message:
 holder.markdown.reset()
-holder.markdown.theme = appTheme
-holder.markdown.sseEnabled = true
 holder.markdown.setMarkdown(message.content)
+holder.markdown.sseEnabled = true
 holder.markdown.setSSEState(message.state)
 
-// onViewRecycled 中
+// In onViewRecycled:
 holder.markdown.reset()
 holder.markdown.onRetry = null
 ```
-
-其中 holder、appTheme、message 为宿主对象，message.state 类型为 THKSSEState。reset 会清理 Mermaid WebView、待渲染任务和附件；临时 detach 不清空正文，必要时重新挂载后恢复。
-
-**iOS：**
 
 ```swift
 override func prepareForReuse() {
@@ -479,98 +411,52 @@ override func prepareForReuse() {
 }
 ```
 
-控制器被回调捕获时使用 `[weak self]`，并在页面退出时取消业务 SSE 任务。reset **不会**关闭宿主网络连接，也不会清空业务历史或共享缓存；主题、加载器、自定义状态视图与回调配置仍由业务负责重新绑定。
+The holder/message objects above are your own. Rebind callbacks, theme, and state for each message. Cancel app-owned SSE tasks on reuse or page exit, and use weak captures in controller callbacks.
 
-异步高度变化可参考 [iOS 列表宿主](ios/Example/Sources/DemoMessageListViewController.swift)；Android 参考 [ChatAdapter](android/sample/src/main/java/com/thk/mdview/sample/ChatAdapter.kt)。宿主自行控制是否跟随最新消息，避免用户阅读历史时被强制拉回底部。
+reset cancels internal pending work and tears down old segments. It does not cancel your network connection, erase message history, or clear shared caches. Configuration—including callbacks, theme, loader, and custom indicator—is retained.
 
-## 自定义解析器与异常处理
+## Error handling
 
-- Android：实现 `MarkdownRenderer`，通过 `setMarkdownRenderer` 注入。
-- iOS：实现 `MarkdownRendering`，赋给 `renderer`；通过可抛错的 `renderSafely` / `renderFull` 报告可恢复错误，旧的源码实现有默认适配。
-- 输出支持文本、表格、Mermaid 分段；渲染器需要正确维护主题、格式范围与复制范围。通常只需配置主题，不需要替换解析器。
+Recoverable parser failures first trigger a full parse retry. If that fails too, the component displays the raw text and reports onRenderFailure. Future content updates attempt normal parsing again. A parse error does **not** automatically mark the SSE request as failed.
 
-发生可恢复解析异常时，先全量重试，仍失败则显示原始纯文本，并通过 `onRenderFailure` 报告阶段和错误。下一次正文更新仍尝试正常解析。**解析异常不自动变成 SSE 请求失败**。
+For custom parsers, Android exposes MarkdownRenderer via setMarkdownRenderer; iOS exposes MarkdownRendering via renderer, with throwing renderSafely/renderFull hooks. Prefer the default renderer unless you need custom parsing behavior.
 
-Android 不吞掉 OOM 等 JVM Error；Swift trap、Objective-C 异常和底层原生崩溃不能通过 Swift throws 捕获。这也不是对任意 UI 布局错误的兜底。错误回调不要无条件重新 setMarkdown，以免形成递归重试。
+JVM Errors such as OOM, Swift traps, Objective-C exceptions, and native crashes are outside this recovery contract. Do not call setMarkdown unconditionally from the error callback.
 
-## 业务接入检查清单
+## Supported Markdown and limitations
 
-- [ ] 所有视图更新在主线程，输入为正确解码的 Unicode 文本，不直接追加 SSE 原始 `data:` 行或 JSON。
-- [ ] 分片是 delta 而非累计全文；结束、失败和停止均显式通知。
-- [ ] 每次请求有消息 ID / 尝试 ID，取消后丢弃晚到的旧回调。
-- [ ] 复用时 reset，再恢复正文、状态、主题和事件回调。
-- [ ] 状态视图启停与宿主可见性一致；后台不持续播放业务动画。
-- [ ] iOS 列表处理异步高度变化，双端在窄屏、大字体、长文下验收。
-- [ ] 显式拦截链接和图片点击，限制 URL 协议/域名，按业务确认外部跳转。
-- [ ] 远程图片配置网络权限与 HTTPS 策略；Android 宿主声明 INTERNET，iOS 遵循 ATS，不为方便而全局放开明文 HTTP。
-- [ ] 图片缓存有容量、过期、账号隔离和退出登录清理策略。
-- [ ] 保留 Mermaid / MathJax 资源及第三方许可证，不把示例数据打进业务库。
-- [ ] 不把测试用例数量、源码编译通过或模拟 SSE 通过当作线上协议、性能与视觉验收完成。
+Supported: headings, emphasis, strikethrough, links, lists, task-list display, quotes, fenced/indented code, GFM tables, asynchronous images, Mermaid, NOTE/TIP/IMPORTANT/WARNING/CAUTION alerts, basic footnotes, and inline/block math.
 
-不可信 Markdown 仍可能触发图片请求、消耗大量布局资源或提供恶意链接。建议宿主限制单消息长度、图片大小、并发数量与可访问地址；禁用 HTML 执行不等于内容完全无风险。
+- Code uses a monospace font and theme background; syntax highlighting is not supported.
+- Top-level tables have independent horizontal scrolling. Tables inside lists/quotes fall back to text.
+- Top-level Mermaid fences render diagrams; nested fences remain code.
+- Math supports the bundled MathJax base/AMS subset, not arbitrary LaTeX documents.
+- Basic footnotes do not provide navigation/backlinks, recursive definitions, or cross-message references.
+- Task checkboxes are display-only.
+- Raw HTML is displayed as text rather than executed.
+- Incremental parsing can fall back to a full parse; long individual containers and preprocessing still have costs.
+- Platform fonts and line-breaking differ. Pixel-identical wrapping and justified text are not guaranteed.
 
-## 示例工程与开发
+## Integration checklist
 
-首页提供四个入口：
+- Update views on the main thread; append decoded deltas only.
+- Report stream completion, stop, and failure explicitly.
+- Reject callbacks from old message/request IDs after cancellation.
+- Handle asynchronous height changes and preserve the user's scroll position.
+- Validate external URLs; use HTTPS and app-appropriate network policies.
+- Limit untrusted content size, image dimensions, and concurrent work.
+- Define cache retention, account isolation, and sign-out cleanup.
+- Preserve bundled Mermaid/MathJax resources and third-party licenses.
+- Test narrow screens, large fonts, long responses, reuse, failed images, and interrupted streams.
 
-1. **ShowCase 格式显示**：P0～P3 共 139 个共享用例，全文、播放、暂停、单步与验收说明。
-2. **SSE Chat**：30 组共享复杂回复。本地模拟等待和流式输出；输入 1～30 选题，10/20/30 演示失败与重试，输入 `/停止` 中止。
-3. **科技周刊**：阮一峰周刊第 364～413 期，共 50 篇，在线读取 Markdown 正文。
-4. **主题设置**：即时修改并本地保存；保存逻辑属于例子，不属于库。
+## Examples and support
 
-两个例子共享用例与回复 JSON；业务库不依赖示例应用。周刊来源：[ruanyf/weekly](https://github.com/ruanyf/weekly)。
+The example apps include format showcases, 30 simulated AI replies, a technology-weekly reader, and a persistent theme editor. They are not included in the library.
 
-### 仓库结构
+For development and examples: [Android](android/README.md), [iOS](ios/README.md). For parser/performance details: [performance notes](docs/performance-review.md).
 
-```text
-android/thkmdview/     Android 库
-android/sample/        Android 示例
-ios/Sources/THKMDView/ iOS 库
-ios/Example/           iOS 示例
-ios/Fixtures/          双端共享 Markdown 用例
-ios/Binary/            XCFramework 构建配置
-examples/sse/          30 组模拟回复
-examples/weekly/       50 篇周刊目录
-docs/                  专题与验收文档
-```
+Report issues with your platform, OS/library version, minimal Markdown, chunk sequence, theme, and expected/actual behavior. Please remove private messages, credentials, and personal data from reports.
 
-### 构建与测试
+## License
 
-```sh
-# Android：仓库根目录执行
-cd android
-./gradlew :thkmdview:testDebugUnitTest :sample:assembleDebug
-```
-
-```sh
-# iOS：仓库根目录执行
-cd ios/Example
-xcodegen generate
-xcodebuild build -project Example.xcodeproj -scheme Example \
-  -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
-```
-
-iOS XCTest 需要选择可用模拟器目标；UIKit 项目不能用普通 macOS `swift test` 代替。详细开发说明：[Android](android/README.md) / [iOS](ios/README.md)。二进制构建见 [Binary 指南](ios/Binary/README.md)。
-
-仓库测试覆盖解析对照、分片、复用、主题、图片、SSE 状态和降级等行为。WebView 实际绘制、长列表性能和双端视觉效果仍需运行时验收，不宣称完全符合全部 CommonMark/GFM 边界或“零泄漏”。
-
-### Tag 自动构建
-
-推送 `1.0.0` 这样的 `x.y.z` tag（无 `v` 前缀）会同时触发 Android 和 iOS 工作流；普通分支推送不再触发发布。两端版本配置必须与 tag 完全相同，否则构建提前失败。
-
-- Android：单元测试通过后，将同名版本发布至公开的 `maven-repo` 分支，包含 AAR、POM、Gradle 元数据和源码包；消费者无需认证。
-- iOS：真机/模拟器归档、依赖和资源检查、pod lint 后上传版本化 Actions 附件；不自动创建 Release 或发布 trunk。
-- Android 手动运行工作流时填写已有 `release_tag`，可将历史 tag 补发到新仓库，无需移动 tag；iOS 手动运行仍需选择版本 tag。已发布的 Maven 版本不能重复覆盖；修复已发布版本请使用新 tag，不强制移动旧 tag。
-
-## 贡献与许可证
-
-欢迎通过 [Issues](https://github.com/vizoss/THK-Markdown/issues) 提交问题。请尽量提供：
-
-- 平台、系统版本、接入方式和库版本/提交；
-- 最小 Markdown 输入、分片顺序、主题配置；
-- 预期与实际结果、截图或脱敏日志；
-- 是否仅在流式、复用、字体变化或特定宽度下发生。
-
-修改解析、布局或公开 API 时，请补充相应测试；涉及双端能力时同步评估两端并更新文档。不要提交访问令牌、私人会话内容或未经授权的数据。
-
-本项目采用 [MIT License](LICENSE)。内置 Mermaid、MathJax、图标及解析器依赖保留各自的许可证；请保留分发产物中的第三方许可文件。周刊文章与外部图片不是本项目原创内容，不因本项目的 MIT 许可而改变其原有权利归属。
+[MIT](LICENSE). Bundled dependencies retain their own licenses. External articles and images retain their original rights.

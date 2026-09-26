@@ -49,7 +49,7 @@ pod 'THKMDView', :path => '/绝对路径/ios/Binary/build-XXXXXX/release'
 
 ## 发布（需维护者明确执行）
 
-推送 `x.y.z` tag（无 `v` 前缀）会自动构建并上传 `THKMDView-<版本>-binary` Actions 附件，不创建 Release、不推送 CocoaPods trunk。普通分支推送不再触发；手动运行也必须选择版本 tag。tag、Android VERSION_NAME 和 podspec 版本必须一致。
+推送 `x.y.z` tag（无 `v` 前缀）会自动构建并上传 `THKMDView-<版本>-binary` Actions 附件，不创建 Release、不推送 CocoaPods trunk。普通分支推送不再触发；手动运行可以选择分支验证候选包，通过后再创建版本 tag。Android VERSION_NAME 和 podspec 必须一致，tag 构建还会检查两者与 tag 一致。
 首个二进制版本发布前，维护者应选择未占用的版本号并更新根目录 podspec，完成构建和消费端验证。
 将生成的 ZIP 上传到对应 GitHub Release，地址必须与 podspec 的 `s.source` 一致。
 确认远端 ZIP 可下载后，才分发该版本 podspec 或提交到自己的 Specs 仓库。

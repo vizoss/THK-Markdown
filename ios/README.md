@@ -63,7 +63,7 @@ xcodebuild test -project Example.xcodeproj -scheme Example \
 - 默认主题不会自动适配深色模式或业务 Dynamic Type 策略；宿主调整主题并自行保存。
 - SPM 通过 Bundle.module 加载离线资源；二进制从框架 bundle 加载，不能遗漏 Mermaid / MathJax 文件。
 
-更多示例见 [基础使用](../README.md#基础使用与布局)、[主题配置](../README.md#主题配置)、[图片缓存](../README.md#图片加载与缓存)、[生命周期](../README.md#列表复用与生命周期)。
+更多示例见 [基础使用](../README.zh-CN.md#基础使用与布局)、[主题配置](../README.zh-CN.md#主题配置)、[图片缓存](../README.zh-CN.md#图片加载与缓存)、[生命周期](../README.zh-CN.md#列表复用与生命周期)。
 
 ## 二进制与 CocoaPods
 
