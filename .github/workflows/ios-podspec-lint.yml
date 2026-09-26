@@ -1,11 +1,7 @@
 name: iOS – binary CocoaPods package
 on:
   push:
-    branches: [main]
-    paths:
-      - 'ios/**'
-      - 'THKMDView.podspec'
-      - '.github/workflows/ios-podspec-lint.yml'
+    tags: ['[0-9]*.[0-9]*.[0-9]*']
   workflow_dispatch: {}
 permissions:
   contents: read
@@ -14,6 +10,13 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Validate release tag and version
+        id: version
+        run: |
+          VERSION=$(bash scripts/release-version.sh)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Test binary dependency guard
+        run: bash ios/scripts/test-parser-dependencies.sh
       - name: Toolchain
         run: |
           xcodebuild -version
@@ -25,7 +28,7 @@ jobs:
       - name: Keep candidate artifacts (no release publication)
         uses: actions/upload-artifact@v4
         with:
-          name: THKMDView-binary-candidate
+          name: THKMDView-${{ steps.version.outputs.version }}-binary
           path: |
             ios/Binary/build-*/THKMDView-*.zip
             ios/Binary/build-*/SHA256SUMS

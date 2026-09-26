@@ -88,7 +88,7 @@ maven {
 
 使用有包读取权限的凭据，存放在用户级 `~/.gradle/gradle.properties` 或 CI secrets，**不要提交令牌**。是否还需组织授权取决于你的 GitHub 账号与组织设置。
 
-CI 按 `<VERSION_NAME>-build<run_number>` 生成版本；上述版本已通过单元测试并发布到 GitHub Packages。后续升级请从成功的发布记录选择完整版本号，不要省略 `-build19` 后缀改用 `0.1.0`。
+新版本从 `1.0.0` 起按版本 tag 发布，不再使用 build 后缀。推送 `1.0.0` 后会自动运行测试并发布同名 Maven 版本；构建成功前，上面保留上一版已验证坐标。
 
 推荐通过带 POM 的 Maven 包集成。单独复制 AAR 不会自动带入 Maven 传递依赖，需要自行补齐：AndroidX Core/AppCompat、协程 Android、commonmark-java 及 GFM 表格、删除线、任务列表扩展。精确版本以 [库构建配置](android/thkmdview/build.gradle.kts) 为准；不要遗漏 AAR 内的 HTML/JS assets。
 
@@ -96,14 +96,14 @@ CI 按 `<VERSION_NAME>-build<run_number>` 生成版本；上述版本已通过�
 
 CocoaPods 路线使用 **预编译 XCFramework**，不是通过 pod 编译 Git 仓库里的 Swift 源码。
 
-当前 podspec 声明版本为 **0.1.0**，不是已验证的远端安装版本。[2026-09-26 构建 #20](https://github.com/vizoss/THK-Markdown/actions/runs/36220522216) 失败，未生成二进制候选附件；本次不能提供新的可安装 iOS 版本。
+当前 podspec 声明版本为 **1.0.0**。版本 tag 会自动构建、校验并上传 `THKMDView-1.0.0-binary` Actions 附件；附件不等于已发布的 GitHub Release 或 CocoaPods trunk 版本。
 
 维护者发布匹配版本的 ZIP 和 podspec 后，可使用远端 podspec：
 
 ```ruby
 # <版本> 为实际存在、已验证的发布版本，不能原样复制。
 pod 'THKMDView',
-    :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/v<版本>/THKMDView.podspec'
+    :podspec => 'https://raw.githubusercontent.com/vizoss/THK-Markdown/<版本>/THKMDView.podspec'
 ```
 
 根目录 podspec 中的版本号不是“已上传 Release / 已发布到 CocoaPods trunk”的证明。现有二进制工作流生成候选附件，不自动发布 Release 或 trunk。
@@ -556,6 +556,14 @@ xcodebuild build -project Example.xcodeproj -scheme Example \
 iOS XCTest 需要选择可用模拟器目标；UIKit 项目不能用普通 macOS `swift test` 代替。详细开发说明：[Android](android/README.md) / [iOS](ios/README.md)。二进制构建见 [Binary 指南](ios/Binary/README.md)。
 
 仓库测试覆盖解析对照、分片、复用、主题、图片、SSE 状态和降级等行为。WebView 实际绘制、长列表性能和双端视觉效果仍需运行时验收，不宣称完全符合全部 CommonMark/GFM 边界或“零泄漏”。
+
+### Tag 自动构建
+
+推送 `1.0.0` 这样的 `x.y.z` tag（无 `v` 前缀）会同时触发 Android 和 iOS 工作流；普通分支推送不再触发发布。两端版本配置必须与 tag 完全相同，否则构建提前失败。
+
+- Android：单元测试通过后，将同名版本发布至 GitHub Packages。
+- iOS：真机/模拟器归档、依赖和资源检查、pod lint 后上传版本化 Actions 附件；不自动创建 Release 或发布 trunk。
+- 手动运行工作流也必须选择已有版本 tag。已发布的 Maven 版本不能重复覆盖；修复已发布版本请使用新 tag，不强制移动旧 tag。
 
 ## 贡献与许可证
 

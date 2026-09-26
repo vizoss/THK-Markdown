@@ -36,9 +36,7 @@ for framework in "$device" "$simulator"; do
   test -f "$framework/math_template.html"
   test -f "$framework/mathjax-3.2.2.js"
   test -f "$framework/mathjax-LICENSE.txt"
-  if xcrun otool -L "$framework/THKMDView" | grep -E '(Markdown|cmark|Maaku)'; then
-    echo "Unexpected external parser dependency"; exit 1
-  fi
+  xcrun otool -L "$framework/THKMDView" | bash "$project_root/ios/scripts/check-parser-dependencies.sh"
   if grep -RE 'import (Markdown|cmark|cmark_gfm|Maaku)' "$framework/Modules/THKMDView.swiftmodule/"*.swiftinterface; then
     echo "Parser leaked into public interface"; exit 1
   fi
@@ -59,4 +57,4 @@ cp "$project_root/THKMDView.podspec" "$release/THKMDView.podspec"
 (cd "$release" && /usr/bin/zip -qr "$build_dir/THKMDView-$version.zip" THKMDView.xcframework LICENSE THIRD_PARTY_LICENSES)
 shasum -a 256 "$build_dir/THKMDView-$version.zip" > "$build_dir/SHA256SUMS"
 echo "Local binary artifact: $build_dir/THKMDView-$version.zip"
-echo "Not published. Upload the zip to release v$version before remote pod installation."
+echo "Not published. Upload the zip to release $version before remote pod installation."

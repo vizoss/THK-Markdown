@@ -2,11 +2,7 @@ name: Android – publish AAR to GitHub Packages
 
 on:
   push:
-    branches: [main]
-    paths:
-      - "android/**"
-      - "ios/Fixtures/**"
-      - ".github/workflows/android-publish.yml"
+    tags: ['[0-9]*.[0-9]*.[0-9]*']
   workflow_dispatch: {}
 
 permissions:
@@ -21,6 +17,11 @@ jobs:
         working-directory: android
     steps:
       - uses: actions/checkout@v5
+      - name: Validate release tag and version
+        id: version
+        run: |
+          VERSION=$(bash ../scripts/release-version.sh)
+          echo "publish_version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -46,18 +47,7 @@ jobs:
       - name: Run unit tests
         run: ./gradlew :thkmdview:testDebugUnitTest --stacktrace
 
-      - name: Compute publish version
-        id: version
-        run: |
-          BASE_VERSION=$(grep '^VERSION_NAME=' gradle.properties | cut -d= -f2)
-          PUBLISH_VERSION="${BASE_VERSION}-build${{ github.run_number }}"
-          echo "publish_version=${PUBLISH_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Publishing version: ${PUBLISH_VERSION}"
-
-      # GitHub Packages Maven registry rejects republishing an existing version, so every
-      # push to main gets a unique "<VERSION_NAME>-build<run_number>" version. Tag a real
-      # release manually (bump VERSION_NAME in gradle.properties) when you want a stable,
-      # human-chosen version number instead of a build-numbered one.
+      # Published Maven versions are immutable; use a new tag for a new release.
       - name: Publish :thkmdview to GitHub Packages
         env:
           GITHUB_ACTOR: ${{ github.actor }}

@@ -58,7 +58,7 @@ dependencies {
 }
 
 // Publishes the "release" AAR to GitHub Packages: https://maven.pkg.github.com/vizoss/THK-Markdown
-// VERSION_NAME is overridden by CI per-push (see ../.github/workflows/android-publish.yml) since
+// CI validates VERSION_NAME against the release tag before publishing.
 // GitHub Packages rejects republishing an already-existing version.
 afterEvaluate {
     publishing {

@@ -56,7 +56,7 @@ SSE Chat 不是在线 AI 服务；输入 1～30 选题，10/20/30 演示失败�
 
 ## 发布
 
-仓库配置发布到 GitHub Packages，坐标 `com.thk.mdview:thkmdview`。工作流使用 `<VERSION_NAME>-build<run_number>`；以实际发布记录为准，不将源码版本号当作包已存在的证明。
+推送 `x.y.z` tag（无 `v` 前缀）后自动测试并发布到 GitHub Packages，坐标为 `com.thk.mdview:thkmdview:<tag>`。tag 必须与 Android 和 iOS 版本配置一致；普通分支推送不发布，手动构建也必须选择版本 tag。以成功的发布记录为准，已发布版本不能覆盖。
 
 依赖仓库与凭据配置见 [安装依赖](../README.md#安装依赖)；维护者流水线见 [android-publish.yml](../.github/workflows/android-publish.yml)。不要将读取或发布令牌写进仓库。
 
